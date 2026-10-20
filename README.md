@@ -1,6 +1,6 @@
-# Interactive Physiology
+# Lecture Materials
 
-Lecture materials for health sciences students, with a focus on physiology: interactive simulations, self-assessment tests and course documents. Student-facing content is in Turkish.
+Lecture materials for health sciences students, with a focus on physiology: interactive simulations, self-assessment tests and course documents. Student-facing content is available in Turkish and English (a TR/EN switch is built into each simulation; `?lang=en` or `?lang=tr` in the address selects the language).
 
 **Website:** https://nuh-yilmaz.github.io/lecture-materials/
 
@@ -8,7 +8,7 @@ Lecture materials for health sciences students, with a focus on physiology: inte
 
 | Folder | Topic | Materials |
 |---|---|---|
-| [`endocrine/`](endocrine/) | Endokrin Sistem Fizyolojisi | [Hormon Simülatörü](https://nuh-yilmaz.github.io/lecture-materials/endocrine/) (7 modules, pre/post test) |
+| [`endocrine/`](endocrine/) | Endocrine system physiology (Endokrin Sistem Fizyolojisi) | [Hormone Simulator / Hormon Simülatörü](https://nuh-yilmaz.github.io/lecture-materials/endocrine/) (7 modules, pre/post test, Turkish + English) |
 
 ## Structure
 

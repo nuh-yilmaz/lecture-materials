@@ -4,9 +4,9 @@
  * Setup: Sheet > Extensions > Apps Script > paste this code > Deploy > New deployment >
  * Type: Web app > Execute as: Me > Who has access: Anyone.
  */
-const HEADERS = ['Zaman', 'Rumuz', 'Test', 'S1 (20)', 'S2 (20)', 'S3 (20)', 'S4 (20)',
-  'S5 öz puan (20)', 'Otomatik toplam (80)', 'Toplam (öz puan dahil)',
-  'C1 seçenek', 'C2 sıra', 'C3 eşleştirme', 'C4 D/Y', 'C5 açık uçlu cevap', 'Sürüm'];
+const HEADERS = ['Timestamp', 'Alias', 'Test', 'Q1 (20)', 'Q2 (20)', 'Q3 (20)', 'Q4 (20)',
+  'Q5 self-score (20)', 'Auto total (80)', 'Total (incl. self-score)',
+  'A1 choice', 'A2 order', 'A3 matching', 'A4 T/F (D=true, Y=false)', 'A5 open-ended answer', 'Version', 'Language'];
 
 function doPost(e) {
   const lock = LockService.getScriptLock();
@@ -24,7 +24,7 @@ function doPost(e) {
       new Date(), clean(d.alias), clean(d.test),
       num(d.s1), num(d.s2), num(d.s3), num(d.s4), num(d.s5_self),
       num(d.auto_total), num(d.total),
-      clean(d.a1), clean(d.a2), clean(d.a3), clean(d.a4), clean(d.a5), clean(d.version)
+      clean(d.a1), clean(d.a2), clean(d.a3), clean(d.a4), clean(d.a5), clean(d.version), clean(d.lang)
     ]);
     return ContentService.createTextOutput(JSON.stringify({ ok: true }))
       .setMimeType(ContentService.MimeType.JSON);
