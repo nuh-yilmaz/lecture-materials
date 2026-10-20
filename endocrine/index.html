@@ -1,0 +1,875 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="description" content="Hemşirelik 1. sınıf için etkileşimli endokrin sistem fizyolojisi simülasyonu."><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>Hormon Simülatörü</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Düzen: üstte başlık bandı, yapışkan modül sekmeleri; her modül = solda kontrol + yol + grafik, sağda "Ne oluyor?" + ders notu */
+:root{
+  --bg:#F3F6FB; --surface:#FFFFFF; --surface-2:#E8EEF8; --ink:#0E1A33; --muted:#566381; --line:#D3DCEB;
+  --navy:#0B2A6B; --signal:#B3122E; --ok:#0F7A5F; --warn:#B45309;
+  --h1:#2457C5; --h2:#C2410C; --h3:#0F7A5F; --h4:#8E2E6B; --h5:#6B4FD3;
+  --band:rgba(15,122,95,.12); --grid:rgba(14,26,51,.08);
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1222; --surface:#121C31; --surface-2:#1A2742; --ink:#E5ECF8; --muted:#9BA9C4; --line:#28385A;
+  --navy:#9DB8FF; --signal:#FF6F86; --ok:#4CD3A7; --warn:#F5A453;
+  --h1:#7FA6FF; --h2:#FF9A63; --h3:#4CD3A7; --h4:#E28AC2; --h5:#B4A2FF;
+  --band:rgba(76,211,167,.14); --grid:rgba(229,236,248,.08); color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0B1222; --surface:#121C31; --surface-2:#1A2742; --ink:#E5ECF8; --muted:#9BA9C4; --line:#28385A;
+  --navy:#9DB8FF; --signal:#FF6F86; --ok:#4CD3A7; --warn:#F5A453;
+  --h1:#7FA6FF; --h2:#FF9A63; --h3:#4CD3A7; --h4:#E28AC2; --h5:#B4A2FF;
+  --band:rgba(76,211,167,.14); --grid:rgba(229,236,248,.08); color-scheme:dark;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .wrap{padding-block:22px 18px;display:flex;flex-wrap:wrap;gap:8px 24px;align-items:flex-end;justify-content:space-between}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(28px,4.4vw,42px);font-weight:800;color:var(--navy);letter-spacing:-.01em}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.top p{margin:6px 0 0;color:var(--muted);max-width:60ch}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+nav.tabs .wrap{display:flex;gap:6px;overflow-x:auto;padding-block:10px;scrollbar-width:thin}
+nav.tabs button{flex:0 0 auto;font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{background:var(--navy);color:var(--surface);border-color:var(--navy)}
+button:focus-visible,input:focus-visible,label:focus-within{outline:3px solid var(--h1);outline-offset:2px}
+main .wrap{padding-block:22px 48px}
+.view[hidden]{display:none!important}
+
+/* Giriş */
+.intro{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:22px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.intro h2{font-size:26px;color:var(--navy);margin-bottom:8px}
+.steps{display:grid;gap:10px;margin:14px 0 0;padding:0;list-style:none;counter-reset:s}
+.steps li{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:start}
+.steps li::before{counter-increment:s;content:counter(s);display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--surface-2);color:var(--navy);font-weight:700;font-family:var(--f-mono)}
+.modgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:22px}
+.modcard{all:unset;cursor:pointer;display:grid;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.modcard:hover{border-color:var(--navy)}
+.modcard:focus-visible{outline:3px solid var(--h1);outline-offset:2px}
+.modcard strong{font-family:var(--f-display);font-size:19px;color:var(--navy)}
+.modcard span{color:var(--muted);font-size:14px}
+.modcard em{font-style:normal;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--signal)}
+.btn{font:inherit;font-weight:700;font-size:15px;border:1px solid var(--navy);background:var(--navy);color:var(--surface);padding:9px 14px;border-radius:10px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--navy)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.legendkey{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:14px;color:var(--muted)}
+
+/* Modül */
+.mod-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 20px;align-items:flex-end;margin-bottom:14px}
+.mod-head h2{font-size:clamp(24px,3.4vw,32px);color:var(--navy)}
+.mod-head p{margin:4px 0 0;color:var(--muted);max-width:62ch}
+.simbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.simbar .btn{padding:7px 11px;font-size:14px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{font:inherit;font-size:13px;font-weight:700;border:0;background:var(--surface);color:var(--muted);padding:7px 10px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface-2);color:var(--ink)}
+.mod-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;align-items:start}
+.col{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-width:0}
+.col>*{min-width:0}
+.controls{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.ctl{display:grid;gap:6px;background:var(--surface-2);border-radius:12px;padding:12px}
+.ctl label,.ctl .lab{font-weight:700;font-size:14px}
+.ctl small{color:var(--muted);font-size:12.5px;line-height:1.35}
+.ctl input[type=range]{width:100%;accent-color:var(--navy)}
+.ctl .ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.ctl .btn{width:100%}
+.switch{display:flex;align-items:center;gap:10px;cursor:pointer}
+.switch input{appearance:none;width:44px;height:26px;border-radius:999px;background:var(--line);position:relative;flex:0 0 auto;cursor:pointer;transition:background .2s}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--surface);transition:left .2s}
+.switch input:checked{background:var(--navy)}
+.switch input:checked::after{left:21px}
+
+.path{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.path h3,.panel h3{font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-family:var(--f-body);font-weight:700;margin-bottom:10px}
+.prow{display:flex;align-items:stretch;gap:0;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
+.prow + .prow{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.node{flex:1 1 0;min-width:118px;background:var(--surface-2);border-radius:12px;padding:10px;display:grid;gap:4px;align-content:start}
+.node .nl{font-weight:700;font-size:14px;line-height:1.25}
+.node .ns{font-size:12px;color:var(--muted);line-height:1.25}
+.node .nv{font-family:var(--f-mono);font-size:18px;font-weight:700}
+.meter{position:relative;height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.meter i{position:absolute;inset:0 auto 0 0;border-radius:99px}
+.meter b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.55}
+.state{font-size:12px;font-weight:700}
+.state.hi{color:var(--signal)} .state.lo{color:var(--h1)} .state.ok{color:var(--ok)}
+.arrow{flex:0 0 26px;display:grid;place-items:center;color:var(--muted);font-weight:700;font-size:18px}
+.fb{margin-top:10px;display:flex;gap:10px;align-items:center;font-size:14px;padding:8px 10px;border-radius:10px;border:1px dashed var(--line);color:var(--muted)}
+.fb .dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;background:var(--line)}
+.fb.on.neg{border-color:var(--h1);color:var(--ink)} .fb.on.neg .dot{background:var(--h1)}
+.fb.on.pos{border-color:var(--signal);color:var(--ink)} .fb.on.pos .dot{background:var(--signal)}
+.fb.off{opacity:.7}
+
+.chartbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.chartbox canvas{width:100%;height:240px;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:13px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.legend .v{font-family:var(--f-mono);font-weight:700}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.now{font-size:16px}
+.now p{margin:0 0 8px}
+.now p:last-child{margin-bottom:0}
+.now .tag{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:99px;background:var(--surface-2);color:var(--navy);margin-right:6px}
+.note p{margin:0 0 10px;max-width:65ch}
+.note ul{margin:0 0 10px;padding-left:20px}
+.note strong{color:var(--navy)}
+.tasks{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.tasks li{display:grid;grid-template-columns:22px 1fr;gap:8px;font-size:15px}
+.tasks li::before{content:"→";color:var(--signal);font-weight:700}
+.daily{background:color-mix(in srgb,var(--h2) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--h2) 30%,var(--line));border-radius:var(--r);padding:14px 16px;font-size:15px}
+.daily b{color:var(--h2)}
+.visual{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.cup{width:64px;height:96px;border:3px solid var(--muted);border-top:0;border-radius:0 0 14px 14px;position:relative;overflow:hidden;flex:0 0 auto}
+.cup i{position:absolute;left:0;right:0;bottom:0}
+.gland{flex:0 0 auto;width:120px;height:80px;display:grid;place-items:center}
+.progress{height:14px;border-radius:99px;background:var(--line);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--signal)}
+.clock{font-family:var(--f-mono);font-size:34px;font-weight:700;color:var(--navy)}
+
+/* Test */
+.quiz{display:grid;gap:14px;max-width:860px}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.q legend{font-weight:700;font-size:17px;padding:0;margin-bottom:10px}
+.q fieldset{border:0;margin:0;padding:0;min-width:0}
+.opts{display:grid;gap:8px}
+.opt{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:var(--surface)}
+.opt input{accent-color:var(--navy);width:18px;height:18px;flex:0 0 auto}
+.opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--surface))}
+.opt.wrong{border-color:var(--signal);background:color-mix(in srgb,var(--signal) 10%,var(--surface))}
+.why{margin-top:10px;font-size:15px;color:var(--muted)}
+.why b{color:var(--ink)}
+.why a{color:var(--navy);font-weight:700}
+.score{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.score .big{font-family:var(--f-mono);font-size:30px;font-weight:700;color:var(--navy)}
+.compare{display:flex;gap:10px;flex-wrap:wrap}
+.pill{font-size:14px;font-weight:700;border-radius:99px;padding:4px 12px;background:var(--surface-2)}
+
+.qtag{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--signal);margin-bottom:4px}
+.ord{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.ordrow{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.ordrow .pos{font-family:var(--f-mono);font-weight:700;color:var(--navy);text-align:center}
+.obtns{display:flex;gap:4px}
+.mini{font:inherit;font-weight:700;width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer}
+.mini:disabled{opacity:.35;cursor:default}
+.match{display:grid;gap:8px}
+.mrow{display:grid;grid-template-columns:minmax(110px,160px) minmax(0,1fr);gap:10px;align-items:center;padding:6px 10px;border:1px solid var(--line);border-radius:10px}
+.mrow select{font:inherit;font-size:15px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%;min-width:0}
+.tfl{display:grid;gap:8px}
+.tfrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+.tfbtns{display:flex;gap:12px;font-weight:700}
+.tfbtns label{display:flex;gap:4px;align-items:center;cursor:pointer}
+.tfbtns input{accent-color:var(--navy);width:18px;height:18px}
+.fix{grid-column:1/-1;font-size:14px;color:var(--muted)}
+textarea{font:inherit;width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface);color:var(--ink);resize:vertical}
+.rubric{display:grid;gap:8px;margin-top:12px;padding:12px;border-radius:10px;background:var(--surface-2)}
+.rb{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.rb input{accent-color:var(--ok);width:18px;height:18px;margin-top:3px;flex:0 0 auto}
+.rb em{font-style:normal;font-size:12px;font-weight:700;color:var(--muted);margin-left:auto;white-space:nowrap}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.ordrow.right,.mrow.right,.tfrow.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,var(--surface))}
+.ordrow.wrong,.mrow.wrong,.tfrow.wrong{border-color:var(--signal);background:color-mix(in srgb,var(--signal) 8%,var(--surface))}
+@media (max-width:600px){.mrow{grid-template-columns:minmax(0,1fr)}}
+.rumuz{display:grid;gap:6px;max-width:860px;margin-bottom:14px}
+.rumuz input{font:inherit;font-family:var(--f-mono);font-size:20px;letter-spacing:.12em;text-transform:uppercase;width:9ch;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+.rumuz small{color:var(--muted)}
+.sendbox{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+footer{color:var(--muted);font-size:13px;padding-block:0 30px}
+@media (max-width:600px){.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.ctl{padding:10px}.prow{flex-wrap:wrap;gap:8px}.prow .arrow{display:none}.node{flex:1 1 calc(50% - 8px);min-width:0}}
+@media (max-width:860px){.mod-grid,.intro{grid-template-columns:minmax(0,1fr)}.chartbox canvas{height:210px}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<header class="top"><div class="wrap">
+  <div>
+    <div class="eyebrow">Endokrin Sistem Fizyolojisi · Hemşirelik 1. sınıf</div>
+    <h1>Hormon Simülatörü</h1>
+    <p>Hormonları kendiniz yönetin: ortamı soğutun, yemek yiyin, terleyin, sınava girin. Kandaki düzeylerin nasıl değiştiğini canlı izleyin.</p>
+  </div>
+</div></header>
+
+<nav class="tabs" aria-label="Modüller"><div class="wrap" id="tabs" role="tablist"></div></nav>
+
+<main><div class="wrap">
+  <section class="view" id="v-giris" aria-labelledby="t-giris">
+    <div class="intro">
+      <div class="card">
+        <h2>Nasıl kullanılır?</h2>
+        <p>Her modül bir hormon sistemini canlandırır. Değerler gerçek zamanlı hesaplanır, yani yaptığınız her değişikliğin sonucunu birkaç saniye içinde görürsünüz.</p>
+        <ol class="steps">
+          <li><span><b>Önce ön testi çözün.</b> 5 soru, 5 farklı soru türü. Not için değil, neyi bildiğinizi görmek için.</span></li>
+          <li><span><b>Bir modül seçin.</b> Düğmelere basın, kaydırıcıları oynatın.</span></li>
+          <li><span><b>“Ne oluyor?” kutusunu okuyun.</b> Ekranda olanı adım adım açıklar.</span></li>
+          <li><span><b>Ders notunu ve görevleri yapın,</b> sonra son testi çözüp puanınızı karşılaştırın.</span></li>
+        </ol>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+          <button class="btn" type="button" data-go="test" data-mode="pre">Ön teste başla</button>
+          <button class="btn ghost" type="button" data-go="tiroid">İlk modüle geç</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2 style="font-size:20px">Ekranda ne göreceksiniz?</h2>
+        <p style="margin:6px 0 10px">Her hormon bir kutuda gösterilir. Çubuktaki ince çizgi normal düzeyi işaret eder.</p>
+        <div class="node" style="max-width:240px">
+          <div class="nl">Ön hipofiz</div><div class="ns">TSH</div>
+          <div class="nv">%140</div>
+          <div class="meter"><i style="width:70%;background:var(--h1)"></i><b style="left:50%"></b></div>
+          <div class="state hi">Normalden yüksek</div>
+        </div>
+        <p style="margin:12px 0 0;font-size:14px;color:var(--muted)">Hormon düzeyleri normalin yüzdesi olarak (%100 = normal) verilir. Kan şekeri, kan yoğunluğu ve kalsiyum ise gerçek birimleriyle (mg/dL, mOsm/kg) gösterilir.</p>
+      </div>
+    </div>
+    <div class="modgrid" id="modgrid"></div>
+  </section>
+
+  <section class="view" id="v-mod" hidden>
+    <div class="mod-head">
+      <div><div class="eyebrow" id="m-eyebrow"></div><h2 id="m-title"></h2><p id="m-sub"></p></div>
+      <div class="simbar">
+        <button class="btn ghost" type="button" id="b-pause">Duraklat</button>
+        <button class="btn ghost" type="button" id="b-reset">Baştan başlat</button>
+        <div class="seg" role="group" aria-label="Simülasyon hızı" id="speed">
+          <button type="button" data-s="1" aria-pressed="true">1×</button><button type="button" data-s="2" aria-pressed="false">2×</button><button type="button" data-s="4" aria-pressed="false">4×</button>
+        </div>
+      </div>
+    </div>
+    <div class="mod-grid">
+      <div class="col">
+        <div class="controls" id="m-controls"></div>
+        <div class="path"><h3 id="m-pathtitle">Hormon yolu</h3><div id="m-path"></div><div id="m-fb"></div></div>
+        <div class="chartbox"><canvas id="chart" aria-label="Zamana göre değerler grafiği" role="img"></canvas><div class="legend" id="m-legend"></div></div>
+      </div>
+      <div class="col">
+        <div class="panel"><h3>Ne oluyor?</h3><div class="now" id="m-now" aria-live="polite"></div><div id="m-visual" style="margin-top:12px"></div></div>
+        <div class="daily" id="m-daily"></div>
+        <div class="panel"><h3>Bunu deneyin</h3><ul class="tasks" id="m-tasks"></ul></div>
+        <div class="panel note"><h3>Ders notu</h3><div id="m-note"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-test" hidden>
+    <div class="mod-head">
+      <div><div class="eyebrow">Kendinizi sınayın</div><h2>Ön test ve son test</h2>
+      <p>Aynı 5 soru, 5 farklı soru türü, toplam 100 puan. Dersten önce ön testi, dersten ve simülasyondan sonra son testi çözün. Puanlarınız bu tarayıcıda saklanır.</p></div>
+      <div class="seg" role="group" aria-label="Test türü" id="qmode">
+        <button type="button" data-m="pre" aria-pressed="true">Ön test</button><button type="button" data-m="post" aria-pressed="false">Son test</button>
+      </div>
+    </div>
+    <div class="q rumuz" id="rumuzbox" hidden>
+      <label for="rumuz"><b>Rumuzunuz</b></label>
+      <input id="rumuz" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="ör. AY07">
+      <small>Annenizin adının ilk iki harfi + doğduğunuz günün iki hanesi. Ön ve son testte aynı rumuzu yazın. Adınız kaydedilmez.</small>
+    </div>
+    <form class="quiz" id="quiz"></form>
+  </section>
+</div></main>
+<footer><div class="wrap">Bu simülasyon, fizyolojiyi anlamak için basitleştirilmiş bir eğitim modelidir; sayılar gerçek bir hastanın değerleri değildir.</div></footer>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ap=(x,t,tau,dt)=>x+(t-x)*Math.min(1,dt/tau);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const pct=v=>"%"+Math.round(v*100);
+function lvState(v,lo,hi){ if(v>hi) return ["hi","Normalden yüksek"]; if(v<lo) return ["lo","Normalden düşük"]; return ["ok","Normal"]; }
+
+/* ---------------- MODÜLLER ---------------- */
+const M={};
+
+/* 1. TİROİD EKSENİ — negatif geri bildirim */
+M.tiroid={
+  tab:"Tiroid ekseni", eyebrow:"Negatif geri bildirim", title:"Tiroid ekseni",
+  sub:"TRH → TSH → T3/T4. Kanda tiroid hormonu artınca hipotalamus ve hipofiz frene basar.",
+  card:"Soğuk, iyot ve tiroid hormonu tableti ile ekseni zorlayın. Geri bildirimi kapatıp farkı görün.",
+  init:()=>({trh:1,tsh:1,t:1,ex:0,gland:1}),
+  controls:[
+    {type:"range",id:"cold",label:"Ortam sıcaklığı",min:0,max:1,step:.05,value:0,ends:["Ilık","Çok soğuk"],help:"Soğuk, hipotalamustan TRH salgısını artırır."},
+    {type:"range",id:"iod",label:"İyot alımı",min:0,max:1,step:.05,value:1,ends:["Yok","Yeterli"],help:"İyot, tiroid hormonunun hammaddesidir."},
+    {type:"toggle",id:"pill",label:"Tiroid hormonu tableti",value:false,help:"Dışarıdan T4 verilir; kandaki hormon artar."},
+    {type:"toggle",id:"fb",label:"Negatif geri bildirim",value:true,help:"Kapatırsanız T3/T4, TRH ve TSH’yi frenleyemez (deney)."}
+  ],
+  step(s,dt,c){
+    s.ex=ap(s.ex,c.pill?0.9:0,4,dt);
+    const tot=s.t+s.ex;
+    const inhH=c.fb?Math.exp(-1.6*(tot-1)):1, inhP=c.fb?Math.exp(-1.0*(tot-1)):1;
+    s.trh=ap(s.trh,cl((1+0.8*c.cold)*inhH,0,4),1,dt);
+    s.tsh=ap(s.tsh,cl(s.trh*inhP,0,4),2,dt);
+    s.t=ap(s.t,cl(s.tsh*(0.15+0.85*c.iod),0,4),6,dt);
+    s.gland=ap(s.gland,0.6+0.4*s.tsh,10,dt);
+    s.tot=tot;
+  },
+  rows:s=>[[
+    {l:"Hipotalamus",s:"TRH",v:s.trh,c:"--h5"},
+    {l:"Ön hipofiz",s:"TSH",v:s.tsh,c:"--h1"},
+    {l:"Tiroid bezi",s:"T3 / T4 (kanda)",v:s.tot??s.t,c:"--h2"},
+    {l:"Hücreler",s:"Metabolizma ve ısı",v:s.tot??s.t,c:"--h3"}
+  ]],
+  fb:(s,c)=>({kind:"neg",on:c.fb,strength:cl(((s.tot??1)-0.6),0,1.5),
+    text:c.fb?"Negatif geri bildirim açık: T3/T4 arttıkça TRH ve TSH frenlenir.":"Negatif geri bildirim KAPALI: T3/T4 ne kadar artarsa artsın fren yok."}),
+  series:[
+    {k:"trh",n:"TRH",c:"--h5",min:0,max:2.5},{k:"tsh",n:"TSH",c:"--h1",min:0,max:2.5},
+    {k:"tot",n:"T3/T4",c:"--h2",min:0,max:2.5,primary:true,band:[0.85,1.15],axis:v=>pct(v),unit:" "}
+  ],
+  now(s,c){
+    const out=[]; const T=s.tot??s.t;
+    if(c.pill && c.fb && s.tsh<0.8) out.push("<span class='tag'>Tablet</span>Kanda dışarıdan gelen hormon var. Negatif geri bildirim TSH’yi düşürdü, tiroid bezi “dinlenmeye” geçti ve küçülüyor.");
+    if(c.iod<0.6 && c.fb && s.tsh>1.2) out.push("<span class='tag'>Az iyot</span>Hammadde yetersiz, T3/T4 düştü. Fren gevşeyince TSH yükseldi ve bezi daha çok çalıştırıyor. Uzun sürerse bez büyür (guatr).");
+    if(c.iod<0.6 && !c.fb) out.push("<span class='tag'>Fren yok</span>Geri bildirim kapalı olduğu için hipofiz düşük T3/T4’ü fark etmiyor. TSH artmıyor, hormon düşük kalıyor.");
+    if(c.cold>0.3) out.push("<span class='tag'>Soğuk</span>Soğuk TRH’yi artırdı → TSH → T3/T4 yükseldi. Hücreler daha çok ısı üretiyor.");
+    if(!c.fb && c.cold>0.3) out.push("Fren olmadığı için T3/T4 normalin çok üstüne çıktı ve orada kalıyor.");
+    if(!out.length) out.push(Math.abs(T-1)<0.1?"Her şey dengede. Hormon düzeyleri normal civarında; negatif geri bildirim bu dengeyi koruyor.":"Sistem yeni dengesine doğru ilerliyor. Birkaç saniye izleyin.");
+    return out;
+  },
+  visual(s){ const k=cl(s.gland,0.5,1.8); return `<div class="visual"><div class="gland" aria-label="Tiroid bezi boyutu"><svg viewBox="0 0 120 80" width="${Math.round(70*k+30)}" height="${Math.round(50*k+20)}"><path d="M20 40c0-20 14-32 28-28 6 2 8 10 12 10s6-8 12-10c14-4 28 8 28 28s-14 32-28 28c-6-2-8-14-12-14s-6 12-12 14C34 72 20 60 20 40z" fill="var(--h2)" opacity=".85"/></svg></div><div><b>Tiroid bezi boyutu: ${pct(s.gland)}</b><br><small style="color:var(--muted)">TSH uzun süre yüksek kalırsa bez büyür, düşük kalırsa küçülür.</small></div></div>`; },
+  daily:"Sofra tuzuna iyot bu yüzden katılır. İyot alımını azaltıp TSH’nin nasıl yükseldiğini izleyin.",
+  tasks:["Ortam sıcaklığını “Çok soğuk”a getirin. TRH, TSH ve T3/T4 hangi sırayla yükseliyor?","İyot alımını sıfıra indirin. TSH neden yükseliyor, tiroid bezine ne oluyor?","Tableti açın. Kandaki hormon artarken TSH neden düşüyor?","Negatif geri bildirimi kapatıp aynı denemeleri tekrarlayın. Fark nedir?"],
+  note:`<p><strong>TRH</strong> hipotalamustan, <strong>TSH</strong> ön hipofizden, <strong>T4 ve T3</strong> tiroid bezinden salgılanır. Soğuk, stres, egzersiz, yetersiz beslenme ve düşük kan şekeri TRH’yi artırır.</p>
+  <p>Tiroid bezi kandaki iyodu yakalar ve tiroglobulin adlı protein üzerinde hormon yapar. Salgının çoğu T4’tür; dokularda daha etkili olan T3’e dönüşür. T3/T4 hücrelerin metabolik hızını ve ısı üretimini artırır.</p>
+  <p><strong>Negatif geri bildirim:</strong> Kanda T3/T4 yükselince TRH ve TSH azalır. Kombideki termostat gibi: oda ısınınca kombi kapanır. Bu sayede hormon düzeyi dar bir aralıkta kalır.</p>`
+};
+
+/* 2. DOĞUM VE EMZİRME — pozitif geri bildirim */
+M.dogum={
+  tab:"Doğum ve emzirme", eyebrow:"Pozitif geri bildirim", title:"Doğum ve emzirme",
+  sub:"Oksitosin rahmi kastırır, kasılma oksitosini daha da artırır. Döngü doğumla biter.",
+  card:"Doğumu başlatın ve kendini güçlendiren döngüyü izleyin. Sonra bebeği emzirin.",
+  init:()=>({phase:"bekle",str:0,oxy:0.1,con:0,prog:0,t:0,suck:0,prl:0.3,oxyN:0,store:20}),
+  controls:[
+    {type:"button",id:"start",label:"Doğumu başlat",help:"Bebeğin başı rahim ağzına bastırmaya başlar.",act:s=>{if(s.phase==="bekle"){s.phase="dogum";s.str=0.25;}}},
+    {type:"button",id:"nurse",label:"Bebeği emzir",help:"Bebeğin emmesi sinir yoluyla hipotalamusa ulaşır.",act:s=>{s.suck=1;}}
+  ],
+  step(s,dt){
+    s.t+=dt;
+    const target=s.phase==="dogum"?0.25+1.1*s.con:0;
+    s.str=ap(s.str,target,1,dt);
+    s.oxyL=ap(s.oxyL||0,cl(s.str,0,3),1.5,dt);
+    s.con=ap(s.con,cl(s.oxyL,0,2.6),2,dt);
+    if(s.phase==="dogum"){ s.prog+=1.5*s.con*dt; if(s.prog>=100){s.prog=100;s.phase="bitti";} }
+    s.suck=Math.max(0,s.suck-dt/8);
+    s.prl=ap(s.prl,0.3+1.6*(s.suck>0?1:0),4,dt);
+    s.oxyN=ap(s.oxyN,s.suck>0?1.4:0,1.5,dt);
+    s.store=cl(s.store+s.prl*dt*0.6-s.oxyN*dt*1.2,0,100);
+    s.oxy=0.1+s.oxyL+s.oxyN;
+    s.wave=s.con*Math.pow(0.5+0.5*Math.sin(2*Math.PI*s.t/6),2);
+  },
+  rows:s=>[[
+    {l:"Rahim ağzı",s:"Gerilme",v:s.str,c:"--h4",n:[0,9]},
+    {l:"Arka hipofiz",s:"Oksitosin",v:s.oxy,c:"--signal",n:[0,9]},
+    {l:"Rahim kası",s:"Kasılma gücü",v:s.con,c:"--h2",n:[0,9]}
+  ],[
+    {l:"Bebek",s:"Emme",v:s.suck,c:"--h1",n:[0,9],fmt:v=>v>0?"Emiyor":"—"},
+    {l:"Ön hipofiz",s:"Prolaktin → süt yapımı",v:s.prl,c:"--h3",n:[0,9]},
+    {l:"Memedeki süt",s:"Oksitosin → süt akışı",v:s.store/50,c:"--h5",n:[0,9],fmt:()=>Math.round(s.store)+" birim"}
+  ]],
+  fb:s=>({kind:"pos",on:s.phase==="dogum",strength:cl(s.con/2,0,1),
+    text:s.phase==="dogum"?"Pozitif geri bildirim çalışıyor: kasılma → gerilme ↑ → oksitosin ↑ → daha güçlü kasılma.":(s.phase==="bitti"?"Döngü kırıldı: bebek doğdu, gerilme kalmadı, oksitosin düşüyor.":"Pozitif geri bildirim henüz başlamadı.")}),
+  series:[
+    {k:"oxy",n:"Oksitosin",c:"--signal",min:0,max:3,primary:true,axis:v=>pct(v),unit:" "},
+    {k:"wave",n:"Kasılmalar",c:"--h2",min:0,max:3},
+    {k:"prl",n:"Prolaktin",c:"--h3",min:0,max:3}
+  ],
+  now(s){
+    const o=[];
+    if(s.phase==="bekle") o.push("Rahim sakin. “Doğumu başlat” düğmesine basın.");
+    if(s.phase==="dogum"&&s.prog<35) o.push("<span class='tag'>Başlangıç</span>Hafif gerilme oksitosin salgılattı. Oksitosin kasılmayı başlattı.");
+    if(s.phase==="dogum"&&s.prog>=35) o.push("<span class='tag'>Kendini güçlendiriyor</span>Her kasılma rahim ağzını daha çok geriyor, bu da daha çok oksitosin salgılatıyor. Negatif geri bildirimin tersi: sonuç, süreci büyütüyor.");
+    if(s.phase==="bitti") o.push("<span class='tag'>Doğum</span>Bebek doğdu! Gerilme ortadan kalktı, döngü kendiliğinden durdu. Pozitif geri bildirim bir olayı tamamlamak içindir.");
+    if(s.suck>0) o.push("<span class='tag'>Emzirme</span>Emme hem prolaktini (süt yapımı) hem oksitosini (sütün akması) artırıyor.");
+    else if(s.phase==="bitti") o.push("Şimdi “Bebeği emzir” düğmesine basın.");
+    return o;
+  },
+  visual:s=>`<div style="display:grid;gap:6px"><b>Doğumun ilerlemesi: %${Math.round(s.prog)}</b><div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(s.prog)}"><i style="width:${s.prog}%"></i></div></div>`,
+  daily:"Emziren bir annenin bebeğinin ağladığını duyunca sütünün gelmesi oksitosinin işidir. Süt yapımı ise prolaktinin görevidir.",
+  tasks:["Doğumu başlatın. Oksitosin eğrisi neden giderek dikleşiyor?","Doğum bitince oksitosine ne oluyor? Neden?","Bebeği emzirin. Prolaktin ve oksitosinin görevleri arasındaki fark nedir?"],
+  note:`<p><strong>Oksitosin</strong> hipotalamusun paraventriküler çekirdeğinde yapılır, arka hipofizde depolanır ve sinir uyarısıyla kana verilir. Temel etkisi düz kasları kastırmaktır.</p>
+  <p><strong>Pozitif geri bildirimde</strong> sonuç, süreci daha da güçlendirir. Doğumda bebeğin başı rahim ağzını gerdikçe oksitosin artar, oksitosin kasılmayı güçlendirir, kasılma gerilmeyi artırır. Döngü ancak bebek doğunca durur.</p>
+  <p><strong>Emzirme:</strong> Bebeğin emmesi ön hipofizden <strong>prolaktin</strong> (süt yapımı) ve arka hipofizden <strong>oksitosin</strong> (sütün akması) salgılatır. Prolaktini hipotalamustan gelen dopamin frenler.</p>`
+};
+
+/* 3. STRES YANITI */
+M.stres={
+  tab:"Stres yanıtı", eyebrow:"Hızlı ve yavaş yol", title:"Stres yanıtı: sınav anı",
+  sub:"Adrenalin saniyeler içinde, kortizol dakikalar içinde yükselir. İkisi farklı yollarla çalışır.",
+  card:"Sınavı başlatın: kalp hızı, adrenalin ve kortizol aynı hızda mı değişiyor?",
+  init:()=>({stress:0,sym:0,adr:1,crh:1,acth:1,cort:1}),
+  controls:[
+    {type:"button",id:"go",label:"Sınav başlıyor!",help:"Stres hem sinir sistemini hem hipotalamusu uyarır.",act:s=>{s.stress=1;}},
+    {type:"button",id:"calm",label:"Sınav bitti, sakinleş",help:"Stres ortadan kalkar.",act:s=>{s.stress=0;}}
+  ],
+  step(s,dt){
+    s.sym=ap(s.sym,s.stress,0.3,dt);
+    s.adr=ap(s.adr,1+4*s.sym,1,dt);
+    s.crh=ap(s.crh,cl((1+2*s.stress)*Math.exp(-1.0*(s.cort-1)),0,4),3,dt);
+    s.acth=ap(s.acth,cl(s.crh*Math.exp(-0.6*(s.cort-1)),0,4),5,dt);
+    s.cort=ap(s.cort,s.acth,15,dt);
+    s.hr=70+12*(s.adr-1);
+    s.glu=90+6*(s.adr-1)+15*(s.cort-1);
+  },
+  rows:s=>[[
+    {l:"Sempatik sinirler",s:"Hızlı yol",v:1+s.sym*2,c:"--h4",n:[0.9,1.15],fmt:()=>s.sym>0.5?"Aktif":"Sakin"},
+    {l:"Adrenal medulla",s:"Adrenalin",v:s.adr,c:"--signal"},
+    {l:"Kalp",s:"Kalp hızı",v:s.hr/70,c:"--h2",fmt:()=>Math.round(s.hr)+" atım/dk",n:[60/70,100/70]}
+  ],[
+    {l:"Hipotalamus",s:"CRH",v:s.crh,c:"--h5"},
+    {l:"Ön hipofiz",s:"ACTH",v:s.acth,c:"--h1"},
+    {l:"Adrenal korteks",s:"Kortizol",v:s.cort,c:"--h3"}
+  ]],
+  fb:s=>({kind:"neg",on:s.cort>1.15,strength:cl(s.cort-1,0,1),text:"Kortizol yükseldikçe CRH ve ACTH’yi frenler (negatif geri bildirim). Stres sürerse de dengeye oturur."}),
+  series:[
+    {k:"hr",n:"Kalp hızı",c:"--h2",min:50,max:140,primary:true,band:[60,100],axis:v=>Math.round(v),unit:"atım/dk"},
+    {k:"adr",n:"Adrenalin",c:"--signal",min:0.5,max:5.5},
+    {k:"cort",n:"Kortizol",c:"--h3",min:0.5,max:5.5}
+  ],
+  now(s){
+    const o=[];
+    if(s.stress&&s.adr>2.5&&s.cort<1.25) o.push("<span class='tag'>Saniyeler</span>Sempatik sinirler adrenal medullayı doğrudan uyardı. Adrenalin hemen yükseldi, kalp hızlandı. Bu hızlı yolda ACTH yok.");
+    if(s.stress&&s.cort>=1.25) o.push("<span class='tag'>Dakikalar</span>Yavaş yol da devreye girdi: CRH → ACTH → kortizol. Kortizol kan şekerini yükselterek uzun süreli enerji sağlar.");
+    if(!s.stress&&s.adr>1.5) o.push("<span class='tag'>Sakinleşme</span>Adrenalin hızla düşüyor, kalp yavaşlıyor.");
+    if(!s.stress&&s.cort>1.2&&s.adr<1.5) o.push("Adrenalin normale döndü ama kortizol hâlâ yüksek. Kortizol yavaş yükselir, yavaş düşer.");
+    if(!o.length) o.push("Sakin bir an. “Sınav başlıyor!” düğmesine basın ve iki eğriyi karşılaştırın.");
+    o.push(`Kan şekeri: <b>${Math.round(s.glu)} mg/dL</b> (adrenalin ve kortizol kan şekerini yükseltir).`);
+    return o;
+  },
+  daily:"Sınavdan önce kalbin çarpması ve avuçların terlemesi adrenalindir. Sınav bitince geçer, ama yorgunluk hissi bir süre kalabilir.",
+  tasks:["Sınavı başlatın ve 5 saniye bekleyin. Hangi eğri önce yükseldi?","Bir dakika bekleyin. Kortizol hâlâ yükseliyor mu?","Sakinleşin. Hangisi daha çabuk normale dönüyor?"],
+  note:`<p>Stresin iki yolu vardır. <strong>Hızlı yol:</strong> sempatik sinirler böbrek üstü bezinin iç kısmını (medulla) doğrudan uyarır; saniyeler içinde <strong>adrenalin</strong> salgılanır. Kalp hızlanır, kan şekeri yükselir: “savaş ya da kaç”.</p>
+  <p><strong>Yavaş yol:</strong> hipotalamus <strong>CRH</strong>, ön hipofiz <strong>ACTH</strong> salgılar; ACTH böbrek üstü bezinin dış kısmından (korteks) <strong>kortizol</strong> salgılatır. Kortizol katabolik ve anti-inflamatuvardır, kan şekerini yükseltir.</p>
+  <p>Kortizol sirkadyen ritim gösterir: sabah en yüksek, gece en düşüktür. Bunu “Günlük ritim” modülünde görebilirsiniz.</p>`
+};
+
+/* 4. KAN ŞEKERİ */
+M.seker={
+  tab:"Kan şekeri", eyebrow:"İnsülin ve glukagon", title:"Kan şekeri dengesi",
+  sub:"İnsülin kan şekerini düşürür, glukagon yükseltir. Normal açlık değeri yaklaşık 70–110 mg/dL.",
+  card:"Yemek yiyin, egzersiz yapın, aç kalın. Pankreasın iki hormonu kan şekerini nasıl dengede tutuyor?",
+  init:()=>({G:90,I:1/3,Gn:0.5,P:0,L:60}),
+  controls:[
+    {type:"button",id:"meal",label:"Yemek ye",help:"Sindirilen besin şeker olarak kana geçer.",act:s=>{s.P+=120;}},
+    {type:"toggle",id:"ex",label:"Egzersiz yap",value:false,help:"Kaslar kandan daha çok şeker kullanır."},
+    {type:"toggle",id:"noIns",label:"Deney: insülini kapat",value:false,help:"Beta hücreleri insülin salgılamazsa ne olur?"}
+  ],
+  step(s,dt,c){
+    const ab=0.06*s.P; s.P-=ab*dt; s.L=Math.min(100,s.L+ab*0.15*dt);
+    s.I=ap(s.I,c.noIns?0:cl((s.G-80)/30,0,3),4,dt);
+    s.Gn=ap(s.Gn,cl((100-s.G)/20,0,3),4,dt);
+    const hep=s.Gn*Math.min(1,s.L/20)+0.05; s.L=Math.max(0,s.L-s.Gn*0.4*dt);
+    const up=0.1+1.2*s.I*(s.G/90)+(c.ex?0.9*s.G/90:0);
+    s.G=cl(s.G+(ab+hep-up-0.05)*dt,40,260);
+    s.ins=s.I*3; s.glc=s.Gn*2;
+  },
+  rows:s=>[[
+    {l:"Kan",s:"Kan şekeri",v:s.G/90,c:"--h2",fmt:()=>Math.round(s.G)+" mg/dL",n:[70/90,110/90]},
+    {l:"Beta hücresi",s:"İnsülin",v:s.I*3,c:"--h1",n:[0.6,1.6]},
+    {l:"Alfa hücresi",s:"Glukagon",v:s.Gn*2,c:"--signal",n:[0.6,1.6]},
+    {l:"Karaciğer",s:"Glikojen deposu",v:s.L/60,c:"--h3",fmt:()=>"%"+Math.round(s.L),n:[0.3,2]}
+  ]],
+  fb:s=>({kind:"neg",on:true,strength:cl(Math.abs(s.G-90)/40,0.15,1),text:"Negatif geri bildirim: kan şekeri yükselince insülin, düşünce glukagon artar ve şekeri normale çeker."}),
+  series:[
+    {k:"G",n:"Kan şekeri",c:"--h2",min:40,max:240,primary:true,band:[70,110],axis:v=>Math.round(v),unit:"mg/dL"},
+    {k:"ins",n:"İnsülin",c:"--h1",min:0,max:9},
+    {k:"glc",n:"Glukagon",c:"--signal",min:0,max:9}
+  ],
+  now(s,c){
+    const o=[];
+    if(s.P>15) o.push("<span class='tag'>Yemek</span>Besinler sindiriliyor, şeker kana geçiyor.");
+    if(s.G>115&&!c.noIns) o.push("<span class='tag'>İnsülin ↑</span>Kan şekeri yükseldi. Beta hücreleri insülin salgıladı; insülin şekeri hücrelere sokuyor ve karaciğerde depolatıyor.");
+    if(c.noIns&&s.G>130) o.push("<span class='tag'>Deney</span>İnsülin olmadığı için şeker hücrelere giremiyor ve kanda birikiyor. İnsülin, hücrenin kapısını açan anahtardır.");
+    if(s.G<85) o.push("<span class='tag'>Glukagon ↑</span>Kan şekeri düşüyor. Alfa hücreleri glukagon salgıladı; glukagon karaciğerdeki depoyu (glikojen) çözerek kana şeker veriyor.");
+    if(s.G<70) o.push("<span class='tag'>Düşük</span>Kan şekeri 70 mg/dL’nin altında. Adrenalin de devreye girer: ellerde titreme, terleme, baş dönmesi. Aç kalınca hissettiğiniz bu.");
+    if(c.ex) o.push("Egzersiz sırasında kaslar şekeri yakıt olarak kullanıyor; karaciğer deposu azalıyor.");
+    if(!o.length) o.push("Kan şekeri normal aralıkta. İnsülin ve glukagon düşük düzeyde, dengeli çalışıyor.");
+    return o;
+  },
+  daily:"Yemekten sonra gelen rehavet ve uzun süre aç kalınca ellerin titremesi, kan şekeri ve bu hormonlarla ilgilidir.",
+  tasks:["“Yemek ye”ye basın. Kan şekeri en fazla kaça çıkıyor ve kaç saniyede normale dönüyor?","Egzersizi açıp bekleyin. Glukagon ve karaciğer deposuna ne oluyor?","Deney: insülini kapatıp yemek yiyin. Kan şekeri neden düşmüyor?"],
+  note:`<p>Pankreastaki Langerhans adacıklarında üç hücre tipi vardır. <strong>Beta hücreleri insülin</strong> salgılar: yemekten sonra kan şekeri yükselince artar, şekerin hücrelere girmesini ve karaciğerde glikojen olarak depolanmasını sağlar. İnsülin anaboliktir.</p>
+  <p><strong>Alfa hücreleri glukagon</strong> salgılar: açlıkta artar, karaciğerdeki glikojeni yıkarak kana şeker verir, kan şekerini yükseltir.</p>
+  <p><strong>Delta hücreleri somatostatin</strong> salgılar ve hem insülini hem glukagonu baskılar.</p>`
+};
+
+/* 5. SU DENGESİ — ADH */
+M.su={
+  tab:"Su dengesi", eyebrow:"ADH", title:"Su dengesi ve ADH",
+  sub:"Kan koyulaşınca ADH artar ve böbrek suyu geri emer. Kan yoğunluğu normalde 285–295 mOsm/kg.",
+  card:"Su için, terleyin, tuzlu yiyin. İdrarınızın miktarı ve rengi nasıl değişiyor?",
+  init:()=>({O:290,adh:0.667,W:0,S:0,alc:0,bl:120}),
+  controls:[
+    {type:"button",id:"water",label:"Bir bardak su iç",help:"Kan sulanır, yoğunluğu azalır.",act:s=>{s.W+=40;}},
+    {type:"button",id:"salt",label:"Tuzlu yemek ye",help:"Kana geçen tuz kanı koyulaştırır.",act:s=>{s.S+=30;}},
+    {type:"toggle",id:"sweat",label:"Sıcak gün, terliyorum",value:false,help:"Ter ile su kaybedilir."},
+    {type:"button",id:"alc",label:"Deney: alkol",help:"Alkol ADH salgısını baskılar.",act:s=>{s.alc=35;}},
+    {type:"button",id:"wc",label:"Tuvalete git",help:"Mesaneyi boşaltır.",act:s=>{s.bl=0;}}
+  ],
+  step(s,dt,c){
+    s.alc=Math.max(0,s.alc-dt);
+    s.adh=ap(s.adh,cl((s.O-280)/15,0,2.5)*(s.alc>0?0.25:1),2,dt);
+    s.U=cl(0.8/Math.max(s.adh,0.13),0.3,6);
+    const wi=0.08*s.W, si=0.08*s.S; s.W-=wi*dt; s.S-=si*dt;
+    s.O=cl(s.O+(0.5*(s.U-1.2)+(c.sweat?0.6:0)+si-wi)*dt,265,325);
+    s.bl=Math.min(600,s.bl+s.U*dt*6);
+    s.adhP=s.adh*1.5;
+  },
+  rows:s=>[[
+    {l:"Kan",s:"Kan yoğunluğu",v:s.O/290,c:"--h2",fmt:()=>Math.round(s.O)+" mOsm/kg",n:[285/290,295/290]},
+    {l:"Hipotalamus",s:"Osmoreseptörler",v:s.O/290,c:"--h5",fmt:()=>s.O>295?"Uyarıldı":(s.O<285?"Sessiz":"Normal"),n:[285/290,295/290]},
+    {l:"Arka hipofiz",s:"ADH",v:s.adh*1.5,c:"--h1"},
+    {l:"Böbrek",s:"İdrar miktarı",v:(s.U||1.2)/1.2,c:"--h3",n:[0.6,1.6]}
+  ]],
+  fb:s=>({kind:"neg",on:true,strength:cl(Math.abs(s.O-290)/15,0.15,1),text:"Negatif geri bildirim: ADH suyu geri emdirir, kan sulanır, osmoreseptörlerin uyarısı azalır."}),
+  series:[
+    {k:"O",n:"Kan yoğunluğu",c:"--h2",min:270,max:320,primary:true,band:[285,295],axis:v=>Math.round(v),unit:"mOsm/kg"},
+    {k:"adhP",n:"ADH",c:"--h1",min:0,max:4},
+    {k:"U",n:"İdrar miktarı",c:"--h3",min:0,max:6,norm:1.2}
+  ],
+  now(s,c){
+    const o=[];
+    if(s.O>295) o.push("<span class='tag'>Koyu kan</span>Kan koyulaştı. Osmoreseptörler uyarıldı, ADH arttı. Böbrek suyu geri emiyor: idrar az ve koyu. Susuzluk hissi başlar.");
+    if(s.O<285) o.push("<span class='tag'>Sulu kan</span>Kan sulandı. ADH azaldı, böbrek fazla suyu atıyor: idrar bol ve açık renkli. Mesane hızla doluyor.");
+    if(s.alc>0) o.push("<span class='tag'>Alkol</span>Alkol ADH’yi baskılıyor. Kan yoğunluğu artsa bile idrar bol. Alkol sonrası susuzluk bu yüzden olur.");
+    if(c.sweat) o.push("Terleme ile su kaybediyorsunuz. Su içmezseniz kan yoğunluğu artmaya devam eder.");
+    if(s.bl>400) o.push("Mesane doldu. “Tuvalete git” düğmesine basın.");
+    if(!o.length) o.push("Kan yoğunluğu normal aralıkta, ADH orta düzeyde. Böbrek ihtiyaç kadar su atıyor.");
+    return o;
+  },
+  visual(s){
+    const U=s.U||1.2; const conc=cl((1/U-0.17)/3.1,0,1);
+    const col=`color-mix(in srgb, #E0A21B ${Math.round(15+85*conc)}%, #FFF7D6)`;
+    return `<div class="visual"><div class="cup" aria-label="Mesane ve idrar rengi"><i style="height:${Math.round(s.bl/6)}%;background:${col}"></i></div><div><b>Mesane: ${Math.round(s.bl)} mL</b><br><small style="color:var(--muted)">İdrar rengi: ${conc>0.6?"koyu sarı":conc>0.3?"sarı":"açık, suya yakın"}</small></div></div>`;
+  },
+  daily:"Çok su içince sık tuvalete gitmeniz, sıcak bir günde ise idrarınızın az ve koyu olması ADH’nin işidir.",
+  tasks:["Terlemeyi açın. Kan yoğunluğu 295’i geçince ADH’ye ne oluyor?","Üç bardak su için. İdrar miktarı ve rengi nasıl değişti?","Deney: alkol düğmesine basın. Kan koyulaşırken idrar neden hâlâ bol?"],
+  note:`<p><strong>ADH</strong> (antidiüretik hormon, diğer adıyla vazopressin) hipotalamusun supraoptik çekirdeğinde yapılır, arka hipofizde depolanır.</p>
+  <p>Hipotalamustaki <strong>osmoreseptörler</strong> kanın yoğunluğunu ölçer. Terleme, kusma, az su içme ile kan koyulaşınca ADH artar. ADH böbreğin <strong>distal tübül ve toplayıcı kanallarında</strong> suyun geri emilmesini sağlar; idrar azalır ve koyulaşır.</p>
+  <p>Çok su içilince ADH azalır, idrar bol ve açık renkli olur. Yüksek dozda ADH damarları daraltır (vazokonstriksiyon).</p>`
+};
+
+/* 6. KALSİYUM */
+M.kalsiyum={
+  tab:"Kalsiyum", eyebrow:"Parathormon ve kalsitonin", title:"Kalsiyum dengesi",
+  sub:"Parathormon kalsiyumu kemikten kana, kalsitonin kandan kemiğe taşır. Normal kan kalsiyumu 8,5–10,5 mg/dL.",
+  card:"Süt için, güneşe çıkın, kalsiyumsuz beslenin. Kan kalsiyumu ve kemik deposu nasıl değişiyor?",
+  init:()=>({Ca:9.5,pth:1,ct:1,P:1,D:1,bone:100}),
+  controls:[
+    {type:"button",id:"milk",label:"Bir bardak süt iç",help:"Bağırsaktan kana kalsiyum geçer.",act:s=>{s.P+=8;}},
+    {type:"toggle",id:"sun",label:"Güneşte vakit geçir",value:false,help:"Deride D vitamini yapılır."},
+    {type:"toggle",id:"low",label:"Kalsiyumsuz beslen",value:false,help:"Besinle kalsiyum alınmaz."}
+  ],
+  step(s,dt,c){
+    if(!c.low) s.P+=0.03*dt;
+    const ab=0.03*s.P*cl(s.D,0.3,2); s.P-=0.03*s.P*dt;
+    s.pth=ap(s.pth,cl(1+(9.5-s.Ca)*1.6,0,4),3,dt);
+    s.ct=ap(s.ct,cl(1+(s.Ca-9.5)*1.6,0,4),3,dt);
+    s.D=ap(s.D,0.5*s.pth+0.5+(c.sun?0.7:0),8,dt);
+    const net=0.04*(s.pth-s.ct), loss=0.03*(s.Ca/9.5)*cl(1.4-0.4*s.pth,0.3,1.8);
+    s.Ca=cl(s.Ca+(ab+net-loss)*dt,7,12); s.bone=cl(s.bone-net*dt*10,0,150); s.net=net;
+  },
+  rows:s=>[[
+    {l:"Kan",s:"Kalsiyum",v:s.Ca/9.5,c:"--h2",fmt:()=>s.Ca.toFixed(1).replace(".",",")+" mg/dL",n:[8.5/9.5,10.5/9.5]},
+    {l:"Paratiroid",s:"Parathormon",v:s.pth,c:"--signal"},
+    {l:"Tiroid C hücresi",s:"Kalsitonin",v:s.ct,c:"--h1"},
+    {l:"Böbrek ve deri",s:"Aktif D vitamini",v:s.D,c:"--h3"},
+    {l:"Kemik",s:"Kalsiyum deposu",v:s.bone/100,c:"--h5",fmt:()=>"%"+Math.round(s.bone),n:[0.9,1.1]}
+  ]],
+  fb:s=>({kind:"neg",on:true,strength:cl(Math.abs(s.Ca-9.5),0.15,1),text:"Negatif geri bildirim: kalsiyum düşünce parathormon, yükselince kalsitonin artar."}),
+  series:[
+    {k:"Ca",n:"Kan kalsiyumu",c:"--h2",min:8,max:11,primary:true,band:[8.5,10.5],axis:v=>v.toFixed(1).replace(".",","),unit:"mg/dL"},
+    {k:"pth",n:"Parathormon",c:"--signal",min:0,max:3},
+    {k:"ct",n:"Kalsitonin",c:"--h1",min:0,max:3}
+  ],
+  now(s,c){
+    const o=[];
+    if(s.ct>1.3) o.push("<span class='tag'>Kalsitonin ↑</span>Kan kalsiyumu yükseldi. Tiroidin C hücreleri kalsitonin salgıladı; osteoblastlar fazla kalsiyumu kemiğe yerleştiriyor.");
+    if(s.pth>1.15) o.push("<span class='tag'>Parathormon ↑</span>Kan kalsiyumu düşme eğiliminde. Parathormon osteoklastları uyararak kemikten kana kalsiyum çıkarıyor, böbrekte geri emilimi artırıyor ve D vitaminini aktif hale getiriyor.");
+    if(c.low&&s.bone<97) o.push("<span class='tag'>Dikkat</span>Kan kalsiyumu neredeyse normal kalıyor ama bedeli kemik deposu ödüyor. Vücut önce kandaki düzeyi korur.");
+    if(c.sun) o.push("Güneşte deride D vitamini yapılıyor; D vitamini bağırsaktan kalsiyum emilimini artırıyor.");
+    if(!o.length) o.push("Kan kalsiyumu normal. Parathormon ve kalsitonin dengede, kemikte yapım ve yıkım eşit.");
+    return o;
+  },
+  visual(s){ const n=s.net||0; const dir=n>0.003?"Kemik → kan":n<-0.003?"Kan → kemik":"Denge"; return `<div class="visual"><div style="font-family:var(--f-mono);font-size:22px;font-weight:700;color:var(--navy)">${dir}</div><small style="color:var(--muted)">Kalsiyumun şu anki hareket yönü</small></div>`; },
+  daily:"Güneşte deride D vitamini yapılır; D vitamini sütle aldığınız kalsiyumun bağırsaktan emilmesine yardım eder.",
+  tasks:["Bir bardak süt için. Hangi hormon yükseldi, kalsiyum nereye gitti?","Kalsiyumsuz beslenmeyi açıp bir dakika bekleyin. Kan kalsiyumu mu, kemik deposu mu daha çok değişti?","Güneşi açın. D vitamini kalsiyumu nasıl etkiliyor?"],
+  note:`<p>Kalsiyum kas kasılması, sinir iletimi, kanın pıhtılaşması ve enzimlerin çalışması için gereklidir.</p>
+  <ul><li><strong>Kalsitonin</strong> (tiroid bezinin parafoliküler/C hücreleri): kan kalsiyumu artınca salgılanır, osteoblastlarla kalsiyumu kandan kemiğe aktarır.</li>
+  <li><strong>Parathormon</strong> (paratiroid bezleri): kan kalsiyumu düşünce salgılanır, osteoklastlarla kemikten kana kalsiyum çıkarır, böbrekte geri emilimi artırır, D vitaminini aktif hale getirir.</li></ul>`
+};
+
+/* 7. GÜNLÜK RİTİM */
+function circ(h,peak,w){ let d=Math.abs(h-peak)%24; d=Math.min(d,24-d); return Math.exp(-(d*d)/(2*w*w)); }
+function asleep(h,c){ const start=c.phone?1:23, end=7; if(c.awake) return false; return start>end ? (h>=start||h<end) : (h>=start&&h<end); }
+function dayVals(h,c){
+  const cort=4+16*circ(h,7.5,3.2);
+  let mel=3+85*circ(h,3,3.2);
+  const lightOn=c.awake || (c.phone && (h>=21||h<1));
+  if(lightOn && (h>=20||h<7)) mel=3+(mel-3)*0.25;
+  const sleepStart=c.phone?1:23;
+  const gh=c.awake?2+3*circ(h,sleepStart+1,1):2+26*circ(h,(sleepStart+1)%24,1.1);
+  return {cort,mel,gh};
+}
+M.ritim={
+  tab:"Günlük ritim", eyebrow:"Sirkadyen ritim", title:"Günlük ritim: 24 saat",
+  sub:"Kortizol sabah, melatonin gece, büyüme hormonu derin uykuda en yüksektir.",
+  card:"Saati ilerletin. Gece telefon ışığı ya da uykusuzluk melatonin ve büyüme hormonunu nasıl etkiliyor?",
+  day:true,
+  init:()=>({h:8,play:false}),
+  controls:[
+    {type:"range",id:"hour",label:"Saat",min:0,max:23.75,step:.25,value:8,ends:["00:00","24:00"],help:"Kaydırarak günün saatini seçin."},
+    {type:"toggle",id:"play",label:"Günü oynat",value:false,help:"Saat kendiliğinden ilerler (1 saniye = 1 saat)."},
+    {type:"toggle",id:"phone",label:"Gece telefona bakıyorum",value:false,help:"Ekran ışığı 21:00–01:00 arası açık."},
+    {type:"toggle",id:"awake",label:"Bütün gece uyumadım",value:false,help:"Işıklar açık, uyku yok."}
+  ],
+  step(s,dt,c){ if(c.play){ c.hour=(c.hour+dt)%24; const r=document.getElementById("c-hour"); if(r) r.value=c.hour; } s.h=c.hour; Object.assign(s,dayVals(s.h,c)); },
+  rows:s=>[[
+    {l:"Adrenal korteks",s:"Kortizol",v:s.cort/12,c:"--h3",n:[0,9],fmt:v=>v>1.2?"Yüksek":v>0.5?"Orta":"Düşük"},
+    {l:"Epifiz bezi",s:"Melatonin",v:s.mel/40,c:"--h5",n:[0,9],fmt:v=>v>1.2?"Yüksek":v>0.5?"Orta":"Düşük"},
+    {l:"Ön hipofiz",s:"Büyüme hormonu",v:s.gh/14,c:"--h1",n:[0,9],fmt:v=>v>1.2?"Yüksek":v>0.5?"Orta":"Düşük"}
+  ]],
+  fb:()=>null,
+  series:[
+    {k:"cort",n:"Kortizol",c:"--h3",min:0,max:24},
+    {k:"mel",n:"Melatonin",c:"--h5",min:0,max:90,primary:true,axis:()=>""},
+    {k:"gh",n:"Büyüme hormonu",c:"--h1",min:0,max:30}
+  ],
+  now(s,c){
+    const h=s.h, o=[]; const sl=asleep(h,c);
+    o.push(`<span class='tag'>${sl?"Uykuda":"Uyanık"}</span>`+(h>=5&&h<10?"Sabah: kortizol günün en yüksek düzeyine çıkıyor ve uyanmanıza yardım ediyor.":h>=10&&h<18?"Gündüz: kortizol yavaşça azalıyor, melatonin çok düşük.":h>=18&&h<22?"Akşam: karanlık başladıkça epifiz bezi melatonin salgılamaya başlıyor.":"Gece: melatonin yüksek, kortizol en düşük düzeyde."));
+    if(sl && s.gh>12) o.push("<span class='tag'>Derin uyku</span>Büyüme hormonu en çok uykunun ilk saatlerindeki derin uykuda salgılanır.");
+    if(c.phone && (h>=21||h<1)) o.push("<span class='tag'>Ekran ışığı</span>Işık melatonini baskılıyor; uykuya dalmak gecikiyor, büyüme hormonu tepesi de kayıyor.");
+    if(c.awake && (h>=22||h<7)) o.push("<span class='tag'>Uykusuz</span>Işık açık ve uyku yok: melatonin düşük, büyüme hormonu tepesi oluşmuyor.");
+    return o;
+  },
+  visual:s=>{const hh=Math.floor(s.h), mm=Math.round((s.h-hh)*60); return `<div class="visual"><div class="clock">${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}</div><small style="color:var(--muted)">${s.h>=6.5&&s.h<19?"Gündüz":"Gece"}</small></div>`;},
+  daily:"Gece telefona bakınca uykunuzun kaçması, ekran ışığının melatonini baskılamasındandır. “Çocuk uykuda büyür” sözü de doğrudur.",
+  tasks:["Saati 07:30’a getirin. Hangi hormon en yüksek?","“Gece telefona bakıyorum”u açın. Melatonin eğrisi nasıl değişti?","“Bütün gece uyumadım”ı açın. Büyüme hormonuna ne oldu?"],
+  note:`<p>Birçok hormon gün içinde düzenli bir ritimle salgılanır; buna <strong>sirkadyen ritim</strong> denir.</p>
+  <ul><li><strong>Kortizol</strong> sabah uyanmadan hemen önce en yüksek, gece yarısı en düşüktür.</li>
+  <li><strong>Melatonin</strong> epifiz bezinden karanlıkta salgılanır; ışık onu baskılar. Uyku ve gece-gündüz ritmini düzenler.</li>
+  <li><strong>Büyüme hormonu</strong> en çok gece derin uykuda salgılanır.</li></ul>`
+};
+
+/* ---------------- TEST ---------------- */
+// 5 farklı soru türü, her biri 20 puan (toplam 100)
+const QUIZ=[
+  {type:"mcq",tag:"Çoktan seçmeli",q:"Sınavdan hemen önce saniyeler içinde başlayan kalp çarpıntısından sorumlu hormon nereden salgılanır?",o:["Hipofiz bezinin ön kısmı (ön hipofiz)","Böbrek üstü bezinin dış kısmı (adrenal korteks)","Böbrek üstü bezinin iç kısmı (adrenal medulla)","Hipofiz bezinin arka kısmı (arka hipofiz)","Boyundaki tiroid bezi"],a:2,why:"Adrenalin, böbrek üstü bezinin iç kısmından (medulla) sempatik sinir uyarısıyla saniyeler içinde salgılanır. Kortizol (korteks) ACTH ile, dakikalar içinde yükselir.",mod:"stres"},
+  {type:"order",tag:"Sıralama",q:"Soğuk bir ortamda gerçekleşen olayları doğru sıraya koyun. Okları kullanarak satırları taşıyın.",o:["Tiroid stimülan hormon (TSH) salgısı artar","Tiroid hormonları (T3/T4) artar, hücreler daha çok ısı üretir","Hipotalamustan tirotropin salgılatıcı hormon (TRH) salgısı artar","Yükselen T3/T4, TRH ve TSH salgısını frenler","Soğuk, hipotalamusu uyarır"],a:[4,2,0,1,3],why:"Uyaran → tirotropin salgılatıcı hormon (TRH) → tiroid stimülan hormon (TSH) → tiroid hormonları (T3/T4) → negatif geri bildirim. Doğru yerdeki her satır 4 puan.",mod:"tiroid"},
+  {type:"match",tag:"Eşleştirme",q:"Her hormonu etkisiyle eşleştirin. Bir seçenek açıkta kalacak.",left:["Antidiüretik hormon (ADH)","Glukagon","Parathormon","Melatonin","Oksitosin"],o:["Karanlıkta artar, uyku ritmini düzenler","Kemikten kana kalsiyum çıkarır","Rahim kasılmasını ve süt akışını sağlar","Böbrekte suyun geri emilmesini sağlar","Açlıkta kan şekerini yükseltir","Kalsiyumu kandan kemiğe taşır"],a:[3,4,1,0,2],why:"Açıkta kalan f seçeneği kalsitoninin etkisidir. Doğru her eşleşme 4 puan.",mod:"kalsiyum"},
+  {type:"tf",tag:"Doğru / yanlış",q:"Her ifadenin doğru mu yanlış mı olduğunu seçin. Yanlış olanları aklınızda düzeltin; düzeltmeler kontrolden sonra görünür.",o:["Glukagon pankreasın beta hücrelerinden salgılanır.","Kanda tiroid hormonları (T3/T4) yükselince tiroid stimülan hormon (TSH) salgısı azalır.","Doğumda oksitosin salgısı negatif geri bildirimle (sonucun süreci frenlemesiyle) düzenlenir.","Parathormon (paratiroid hormonu), kan kalsiyumu düştüğünde salgılanır."],a:[false,true,false,true],fix:["Yanlış: glukagon alfa hücrelerinden salgılanır.","Doğru: negatif geri bildirim.","Yanlış: oksitosin pozitif geri bildirimle düzenlenir.","Doğru."],why:"Her ifade 5 puan.",mod:"dogum"},
+  {type:"open",tag:"Açık uçlu",q:"Sıcak bir günde uzun süre yürüdünüz ve çok terlediniz. İdrarınızın az ve koyu olmasını hormon zinciriyle açıklayın.",rubric:["Terleme kanı koyulaştırır (kan yoğunluğu / ozmolarite artar)","Hipotalamustaki osmoreseptörler uyarılır","Arka hipofizden antidiüretik hormon (ADH) salgısı artar","Böbrekte (distal tübül, toplayıcı kanal) su geri emilir; idrar az ve koyu olur"],why:"Cevabınızı ölçütle karşılaştırın ve yazdığınız basamakları işaretleyin. Her basamak 5 puan.",mod:"su"}
+];
+const SHEET_URL=""; // Google Apps Script web uygulaması adresi; boşsa sonuç gönderilmez
+let lastPayload=null, sent={pre:false,post:false};
+const store={get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+let qmode="pre", orderState=[0,1,2,3,4], checked=false, autoScore=0;
+const LU="ABCDE", ll="abcdef";
+function renderOrder(){
+  const q=QUIZ[1]; const ul=document.getElementById("ord"); if(!ul) return;
+  ul.innerHTML=orderState.map((idx,pos)=>`<li class="ordrow" id="ordrow${pos}"><span class="pos">${pos+1}</span><span class="otext"><b>${LU[idx]})</b> ${q.o[idx]}</span><span class="obtns"><button type="button" class="mini" data-mv="${pos}" data-d="-1" aria-label="Yukarı taşı" ${pos===0||checked?"disabled":""}>↑</button><button type="button" class="mini" data-mv="${pos}" data-d="1" aria-label="Aşağı taşı" ${pos===4||checked?"disabled":""}>↓</button></span></li>`).join("");
+}
+function renderQuiz(){
+  checked=false; orderState=[0,1,2,3,4]; const f=$("#quiz");
+  const blocks=QUIZ.map((q,i)=>{
+    let body="";
+    if(q.type==="mcq") body=`<div class="opts">${q.o.map((o,j)=>`<label class="opt" id="o0_${j}"><input type="radio" name="q0" value="${j}" id="r-${qmode}-0-${j}"><span><b>${LU[j]})</b> ${o}</span></label>`).join("")}</div>`;
+    if(q.type==="order") body=`<ol class="ord" id="ord"></ol>`;
+    if(q.type==="match") body=`<div class="match">${q.left.map((h,j)=>`<div class="mrow" id="m${j}"><label for="sel-${qmode}-${j}"><b>${j+1}.</b> ${h}</label><select id="sel-${qmode}-${j}" data-m="${j}"><option value="">Seçin…</option>${q.o.map((o,k)=>`<option value="${k}">${ll[k]}) ${o}</option>`).join("")}</select></div>`).join("")}</div>`;
+    if(q.type==="tf") body=`<div class="tfl">${q.o.map((o,j)=>`<div class="tfrow" id="tf${j}"><span><b>${ll[j]})</b> ${o}</span><span class="tfbtns"><label><input type="radio" name="tf${j}" value="1" id="tf-${qmode}-${j}-d"> D</label><label><input type="radio" name="tf${j}" value="0" id="tf-${qmode}-${j}-y"> Y</label></span><div class="fix" id="fix${j}" hidden></div></div>`).join("")}</div>`;
+    if(q.type==="open") body=`<label for="open-${qmode}" class="sr">Cevabınız</label><textarea id="open-${qmode}" rows="5" placeholder="Örneğin: Terleme ile … → … → …"></textarea><div class="rubric" id="rubric" hidden><b>Puanlama ölçütü: yazdığınız basamakları işaretleyin</b>${q.rubric.map((r,j)=>`<label class="rb"><input type="checkbox" id="rb-${qmode}-${j}" data-rb="${j}"> ${r} <em>5 puan</em></label>`).join("")}</div>`;
+    return `<div class="q"><fieldset><legend><span class="qtag">${i+1} · ${q.tag} · 20 puan</span>${q.q}</legend>${body}<div class="why" id="w${i}" hidden></div></fieldset></div>`;
+  }).join("");
+  f.innerHTML=blocks+`<div class="q"><div class="score"><button class="btn" type="submit" id="qsubmit">Cevapları kontrol et</button><button class="btn ghost" type="button" id="qclear">Temizle</button><span id="qres"></span></div><div class="compare" id="qcmp" style="margin-top:12px"></div><div class="sendbox" id="sendbox" hidden><button class="btn" type="button" id="qsend">Sonucumu öğretmene gönder</button><span id="sendmsg" role="status"></span></div></div>`;
+  renderOrder(); showCompare();
+  $("#qclear").onclick=()=>renderQuiz();
+  $("#qsend").onclick=sendResult;
+}
+$("#quiz").addEventListener("click",e=>{const b=e.target.closest("[data-mv]"); if(!b) return; const p=+b.dataset.mv, d=+b.dataset.d, t=p+d; if(t<0||t>4) return; [orderState[p],orderState[t]]=[orderState[t],orderState[p]]; renderOrder(); const nb=document.querySelector(`[data-mv="${t}"][data-d="${d}"]`); if(nb&&!nb.disabled) nb.focus();});
+$("#quiz").addEventListener("change",e=>{ if(e.target.dataset.rb!==undefined) updateTotal(); });
+function collect(){
+  const q1=document.querySelector("input[name=q0]:checked");
+  const tf=[0,1,2,3].map(j=>{const s=document.querySelector(`input[name=tf${j}]:checked`); return s?(s.value==="1"?"D":"Y"):"-";});
+  const mt=[0,1,2,3,4].map(j=>{const s=document.getElementById(`sel-${qmode}-${j}`); return (j+1)+"-"+(s&&s.value!==""?ll[+s.value]:"?");});
+  return {a1:q1?LU[+q1.value]:"-", a2:orderState.map(k=>LU[k]).join(""), a3:mt.join(" "), a4:tf.join(""), a5:(document.getElementById("open-"+qmode)||{}).value||""};
+}
+function rubricPts(){ return [...document.querySelectorAll("[data-rb]")].filter(x=>x.checked).length*5; }
+function updateTotal(){
+  if(!checked) return; const tot=autoScore+rubricPts();
+  if(lastPayload){ lastPayload.s5_self=rubricPts(); lastPayload.total=tot; }
+  store.set(qmode==="pre"?"endo-pre2":"endo-post2",tot);
+  $("#qres").innerHTML=`<span class="big">${tot}/100</span> <span style="color:var(--muted)">(1–4. sorular: ${autoScore}/80, 5. soru: ${rubricPts()}/20)</span>`;
+  showCompare();
+}
+function showCompare(){
+  const pre=store.get("endo-pre2"), post=store.get("endo-post2"); const el=$("#qcmp"); if(!el) return;
+  let h=""; if(pre!=null) h+=`<span class="pill">Ön test: ${pre}/100</span>`; if(post!=null) h+=`<span class="pill">Son test: ${post}/100</span>`;
+  if(pre!=null&&post!=null) h+=`<span class="pill" style="color:var(--ok)">${post-pre>=0?"+":""}${post-pre} puan</span>`;
+  el.innerHTML=h;
+}
+$("#quiz").addEventListener("submit",e=>{
+  e.preventDefault(); checked=true; let sc=0; const qs=[];
+  // 1 çoktan seçmeli
+  {const q=QUIZ[0]; const sel=document.querySelector("input[name=q0]:checked"); const v=sel?+sel.value:-1;
+   q.o.forEach((_,j)=>{const el=document.getElementById("o0_"+j); el.classList.toggle("right",j===q.a); el.classList.toggle("wrong",j===v&&j!==q.a);});
+   const p=v===q.a?20:0; sc+=p; qs[0]=p; wh(0,p,(v===q.a?"Doğru. ":"Doğru cevap: C) "+q.o[q.a]+". ")+q.why);}
+  // 2 sıralama
+  {const q=QUIZ[1]; renderOrder(); let p=0; orderState.forEach((idx,pos)=>{const ok=idx===q.a[pos]; if(ok)p+=4; document.getElementById("ordrow"+pos).classList.add(ok?"right":"wrong");});
+   sc+=p; qs[1]=p; wh(1,p,"Doğru sıra: "+q.a.map(k=>LU[k]).join(" → ")+". "+q.why);}
+  // 3 eşleştirme
+  {const q=QUIZ[2]; let p=0; q.left.forEach((_,j)=>{const s=document.getElementById(`sel-${qmode}-${j}`); const ok=s.value!==""&&+s.value===q.a[j]; if(ok)p+=4; document.getElementById("m"+j).classList.add(ok?"right":"wrong"); s.disabled=true;});
+   sc+=p; qs[2]=p; wh(2,p,"Doğru eşleşme: "+q.a.map((k,j)=>(j+1)+"-"+ll[k]).join(", ")+". "+q.why);}
+  // 4 doğru/yanlış
+  {const q=QUIZ[3]; let p=0; q.o.forEach((_,j)=>{const s=document.querySelector(`input[name=tf${j}]:checked`); const ok=s&&(s.value==="1")===q.a[j]; if(ok)p+=5; document.getElementById("tf"+j).classList.add(ok?"right":"wrong"); const fx=document.getElementById("fix"+j); fx.hidden=false; fx.textContent=q.fix[j];});
+   sc+=p; qs[3]=p; wh(3,p,q.why);}
+  // 5 açık uçlu
+  {document.getElementById("rubric").hidden=false; wh(4,null,QUIZ[4].why);}
+  autoScore=sc;
+  lastPayload=Object.assign({course:"endocrine",test:qmode==="pre"?"pre":"post", s1:qs[0], s2:qs[1], s3:qs[2], s4:qs[3], s5_self:0, auto_total:sc, version:"2026-10"}, collect());
+  updateTotal();
+  if(SHEET_URL){ $("#sendbox").hidden=false; if(sent[qmode]){ $("#qsend").disabled=true; $("#sendmsg").textContent="Bu test için sonucunuz daha önce gönderildi."; } }
+  document.getElementById("rubric").scrollIntoView({block:"nearest",behavior:"smooth"});
+});
+async function sendResult(){
+  const r=($("#rumuz").value||"").trim().toLocaleUpperCase("tr-TR");
+  if(!/^[A-ZÇĞİÖŞÜ]{2}[0-9]{2}$/.test(r)){ $("#sendmsg").textContent="Önce sayfanın üstündeki rumuz alanını doldurun (2 harf + 2 rakam, ör. AY07)."; $("#rumuz").focus(); return; }
+  if(!lastPayload) return;
+  const btn=$("#qsend"); btn.disabled=true; $("#sendmsg").textContent="Gönderiliyor…";
+  try{
+    await fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({alias:r},lastPayload))});
+    sent[qmode]=true; store.set("endo-sent",sent);
+    $("#sendmsg").textContent="Gönderildi. Teşekkürler!";
+  }catch(err){ btn.disabled=false; $("#sendmsg").textContent="Gönderilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin."; }
+}
+function wh(i,p,txt){const w=document.getElementById("w"+i); w.hidden=false; w.innerHTML=(p==null?"":`<b>${p}/20 puan.</b> `)+txt+` <a href="#${QUIZ[i].mod}" data-go="${QUIZ[i].mod}">Simülasyonda deneyin →</a>`;}
+if(SHEET_URL){ $("#rumuzbox").hidden=false; const sv=store.get("endo-sent"); if(sv) sent=Object.assign(sent,sv); const rz=store.get("endo-rumuz"); if(rz) $("#rumuz").value=rz; $("#rumuz").addEventListener("change",()=>store.set("endo-rumuz",$("#rumuz").value.trim().toLocaleUpperCase("tr-TR"))); }
+document.querySelectorAll("#qmode button").forEach(b=>b.onclick=()=>{qmode=b.dataset.m;document.querySelectorAll("#qmode button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderQuiz();});
+
+/* ---------------- ÇERÇEVE ---------------- */
+const ORDER=["tiroid","dogum","stres","seker","su","kalsiyum","ritim"];
+const tabs=$("#tabs");
+const TABS=[["giris","Başla"],...ORDER.map(k=>[k,M[k].tab]),["test","Ön / son test"]];
+tabs.innerHTML=TABS.map(([k,n])=>`<button type="button" role="tab" id="t-${k}" data-go="${k}" aria-selected="false">${n}</button>`).join("");
+$("#modgrid").innerHTML=ORDER.map((k,i)=>`<button type="button" class="modcard" data-go="${k}"><em>${M[k].eyebrow}</em><strong>${M[k].title}</strong><span>${M[k].card}</span></button>`).join("");
+
+let cur=null, S=null, C=null, hist=[], simT=0, speed=1, paused=false, last=0, uiAcc=0;
+function ctlDefaults(m){const c={};m.controls.forEach(k=>{if(k.type!=="button") c[k.id]=k.value;}); if(m.day) c.hour=8; return c;}
+function buildControls(m){
+  const box=$("#m-controls");
+  box.innerHTML=m.controls.map(k=>{
+    if(k.type==="range") return `<div class="ctl"><label for="c-${k.id}">${k.label}</label><input type="range" id="c-${k.id}" min="${k.min}" max="${k.max}" step="${k.step}" value="${C[k.id]}"><div class="ends"><span>${k.ends[0]}</span><span>${k.ends[1]}</span></div><small>${k.help}</small></div>`;
+    if(k.type==="toggle") return `<div class="ctl"><label class="switch" for="c-${k.id}"><input type="checkbox" role="switch" id="c-${k.id}" ${C[k.id]?"checked":""}><span>${k.label}</span></label><small>${k.help}</small></div>`;
+    return `<div class="ctl"><button class="btn" type="button" id="c-${k.id}">${k.label}</button><small>${k.help}</small></div>`;
+  }).join("");
+  m.controls.forEach(k=>{
+    const el=document.getElementById("c-"+k.id);
+    if(k.type==="range") el.addEventListener("input",()=>{C[k.id]=+el.value; if(m.day){C.play=false;const p=document.getElementById("c-play");if(p)p.checked=false;} uiTick(true);});
+    else if(k.type==="toggle") el.addEventListener("change",()=>{C[k.id]=el.checked; uiTick(true);});
+    else el.addEventListener("click",()=>{k.act(S,C); uiTick(true);});
+  });
+  if(m.day){ const r=document.getElementById("c-hour"); r.addEventListener("input",()=>{C.hour=+r.value;}); }
+}
+function open(key){
+  if(!M[key]&&key!=="giris"&&key!=="test") key="giris";
+  document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.go===key));
+  const tb=document.getElementById("t-"+key); if(tb) tb.scrollIntoView({block:"nearest",inline:"nearest"});
+  $("#v-giris").hidden=key!=="giris"; $("#v-test").hidden=key!=="test"; $("#v-mod").hidden=!M[key];
+  try{ if(location.hash.slice(1)!==key) history.replaceState(null,"","#"+key); }catch(e){}
+  if(key==="test"){ renderQuiz(); }
+  if(!M[key]){ cur=null; return; }
+  cur=key; const m=M[key];
+  $("#m-eyebrow").textContent=m.eyebrow; $("#m-title").textContent=m.title; $("#m-sub").textContent=m.sub;
+  $("#m-daily").innerHTML="<b>Günlük hayatta:</b> "+m.daily;
+  $("#m-tasks").innerHTML=m.tasks.map(t=>`<li><span>${t}</span></li>`).join("");
+  $("#m-note").innerHTML=m.note;
+  $("#m-legend").innerHTML=m.series.map(s=>`<span><i style="background:var(${s.c})"></i>${s.n}: <span class="v" id="lv-${s.k}">–</span></span>`).join("");
+  reset();
+}
+function reset(){ const m=M[cur]; S=m.init(); C=ctlDefaults(m); hist=[]; simT=0; buildControls(m); for(let i=0;i<3;i++) m.step(S,0.05,C); uiTick(true); }
+
+function nodeHTML(n){
+  const nr=n.n||[0.85,1.15]; const [cls,txt]=lvState(n.v,nr[0],nr[1]);
+  const w=cl(n.v/2,0,1)*100; const val=n.fmt?n.fmt(n.v):pct(n.v);
+  return `<div class="node"><div class="nl">${n.l}</div><div class="ns">${n.s}</div><div class="nv" style="color:var(${n.c})">${val}</div><div class="meter"><i style="width:${w}%;background:var(${n.c})"></i>${n.n&&n.n[1]>5?"":`<b style="left:50%"></b>`}</div>${n.n&&n.n[1]>5?"":`<div class="state ${cls}">${txt}</div>`}</div>`;
+}
+let lastNowHTML="";
+function uiTick(force){
+  if(!cur) return; const m=M[cur];
+  $("#m-path").innerHTML=m.rows(S,C).map(r=>`<div class="prow">${r.map(nodeHTML).join('<div class="arrow" aria-hidden="true">→</div>')}</div>`).join("");
+  const fb=m.fb(S,C); const fbEl=$("#m-fb");
+  if(fb){ fbEl.innerHTML=`<div class="fb ${fb.on?"on":"off"} ${fb.kind}"><span class="dot" style="opacity:${fb.on?0.35+0.65*cl(fb.strength,0,1):1}"></span><span>${fb.text}</span></div>`; } else fbEl.innerHTML="";
+  const nh=m.now(S,C).map(p=>`<p>${p}</p>`).join(""); if(nh!==lastNowHTML){$("#m-now").innerHTML=nh; lastNowHTML=nh;}
+  $("#m-visual").innerHTML=m.visual?m.visual(S,C):"";
+  m.series.forEach(s=>{const el=document.getElementById("lv-"+s.k); if(!el) return; const v=S[s.k]; if(v==null) return;
+    if(m.day){ const f=(v-s.min)/(s.max-s.min); el.textContent=f>0.45?"yüksek":f>0.18?"orta":"düşük"; return; }
+    if(s.primary&&s.unit){ el.textContent=s.axis(v)+" "+s.unit; return; }
+    el.textContent=pct(v/(s.norm||1));
+  });
+}
+
+/* ---------------- GRAFİK ---------------- */
+const cv=$("#chart"), ctx=cv.getContext("2d"); const WIN=60;
+function drawChart(){
+  if(!cur) return; const m=M[cur];
+  const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=cv.clientHeight;
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+  const padL=46,padR=10,padT=10,padB=26, pw=W-padL-padR, ph=H-padT-padB;
+  const ink=css("--muted"), grid=css("--grid"), band=css("--band");
+  ctx.font=`12px ${css("--f-mono")}`; ctx.fillStyle=ink; ctx.strokeStyle=grid; ctx.lineWidth=1;
+  const P=m.series.find(s=>s.primary)||m.series[0];
+  const y=(s,v)=>padT+ph-(cl((v-s.min)/(s.max-s.min),0,1))*ph;
+  if(P.band){ ctx.fillStyle=band; const y1=y(P,P.band[1]), y0=y(P,P.band[0]); ctx.fillRect(padL,y1,pw,y0-y1); ctx.fillStyle=ink; ctx.textAlign="right"; ctx.fillText("normal",padL+pw-4,y1+13); }
+  // yatay ızgara + eksen
+  ctx.textAlign="right"; ctx.textBaseline="middle";
+  for(let i=0;i<=4;i++){ const v=P.min+(P.max-P.min)*i/4, yy=y(P,v); ctx.strokeStyle=grid; ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(padL+pw,yy); ctx.stroke(); const lab=P.axis?P.axis(v):""; if(lab!==""){ctx.fillStyle=ink; ctx.fillText(lab,padL-6,yy);} }
+  ctx.textBaseline="alphabetic"; ctx.textAlign="center"; ctx.fillStyle=ink;
+  if(m.day){
+    const x=h=>padL+(h/24)*pw;
+    for(let h=0;h<=24;h+=3){ ctx.textAlign=h===24?"right":(h===0?"left":"center"); ctx.fillText(String(h%24).padStart(2,"0")+":00",x(h),H-8); } ctx.textAlign="center";
+    // gece gölgesi
+    ctx.fillStyle=grid; ctx.fillRect(x(0),padT,x(6.5)-x(0),ph); ctx.fillRect(x(19),padT,x(24)-x(19),ph);
+    m.series.forEach(s=>{ ctx.strokeStyle=css(s.c); ctx.lineWidth=2.5; ctx.beginPath(); for(let i=0;i<=192;i++){const h=i/8; const v=dayVals(h,C)[s.k]; const xx=x(h), yy=y(s,v); i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy);} ctx.stroke(); });
+    const xh=x(S.h); ctx.strokeStyle=css("--ink"); ctx.lineWidth=1.5; ctx.setLineDash([4,4]); ctx.beginPath(); ctx.moveTo(xh,padT); ctx.lineTo(xh,padT+ph); ctx.stroke(); ctx.setLineDash([]);
+    m.series.forEach(s=>{ const v=dayVals(S.h,C)[s.k]; ctx.fillStyle=css(s.c); ctx.beginPath(); ctx.arc(xh,y(s,v),4.5,0,7); ctx.fill(); });
+    ctx.fillStyle=ink; ctx.textAlign="left"; ctx.fillText("gece",x(0.3),padT+14); ctx.textAlign="right"; ctx.fillText("gece",x(23.7),padT+14);
+    return;
+  }
+  const t1=Math.max(simT,WIN), t0=t1-WIN, x=t=>padL+((t-t0)/WIN)*pw;
+  for(let s=0;s<=WIN;s+=15){ ctx.textAlign=s===WIN?"right":(s===0?"left":"center"); ctx.fillText((s===WIN?"şimdi":"−"+(WIN-s)+" sn"),padL+(s/WIN)*pw,H-8); } ctx.textAlign="center";
+  m.series.forEach(s=>{
+    ctx.strokeStyle=css(s.c); ctx.lineWidth=s.primary?3:2; ctx.beginPath(); let st=false;
+    for(const p of hist){ if(p.t<t0) continue; const xx=x(p.t), yy=y(s,p[s.k]); st?ctx.lineTo(xx,yy):(ctx.moveTo(xx,yy),st=true); }
+    ctx.stroke();
+    const lp=hist[hist.length-1]; if(lp){ ctx.fillStyle=css(s.c); ctx.beginPath(); ctx.arc(x(lp.t),y(s,lp[s.k]),s.primary?4.5:3.5,0,7); ctx.fill(); }
+  });
+}
+
+/* ---------------- DÖNGÜ ---------------- */
+function loop(ts){
+  const dtReal=last?Math.min(0.1,(ts-last)/1000):0; last=ts;
+  if(cur&&!paused){
+    const m=M[cur]; let dt=dtReal*speed; const n=Math.max(1,Math.ceil(dt/0.05));
+    for(let i=0;i<n;i++){ m.step(S,dt/n,C); simT+=dt/n; }
+    if(!m.day){ const p={t:simT}; m.series.forEach(s=>p[s.k]=S[s.k]); hist.push(p); while(hist.length&&hist[0].t<simT-WIN-2) hist.shift(); }
+    uiAcc+=dtReal; if(uiAcc>0.15){uiAcc=0; uiTick();}
+  }
+  drawChart();
+  requestAnimationFrame(loop);
+}
+$("#b-pause").onclick=()=>{paused=!paused; $("#b-pause").textContent=paused?"Devam et":"Duraklat";};
+$("#b-reset").onclick=()=>reset();
+document.querySelectorAll("#speed button").forEach(b=>b.onclick=()=>{speed=+b.dataset.s; document.querySelectorAll("#speed button").forEach(x=>x.setAttribute("aria-pressed",x===b));});
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]"); if(!g) return; e.preventDefault(); if(g.dataset.mode){qmode=g.dataset.mode; document.querySelectorAll("#qmode button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.m===qmode));} open(g.dataset.go); window.scrollTo({top:0});});
+window.addEventListener("hashchange",()=>open(location.hash.slice(1)));
+open(location.hash.slice(1)||"giris");
+requestAnimationFrame(loop);
+})();
+</script>
+</body></html>
