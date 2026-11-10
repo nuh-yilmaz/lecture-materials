@@ -9,6 +9,7 @@ Lecture materials for health sciences students, with a focus on physiology: inte
 | Folder | Topic | Materials |
 |---|---|---|
 | [`endocrine/`](endocrine/) | Endocrine system physiology (Endokrin Sistem Fizyolojisi) | [Hormone Simulator / Hormon Simülatörü](https://nuh-yilmaz.github.io/lecture-materials/endocrine/) (7 modules, pre/post test, Turkish + English) |
+| [`digestion/`](digestion/) | Gastrointestinal physiology (Sindirim ve Beslenme Fizyolojisi) | [Digestion Simulator / Sindirim Simülatörü](https://nuh-yilmaz.github.io/lecture-materials/digestion/) (6 modules, pre/post test, Turkish + English) |
 
 ## Structure
 
