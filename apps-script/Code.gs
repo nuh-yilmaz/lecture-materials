@@ -10,8 +10,8 @@
  *  - Schema 1 (simulators with test engine 2026-11b/11c): the fixed 17 columns in HEADERS.
  *  - Schema 2 (test engine 2026-11d and the simulator template): a list of [column name, value]
  *    pairs. Each value is written under its column name; a missing column is added at the end of
- *    the header row. A value of null only creates the column (e.g. the teacher columns) and never
- *    overwrites what is already there, so teacher scores and notes are kept.
+ *    the header row. A value of null only creates the column (e.g. the lecturer columns) and never
+ *    overwrites what is already there, so lecturer scores and notes are kept.
  *    New simulators should use a new course name (tab), so old and new columns are not mixed.
  * Mini-quiz leaderboard (2026-11e): <web app URL>?board=<course>-quiz&since=<ms>&n=5 returns the best
  *    points of the rows sent after <since> (anonymous codes only; only tabs ending in "-quiz").
@@ -85,7 +85,7 @@ function writeNamed(sheet, d) {
   const col = function (h) { return headers.indexOf(h); };   // 0-based
   const alias = clean(d.alias), test = clean(d.test);
   const target = findRow(sheet, col('Alias') + 1, col('Test') + 1, alias, test);
-  // Start from the existing row (keeps teacher cells) or from an empty row.
+  // Start from the existing row (keeps lecturer cells) or from an empty row.
   const row = target
     ? sheet.getRange(target, 1, 1, headers.length).getValues()[0]
     : headers.map(function () { return ''; });
