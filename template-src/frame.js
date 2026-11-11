@@ -44,14 +44,16 @@ function modText(){
   lastNowHTML=""; renderPredict();
 }
 function open(key){
-  if(key==="board"){ showBoard(); return; }                         // leaderboard for the projector
-  if(MODES.includes(key)){ qmode=key; renderModes(); key="test"; }   // QR links: #pre, #mid, #post, #late
+  const bm=/^board(\d*)$/.exec(key); if(bm){ showBoard(bm[1]?+bm[1]:1); return; }   // leaderboard for the projector: #board1, #board2 … (#board = round 1)
+  const km=/^mid(\d*)$/.exec(key);
+  if(MODES.includes("mid")&&(km||key==="mini")){ qmode="mid"; kr=key==="mini"?(NR===1?1:0):km[1]?+km[1]:1; if(kr>NR) kr=0; renderModes(); key="test"; }   // #mid1, #mid2 … (#mid = round 1); #mini = list of rounds
+  else if(MODES.includes(key)){ qmode=key; renderModes(); key="test"; }   // QR links: #pre, #post, #late
   if(!M[key]&&key!=="giris"&&key!=="test") key="giris";
   view=key;
   document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.go===key));
   const tb=document.getElementById("t-"+key); if(tb) tb.scrollIntoView({block:"nearest",inline:"nearest"});
   $("#v-giris").hidden=key!=="giris"; $("#v-test").hidden=key!=="test"; $("#v-mod").hidden=!M[key];
-  try{ const h=key==="test"?qmode:key; if(location.hash.slice(1)!==h) history.replaceState(null,"","#"+h); }catch(e){}   // the test tab keeps its mode in the address (#pre, #mid…), so a reload returns to it
+  try{ const h=key==="test"?hashOf():key; if(location.hash.slice(1)!==h) history.replaceState(null,"","#"+h); }catch(e){}   // the test tab keeps its mode in the address (#pre, #mid2…), so a reload returns to it
   if(key==="test"){ renderQuiz(); } else testNote();
   if(!M[key]){ cur=null; return; }
   cur=key; modText(); reset();

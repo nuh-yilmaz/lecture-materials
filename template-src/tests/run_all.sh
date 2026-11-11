@@ -11,12 +11,12 @@ run(){ local name="$1"; shift; "$@" > "$name.txt" 2>&1; local p=$(grep -c '^PASS
   printf '%-10s %3d/%-3d %s\n' "$name" "$p" "$((p+f))" "$([ "$f" = 0 ] && echo ok || echo FAILED)"; grep '^FAIL\|CRASH' "$name.txt"; }
 run tsmoke   node "$T/tests/tsmoke.js" "$OUT/plain.html" sm
 run flow2    node "$T/tests/flow2.js" "$OUT/midoff.html" fl "$OUT/midon.html" "$OUT/open.html"
-run kflow    node "$T/tests/kflow.js" x "$H/midon.html"
-run bflow    node "$T/tests/bflow.js" "$H/midon.html" "$H/plain.html"
+run kflow    node "$T/tests/kflow.js" x "$H/midon.html" "$H/one.html"
+run bflow    node "$T/tests/bflow.js" "$H/midon.html" "$H/plain.html" "$H/one.html"
 run gas_test node "$T/tests/gas_test.js" "$T/../apps-script/Code.gs" "$OUT/posts.json"
 run nosheet  node "$T/tests/nosheet.js" "$OUT/plain.html"
 run mob      node "$T/tests/mob.js" "$OUT/midon.html"
-run midcheck node "$T/tests/midcheck.js" "$OUT/plain.html"
-for x in tap conf cols m2 gas_items; do [ -f "$T/tests/$x.js" ] || continue
-  case $x in gas_items) run $x node "$T/tests/$x.js" "$T/../apps-script/Code.gs";; *) run $x node "$T/tests/$x.js" "$H";; esac; done
+run midcheck node "$T/tests/midcheck.js" "$OUT/plain.html" "$OUT/mid4.html" "$OUT/flat.html"
+for x in tap conf cols m2 gas_items gas_rounds; do [ -f "$T/tests/$x.js" ] || continue
+  case $x in gas_items|gas_rounds) run $x node "$T/tests/$x.js" "$T/../apps-script/Code.gs";; *) run $x node "$T/tests/$x.js" "$H";; esac; done
 kill $SRV 2>/dev/null

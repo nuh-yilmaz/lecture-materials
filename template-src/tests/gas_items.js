@@ -73,7 +73,7 @@ ok(df==='0.35:excellent 0.34:good 0.25:good 0.24:review 0.15:review 0.14:low 0:l
 ctx.onOpen(); ok(ui.menus.length===1&&ui.menus[0].title==='Physiology'&&ui.menus[0].items[0].join()==='Item analysis,itemAnalysisMenu','Sheet menu "Physiology → Item analysis"');
 env.setActive('hand'); const n0=book['hand-items'].rows.length; ctx.itemAnalysisMenu();
 ok(/written to tab "hand-items": 40 post-test rows/.test(ui.alerts.pop())&&book['hand-items'].rows.length===n0,'menu on the open tab writes "<tab>-items"; a second run rewrites it (no duplicate rows)');
-env.setActive('hand-items'); ctx.itemAnalysisMenu(); ok(/Open a test tab first/.test(ui.alerts.pop()),'menu on a "-items" tab: asks to open a test tab');
+env.setActive('hand-items'); ctx.itemAnalysisMenu(); ok(/Open a test tab or a "-quiz" tab/.test(ui.alerts.pop()),'menu on a "-items" tab: asks to open a test tab or a "-quiz" tab');
 post({course:'digestion',alias:'NF-OLD1',test:'pre',s1:20,version:'2026-11c',lang:'tr'}); env.setActive('digestion'); ctx.itemAnalysisMenu();
 ok(/no "Item codes" column/.test(ui.alerts.pop())&&!book['digestion-items'],'old tab without item codes: message, no new tab');
 // ---- 7. text cells and the web app
@@ -81,5 +81,5 @@ const tc='text'; post(msg(tc,'PHY-T1','post',ITEMS.map(it=>it.type==='mcq'?[1]:[
 ok(cell(tc,1,'K2 parts')==="'01111"&&cell(tc,1,'Item codes').startsWith("'ornek1:"),'part marks and item codes are stored as text ("01111" keeps its 0)');
 book[tc].rows[1][H(tc).indexOf('K3 parts')]='0111';   // as read back from a real Sheet (no apostrophe)
 post({schema:2,course:tc,alias:'PHY-T1',test:'post',cols:[['Version','2026-11f']]}); ok(cell(tc,1,'K3 parts')==="'0111",'a row update keeps digit-only part marks as text');
-ok(/2026-11f/.test(ctx.doGet({parameter:{}}).t),'web app page says "(script 2026-11f)"');
+ok(/2026-11g/.test(ctx.doGet({parameter:{}}).t),'web app page says "(script 2026-11g)"');
 console.log(out.join('\n'));

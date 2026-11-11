@@ -68,7 +68,7 @@ ok(get({board:'template-quiz',since:'0',n:'1'}).top.length===1,'board: n limits 
 ok(get({board:'template-quiz',since:String(Date.now()+60000)}).n===0,'board: rows before "since" are left out (new round)');
 ok(get({board:'template'}).ok===false,'board: only tabs ending in -quiz');
 ok(get({board:'nothere-quiz'}).n===0,'board: missing tab gives an empty board');
-ok(/2026-11f/.test(ctx.doGet({parameter:{}}).t)&&/2026-11f/.test(ctx.doGet().t),'plain URL still shows the connection text (2026-11f)');
+ok(/2026-11g/.test(ctx.doGet({parameter:{}}).t)&&/2026-11g/.test(ctx.doGet().t),'plain URL still shows the connection text (2026-11g)');
 post(kq('PHY-BBBB',1,0.8,1,1)); const B2=get({board:'template-quiz',since:'0'});
 ok(B2.n===4&&B2.items[1].right===2&&B2.top[0].alias==='PHY-BBBB','board: a resend updates the same row; P is recalculated (Q2 now 2/4)');
 console.log(out.join('\n'));

@@ -1,5 +1,5 @@
 /**
- * Course simulations – writes test results to this Google Sheet.            Script version 2026-11f
+ * Course simulations – writes test results to this Google Sheet.            Script version 2026-11g
  * One deployment serves every course: each course writes to its own tab (e.g. "endocrine").
  * Setup: Sheet > Extensions > Apps Script > paste this code > Deploy > New deployment >
  * Type: Web app > Execute as: Me > Who has access: Anyone.
@@ -17,6 +17,13 @@
  *    points of the rows sent after <since> (anonymous codes only; only tabs ending in "-quiz").
  *    Points come from the round's own answers: right = 500 + 500 * (2 - P) * S, wrong = 0
  *    (P = share of the round right on that question, S = speed 0-1 sent by the phone).
+ * New in 2026-11g (test engine 2026-11g, mini-quiz rounds; Q134–Q143):
+ *  - The mini-quiz sends one row per student and round (Test = mid1, mid2 …; old engines send "mid").
+ *  - Board: &test=mid2 counts only the rows of that round. Without &test the board works as before (2026-11e/f).
+ *    Only the item columns (R<k>, S<k>) that have values in the round's rows are used.
+ *  - "Physiology → Item analysis" also works on a "-quiz" tab: one row per round and item with n, right, P (share
+ *    right), mean time of the right answers and the P flag; no D (3 items per round are too few). Rows are pooled by
+ *    item code ("Item codes"); n < 40: P as a count (e.g. 7/10), flag "few data". Written to "<tab>-items".
  * New in 2026-11f (test engine 2026-11f):
  *  - "K<n> parts", "Item codes" and "M2 answers" are stored as text, so "01101" keeps its first 0.
  *  - Sheet menu "Physiology → Item analysis": open a test tab (e.g. "respiration") and run it. It writes the tab
@@ -138,7 +145,7 @@ function doGet(e) {
   if (p.board) {
     try { return out(board(p)); } catch (err) { return out({ ok: false, error: String(err && err.message || err).slice(0, 200) }); }
   }
-  return ContentService.createTextOutput('Course simulations data endpoint is running (script 2026-11f).');
+  return ContentService.createTextOutput('Course simulations data endpoint is running (script 2026-11g).');
 }
 
 // Mini-quiz points of one round (rows sent after "since"), calculated from the round's own answers:
@@ -146,25 +153,28 @@ function doGet(e) {
 //   right: 500 + 500 * (2 - P) * S, wrong: 0. Equal points share a place, so more than n rows can come back.
 function board(p) {
   const tab = String(p.board).replace(/[^\w -]/g, '').slice(0, 40);
+  const test = /^mid\d{0,2}$/.test(String(p.test || '')) ? String(p.test) : '';   // 2026-11g: one round only (e.g. mid2)
   if (!/-quiz$/.test(tab)) return { ok: false, error: 'not a quiz tab' };
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(tab);
   if (!sheet || sheet.getLastRow() < 2) return { ok: true, n: 0, items: [], top: [] };
   const v = sheet.getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn()).getValues();
-  const h = v[0].map(String), ia = h.indexOf('Alias'), it = h.indexOf('Timestamp');
+  const h = v[0].map(String), ia = h.indexOf('Alias'), it = h.indexOf('Timestamp'), iq = h.indexOf('Test');
   const rc = [], sc = [];
   h.forEach(function (name, j) {
     let m = /^R(\d+)$/.exec(name); if (m) rc[+m[1]] = j;
     m = /^S(\d+)$/.exec(name); if (m) sc[+m[1]] = j;
   });
-  const ks = [];
-  for (let k = 1; k < rc.length; k++) if (rc[k] !== undefined && sc[k] !== undefined) ks.push(k);
-  if (ia < 0 || it < 0 || !ks.length) return { ok: true, n: 0, items: [], top: [] };
+  const all = [];
+  for (let k = 1; k < rc.length; k++) if (rc[k] !== undefined && sc[k] !== undefined) all.push(k);
+  if (ia < 0 || it < 0 || !all.length || (test && iq < 0)) return { ok: true, n: 0, items: [], top: [] };
   const since = Number(p.since) || 0, n = Math.min(Math.max(parseInt(p.n, 10) || 5, 1), 20);
   const rows = v.slice(1).filter(function (r) {
     const t = r[it] instanceof Date ? r[it].getTime() : Date.parse(r[it]);
-    return t >= since && r[rc[ks[0]]] !== '';
+    return t >= since && (!test || String(r[iq]) === test) && all.some(function (k) { return r[rc[k]] !== ''; });
   });
   if (!rows.length) return { ok: true, n: 0, items: [], top: [] };
+  // items of this round: the R<k> columns with a value in at least one row (a tab may hold rounds of other sizes)
+  const ks = all.filter(function (k) { return rows.some(function (r) { return r[rc[k]] !== ''; }); });
   const share = {}, items = [];
   ks.forEach(function (k) {
     let right = 0;
@@ -191,7 +201,7 @@ function board(p) {
   return { ok: true, n: rows.length, items: items, top: top };
 }
 
-// ---------------- Item analysis (2026-11f) ----------------
+// ---------------- Item analysis (2026-11f; "-quiz" tabs 2026-11g) ----------------
 // Sheet menu. A simple trigger: it runs when the Sheet opens (this script is bound to the Sheet).
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Physiology').addItem('Item analysis', 'itemAnalysisMenu').addToUi();
@@ -201,14 +211,14 @@ function onOpen() {
 function itemAnalysisMenu() {
   const ui = SpreadsheetApp.getUi();
   const name = SpreadsheetApp.getActiveSheet().getName();
-  if (/-(items|quiz)$/.test(name)) {
-    ui.alert('Open a test tab first (not a "-items" or "-quiz" tab), then run Physiology → Item analysis.');
+  if (/-items$/.test(name)) {
+    ui.alert('Open a test tab or a "-quiz" tab first (not a "-items" tab), then run Physiology → Item analysis.');
     return;
   }
   const res = itemAnalysis(name);
-  ui.alert(res.ok
-    ? 'Item analysis written to tab "' + res.tab + '": ' + res.nPost + ' post-test rows, ' + res.nPre + ' pre-test rows, ' + res.nItems + ' items.'
-    : res.message);
+  ui.alert(!res.ok ? res.message : res.quiz
+    ? 'Mini-quiz item analysis written to tab "' + res.tab + '": ' + res.nRows + ' rows, ' + res.nRounds + ' rounds, ' + res.nItems + ' items.'
+    : 'Item analysis written to tab "' + res.tab + '": ' + res.nPost + ' post-test rows, ' + res.nPre + ' pre-test rows, ' + res.nItems + ' items.');
 }
 
 // Reads the test tab, writes "<tab>-items" and returns a summary (also used by the tests).
@@ -216,7 +226,8 @@ function itemAnalysis(tabName) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const src = ss.getSheetByName(tabName);
   if (!src || src.getLastRow() < 2) return { ok: false, message: 'Tab "' + tabName + '" has no result rows.' };
-  const res = analyse(src.getRange(1, 1, src.getLastRow(), src.getLastColumn()).getValues(), tabName, new Date());
+  const vals = src.getRange(1, 1, src.getLastRow(), src.getLastColumn()).getValues();
+  const res = /-quiz$/.test(tabName) ? quizAnalyse(vals, tabName, new Date()) : analyse(vals, tabName, new Date());
   if (!res.ok) return res;
   const name = (tabName + '-items').slice(0, 100);
   const sh = ss.getSheetByName(name) || ss.insertSheet(name);
@@ -282,7 +293,7 @@ function analyse(v, tabName, when) {
   });
   const W = 13, table = [];
   const pad = function (a) { while (a.length < W) a.push(''); return a; };
-  table.push(pad(['Item analysis · ' + tabName + ' · script 2026-11f · ' + fmtWhen(when)]));
+  table.push(pad(['Item analysis · ' + tabName + ' · script 2026-11g · ' + fmtWhen(when)]));
   table.push(pad(['Post-test rows with item codes: ' + rows.post.length + ' · pre-test rows: ' + rows.pre.length +
     ' · groups: upper and lower 27% by total minus the item (ties included) · P = mean score share of both groups × 100 · D = upper − lower · n < 40: P as a count, no D']));
   table.push(pad(['Flags: P 50–60 ideal, 30–70 acceptable, > 70 easy, < 30 hard · D ≥ 0.35 excellent, 0.25–0.34 good, 0.15–0.24 review, < 0.15 low, < 0 check the key']));
@@ -303,6 +314,51 @@ function analyse(v, tabName, when) {
     }
   });
   return { ok: true, table: table, items: details, nPost: rows.post.length, nPre: rows.pre.length, nItems: codes.length };
+}
+
+// Mini-quiz tab (Q140-B): one row per round and item. P = share right (time-out = wrong); no D; mean time of right answers.
+// Rows are pooled by item code; rows without codes (older engines) are pooled by round and position.
+function quizAnalyse(v, tabName, when) {
+  const h = v[0].map(String), iTest = h.indexOf('Test'), iCodes = h.indexOf('Item codes');
+  if (iTest < 0) return { ok: false, message: 'Tab "' + tabName + '" has no "Test" column.' };
+  const txt = function (x) { return String(x == null ? '' : x).replace(/^'/, ''); };
+  const seen = {}, last = {};   // key -> stats; last[round] = keys of the newest row of that round
+  let nRows = 0;
+  for (let r = 1; r < v.length; r++) {
+    const m = /^mid(\d*)$/.exec(txt(v[r][iTest])); if (!m) continue;
+    const round = m[1] ? Number(m[1]) : 1, codes = iCodes < 0 ? [] : txt(v[r][iCodes]).trim().split(/\s+/).filter(String);
+    const keys = [];
+    for (let k = 1; k <= 20; k++) {
+      const jr = h.indexOf('R' + k); if (jr < 0) break;
+      const val = v[r][jr]; if (val === '' || val === null) continue;
+      const mc = codes[k - 1] || '', cut = mc.lastIndexOf(':');
+      const code = mc ? (cut < 0 ? mc : mc.slice(cut + 1)) : '', key = code || ('round' + round + '-' + k);
+      const s = seen[key] || (seen[key] = { round: round, k: k, code: code, mod: cut < 0 ? '' : mc.slice(0, cut), n: 0, right: 0, tSum: 0, last: 0 });
+      const ok = Number(val) === 1, jt = h.indexOf('T' + k + ' sec'), t = jt < 0 ? NaN : Number(v[r][jt]);
+      s.n++; if (ok) { s.right++; if (isFinite(t)) s.tSum += t; }
+      s.round = round; s.k = k; s.last = r; keys.push(key);
+    }
+    if (keys.length) { nRows++; last[round] = keys; }
+  }
+  const keys = Object.keys(seen).sort(function (a, b) {
+    const A = seen[a], B = seen[b];
+    return (A.round - B.round) || (A.k - B.k) || (B.last - A.last);
+  });
+  if (!keys.length) return { ok: false, message: 'Tab "' + tabName + '" has no mini-quiz rows.' };
+  const W = 9, table = [], details = [];
+  const pad = function (a) { while (a.length < W) a.push(''); return a; };
+  table.push(pad(['Mini-quiz item analysis · ' + tabName + ' · script 2026-11g · ' + fmtWhen(when)]));
+  table.push(pad(['Rows: ' + nRows + ' · P = share right × 100 (time-out = wrong) · no D (3 items per round) · n < 40: P as a count · pooled by item code']));
+  table.push(pad(['Flags: P 50–60 ideal, 30–70 acceptable, > 70 easy, < 30 hard']));
+  table.push(pad([]));
+  table.push(['Round', 'Item', 'Code', 'Module', 'n', 'Right', 'P', 'Mean time right (s)', 'Flag']);
+  keys.forEach(function (key) {
+    const s = seen[key], p = 100 * s.right / s.n, old = (last[s.round] || []).indexOf(key) < 0;
+    table.push([s.round, 'K' + s.k + (old ? ' (old)' : ''), s.code, s.mod, s.n, s.right, s.n < 40 ? "'" + s.right + '/' + s.n : Math.round(p),
+      s.right ? Math.round(10 * s.tSum / s.right) / 10 : '', s.n < 40 ? 'few data' : 'P ' + pFlag(Math.round(p))]);
+    details.push({ key: key, round: s.round, k: s.k, n: s.n, right: s.right, P: p, old: old });
+  });
+  return { ok: true, quiz: true, table: table, items: details, nRows: nRows, nRounds: Object.keys(last).length, nItems: keys.length };
 }
 
 // P and D of one item or sub-part. get(e) = score share 0–1 of one student.

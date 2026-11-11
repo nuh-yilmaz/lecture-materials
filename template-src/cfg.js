@@ -1,6 +1,6 @@
 /* =====================================================================
    SİMÜLATÖR ŞABLONU / SIMULATOR TEMPLATE
-   Template 2026-11 · test engine 2026-11f · guide: claude/simulator_template.md
+   Template 2026-11 · test engine 2026-11g · guide: claude/simulator_template.md
    ---------------------------------------------------------------------
    HOW TO MAKE A NEW SIMULATOR
    1. Copy this file. Name it "<Konu> Simülatörü.html" (one file per lecture).
@@ -16,6 +16,8 @@
       Total = items + confidence points (−24 to +12) + 4-point gift = 100.
       Points rule (checked in the console): all item points + 2 per automatic
       item + 4 = 100. Give every item a topic (mod = module key).
+      QUIZ_MID: mini-quiz rounds, exactly 3 items each, one round per 18–20
+      minutes of lecture time (rule 2.12); format at QUIZ_MID in the quiz part.
    6. Facts: check every value in Guyton 15th and Ganong 27th (rule 2.9) and
       give the pages in each module note. Physiology only (rule 2.10).
    7. Test with SHEET_URL "" first: open every tab, take the pre- and the
@@ -64,7 +66,7 @@
      B.stack(title,[[label,value,color],…])    shares of a whole
      B.counter(n,label,sub)  B.clock(h,sub)  B.progress(f,label)
      B.eq(formula,numbers,note)                equation panel
-   TEST (QUIZ, and QUIZ_MID for the mid-lecture check)       (* = optional)
+   TEST (QUIZ, and QUIZ_MID for the mini-quiz rounds)       (* = optional)
      common: {type, pts, mod, q:{tr,en}, why:{tr,en}, tag*}  mod = topic
      mcq    o:{tr:[5 options],en:[…]}, a: index of the right option
      tf     o: 5 statements, a:[true,false,…], fix: corrections, mods*:[topic per statement]
@@ -83,19 +85,20 @@
      A coloured box at the top of every test (pre, post, delayed) tells the students the rule.
    SWITCHES (below): TESTS.pre/mid/post/late, LATE_DAYS, CONFIDENCE (M3),
      FEEDBACK (M4, 1–5 form after the post-test), MINUTE (M5, one-minute paper), PREDICT (M2), PROGRAMS.
-   MINI-QUIZ (TESTS.mid): QUIZ_MID, Kahoot style, format at QUIZ_MID in the TEST part.
-   QR LINKS: <simulator link>#pre, #mid, #post open that test directly (one QR per slide).
-   LEADERBOARD: <simulator link>#board on the projector (lecturer only; needs SHEET_URL and Apps Script 2026-11e).
+   MINI-QUIZ (TESTS.mid): QUIZ_MID = list of rounds, 3 items each, Kahoot style; format at QUIZ_MID in the quiz part.
+   QR LINKS: <simulator link>#pre, #post open that test; #mid1, #mid2 … open that mini-quiz round (#mid = round 1).
+   LEADERBOARD: <simulator link>#board1, #board2 … on the projector, one per round (#board = round 1; lecturer only;
+     needs SHEET_URL and Apps Script 2026-11g).
    ===================================================================== */
 
 /* ---------------- AYARLAR / CONFIG ---------------- */
 const COURSE="template";   // Sheet tab name (English, lower case), e.g. "respiration"
 const PFX="tpl";           // browser storage prefix, 2–5 letters, unique per simulator
-const SURUM="2026-11f";    // version sent with each result; change it when the test changes
+const SURUM="2026-11g";    // version sent with each result; change it when the test changes
 const SHEET_URL="";        // Apps Script web app URL (…/exec); "" = results are not sent
 const ORDER=["ornek1","ornek2","ornek3","ornek4"];   // module keys, in tab order
 /* assessment switches (true = on) */
-const TESTS={pre:true, mid:true, post:true, late:true};  // mid = M6 mini-quiz (Kahoot style, QUIZ_MID: 4–5 items; give it after about 15–20 minutes or at a topic break; set false to switch it off); late = M1 delayed test
+const TESTS={pre:true, mid:true, post:true, late:true};  // mid = M6 mini-quiz rounds (Kahoot style, QUIZ_MID: 3 items per round; one round every 18–20 minutes of lecture time, rule 2.12; set false to switch it off); late = M1 delayed test
 const LATE_DAYS=14;        // the delayed test opens this many days after the student's post-test
 const CONFIDENCE=true;     // M3: "Are you sure?" under each automatic item; "sure" = +2·s − 4·(1 − s) (s = item score share), "not sure" / no mark = 0 (−24 to +12)
 const FEEDBACK=true;       // M4: four 1–5 statements after the post-test

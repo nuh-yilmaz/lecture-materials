@@ -1,4 +1,4 @@
-// End-to-end check of test engine 2026-11f on the template. Usage: node flow2.js <midoff file> <shotPrefix> [midon file] [open file]
+// End-to-end check of test engine 2026-11g on the template. Usage: node flow2.js <midoff file> <shotPrefix> [midon file] [open file]
 // Default test: mcq 4 · tf 10 · order 16 (5 steps) · match 15 · fill 15 · order 24 (7 steps) = 84 item points.
 const {chromium}=require('playwright');
 const [file,shot,midFile,openFile]=process.argv.slice(2);
@@ -43,7 +43,7 @@ const inOrder=(o,names)=>{ const k=(o.cols||[]).map(x=>x[0]); const ix=names.map
   await p.screenshot({path:shot+'_pre.png',fullPage:false});
   await p.click('#qsend'); await p.waitForTimeout(300);
   const pc=C(posts[0]||{});
-  ok(posts[0]&&posts[0].schema===2&&posts[0].test==='pre'&&pc['Q1 mcq (4)']===0&&pc['Auto total (84)']===31&&pc['Q2 tf (10)']===10&&pc['Q5 fill (15)']===6&&pc['C1 sure']==='E'&&pc['Version']==='2026-11f','pre payload (schema 2): '+JSON.stringify(pc).slice(0,230));
+  ok(posts[0]&&posts[0].schema===2&&posts[0].test==='pre'&&pc['Q1 mcq (4)']===0&&pc['Auto total (84)']===31&&pc['Q2 tf (10)']===10&&pc['Q5 fill (15)']===6&&pc['C1 sure']==='E'&&pc['Version']==='2026-11g','pre payload (schema 2): '+JSON.stringify(pc).slice(0,230));
   ok(pc['A3']==='ABCDE'&&pc['A6']==='ABCDEFG'&&pc['A2']==='DYDYD'&&pc['A5']==='1-a 2-b 3-? 4-? 5-?','answer strings: order '+pc['A3']+' / '+pc['A6']+', fill '+pc['A5']);
   ok(pc['K2 parts']==='11111'&&pc['K3 parts']==='0000'&&pc['K4 parts']==='11111'&&pc['K5 parts']==='11000'&&pc['K6 parts']==='000000'&&!('K1 parts' in pc),'part marks: tf 11111, order pairs 0000, match 11111, fill 11000, 7-step order 000000; none for mcq');
   ok(pc['Confidence points']===-4&&pc['Gift (4)']===4&&pc['Total (100)']===31&&!('Total incl. lecturer' in pc)&&!Object.keys(pc).some(k=>/lecturer/.test(k)),'Confidence points −4, Gift (4) 4, Total (100) 31; no lecturer columns (no open item)');
@@ -106,7 +106,8 @@ const inOrder=(o,names)=>{ const k=(o.cols||[]).map(x=>x[0]); const ix=names.map
     await q.goto(urlOf(midFile)+'#test'); await q.waitForTimeout(300);
     ok((await q.$$eval('#qmode button',e=>e.map(x=>x.dataset.m))).join()==='pre,mid,post,late','mid switch adds the Mini-quiz tab');
     await q.click('#qmode button[data-m="mid"]'); await q.waitForTimeout(200);
-    await q.click('#kstart'); await q.click('[data-tf="0"]'); await q.waitForTimeout(100);
+    ok((await q.$$('.kround [data-kr]')).length===2,'mini-quiz button: list of the 2 example rounds');
+    await q.click('[data-kr="1"]'); await q.waitForTimeout(100); await q.click('#kstart'); await q.click('[data-tf="0"]'); await q.waitForTimeout(100);
     ok(/Doğru|Correct/.test(await q.textContent('.kres')),'mini-quiz: first item answered and marked right (details: kflow.js)');
     ok(e2.length===0,'mid: no script errors '+JSON.stringify(e2)); }
   // ---- open item (special case; copy with item 6 = open, 26 points, scored by the lecturer)

@@ -51,17 +51,35 @@ const QUIZ=[
    rubric:{tr:["step 1","step 2","step 3","step 4"],en:[…]},
    why:{tr:"Cevabınızı ölçütle karşılaştırın. Bu soruyu eğitimci, her basamak için tam / kısmen / yok olarak puanlar.",en:"Compare your answer with the guide. The lecturer scores this question as full / partial / none for each step."}}
   With an open item the points rule still holds: all item points + 2 per automatic item + 4 = 100. */
-/* M6 MINI-QUIZ (Kahoot style; used when TESTS.mid is true). 4–5 quick items, one try, timed on the phone.
+/* M6 MINI-QUIZ ROUNDS (Kahoot style; used when TESTS.mid is true). Rule 2.12: one round every 18–20 minutes of
+   lecture time (e.g. about 8 rounds in 160 minutes). The number of rounds is free (1–10, Q126-A); each round has
+   exactly 3 items (Q127-A, Q128-A). One try per round, timed on the phone.
+   Format: QUIZ_MID = [ {items:[item, item, item]}, … ]  (round 1 first). The rounds give the QR links:
+     #mid1, #mid2 … open that round on the phone (#mid = round 1); #board1, #board2 … show that round's
+     leaderboard on the projector (#board = round 1).
    Types: mcq · tf (1 statement) · match (2 pairs, 1 option left over) · fill (1 blank).
    Time: tf 10 s · mcq 20 s · fill 20 s · match 30 s (sec:* to change).
-   Points (calculated on the board #board, from the round's own answers; Q84-A):
+   Points (calculated on the board, from the round's own answers; Q84-A):
      P = share who answered right (time-out = wrong), S = 1 − time/limit
-     right: 500 + 500 × (2 − P) × S   (easy for the group: up to 1000; hard: up to 1500)   wrong: 0 */
+     right: 500 + 500 × (2 − P) × S   (easy for the group: up to 1000; hard: up to 1500)   wrong: 0
+   The example has 2 short rounds only to show the format; a lecture has one round per 18–20 minutes. */
 const QUIZ_MID=[
+ {items:[   // round 1
   {type:"tf",mod:"ornek1",
    q:{tr:"Doğru mu, yanlış mı?",en:"True or false?"},
    o:{tr:["Algılayıcı düzeltici yanıtı oluşturur."],en:["The sensor produces the corrective response."]},a:[false],
    why:{tr:"Yanlış: düzeltici yanıtı etkileyici oluşturur; algılayıcı değişikliği ölçer.",en:"False: the effector produces the corrective response; the sensor measures the change."}},
+  {type:"mcq",mod:"ornek1",
+   q:{tr:"Vücut ısısı yükselince terleme artar ve ısı normale döner. Bu hangi kontrol türüdür?",en:"When body temperature rises, sweating increases and the temperature returns to normal. Which type of control is this?"},
+   o:{tr:["Negatif geri bildirim","Pozitif geri bildirim","İleri beslemeli kontrol","Uyarlanabilir kontrol"],en:["Negative feedback","Positive feedback","Feed-forward control","Adaptive control"]},a:0,
+   why:{tr:"Yanıt sapmanın tersi yönde çalışır ve değişkeni ayar noktasına geri getirir: negatif geri bildirim.",en:"The response works against the deviation and brings the variable back to its set point: negative feedback."}},
+  {type:"match",mod:"ornek1",
+   q:{tr:"Eşleştirin. Bir seçenek açıkta kalacak.",en:"Match. One option will be left over."},
+   left:{tr:["Algılayıcı","Etkileyici"],en:["Sensor","Effector"]},
+   o:{tr:["Değişikliği ölçer","Düzeltici yanıtı oluşturur","Değişikliği daha da büyütür"],en:["Measures the change","Produces the corrective response","Makes the change even larger"]},a:[0,1],
+   why:{tr:"Değişikliği büyütmek pozitif geri bildirimin özelliğidir.",en:"Making the change larger is a feature of positive feedback."}}
+ ]},
+ {items:[   // round 2
   {type:"mcq",mod:"ornek2",
    q:{tr:"Basınç farkı sabitken damar yarıçapı azalırsa akıma ne olur?",en:"If the pressure difference stays the same and the vessel radius falls, what happens to flow?"},
    o:{tr:["Artar","Azalır","Değişmez","Önce artar sonra azalır"],en:["It rises","It falls","It does not change","It first rises, then falls"]},a:1,
@@ -71,9 +89,9 @@ const QUIZ_MID=[
    segs:{tr:["Damar yarıçapı yarıya inerse direnç yaklaşık "," katına çıkar."],en:["If the vessel radius is halved, resistance rises about "," times."]},
    blanks:[{o:{tr:["2","4","16"],en:["2","4","16"]},a:2}],
    why:{tr:"Direnç 1/r⁴ ile değişir: 2⁴ = 16.",en:"Resistance changes with 1/r⁴: 2⁴ = 16."}},
-  {type:"match",mod:"ornek1",
-   q:{tr:"Eşleştirin. Bir seçenek açıkta kalacak.",en:"Match. One option will be left over."},
-   left:{tr:["Algılayıcı","Etkileyici"],en:["Sensor","Effector"]},
-   o:{tr:["Değişikliği ölçer","Düzeltici yanıtı oluşturur","Değişikliği daha da büyütür"],en:["Measures the change","Produces the corrective response","Makes the change even larger"]},a:[0,1],
-   why:{tr:"Değişikliği büyütmek pozitif geri bildirimin özelliğidir.",en:"Making the change larger is a feature of positive feedback."}}
+  {type:"tf",mod:"ornek2",
+   q:{tr:"Doğru mu, yanlış mı?",en:"True or false?"},
+   o:{tr:["Basınç farkı sabitken direnç iki katına çıkarsa akım yarıya iner."],en:["If resistance doubles at a constant pressure difference, flow halves."]},a:[true],
+   why:{tr:"Doğru: akım = basınç farkı / direnç.",en:"True: flow = pressure difference / resistance."}}
+ ]}
 ];

@@ -1,32 +1,51 @@
-// Leaderboard (#board) check. Usage: node bflow.js <base url of a copy with SHEET_URL=example.invalid> <base url of the template (no SHEET_URL)>
-const {chromium}=require('playwright'); const [base,plain]=process.argv.slice(2);
+// Leaderboard check, one board per round (engine 2026-11g).
+// Usage: node bflow.js <base url of a copy with SHEET_URL=example.invalid> <base url of the template (no SHEET_URL)> [base url of one.html]
+const {chromium}=require('playwright'); const [base,plain,one]=process.argv.slice(2);
 const out=[]; const ok=(c,m)=>out.push((c?'PASS ':'FAIL ')+m);
 (async()=>{ const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:1280,height:720},deviceScaleFactor:1}); const gets=[]; let reply={ok:true,n:0,top:[]};
   await ctx.route(/fonts\./,r=>r.abort());
   await ctx.route(/example\.invalid/,r=>{ gets.push(r.request().url()); r.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(reply)}); });
   const p=await ctx.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
   await p.clock.install({time:new Date('2026-11-11T10:00:00')});
+  const T0=Date.parse('2026-11-11T10:00:00'), last=()=>new URL(gets[gets.length-1]).searchParams;
   await p.goto(base+'#board'); await p.waitForTimeout(400);
   ok(await p.isVisible('#board'),'#board opens the leaderboard view');
   ok(gets.length>=1&&/board=template-quiz/.test(gets[0])&&/&n=5/.test(gets[0]),'asks the script for tab template-quiz, top 5');
-  const s0=+new URL(gets[0]).searchParams.get('since'); ok(Math.abs(s0-(Date.parse('2026-11-11T10:00:00')-20*60e3))<5000,'default window: last 20 minutes');
+  ok(last().get('test')==='mid1'&&/Mini quiz 1\/2/.test(await p.textContent('#board h2'))&&new URL(p.url()).hash==='#board1','#board = round 1: asks for Test "mid1", title "Mini quiz 1/2", address #board1');
+  const s0=+last().get('since'); ok(Math.abs(s0-(T0-20*60e3))<5000,'default window: last 20 minutes');
   ok(/Henüz sonuç yok|No results yet/.test(await p.textContent('#blist')),'empty board message');
-  reply={ok:true,n:6,items:[{k:1,right:6,n:6},{k:2,right:2,n:6}],top:[{rank:1,alias:'PHY-BBBB',points:3100},{rank:2,alias:'PHY-AAAA',points:2500},{rank:2,alias:'PHY-CCCC',points:2500},{rank:4,alias:'PHY-DDDD',points:900},{rank:5,alias:'<b>x</b>',points:10}]};
+  ok(await p.isDisabled('#bprev')&&!(await p.isDisabled('#bnext')),'round 1: "previous" off, "next" on');
+  reply={ok:true,n:6,items:[{k:1,right:6,n:6},{k:2,right:2,n:6},{k:3,right:3,n:6}],top:[{rank:1,alias:'PHY-BBBB',points:3100},{rank:2,alias:'PHY-AAAA',points:2500},{rank:2,alias:'PHY-CCCC',points:2500},{rank:4,alias:'PHY-DDDD',points:900},{rank:5,alias:'<b>x</b>',points:10}]};
   await p.clock.runFor(5200); await p.waitForTimeout(300);
   const items=await p.$$eval('#blist li',l=>l.map(x=>x.innerText.replace(/\s+/g,' ').trim()));
   ok(items.length===5&&/^1 PHY-BBBB 3100/.test(items[0])&&/^2 PHY-CCCC/.test(items[2]),'updates every 5 s; equal points share place 2');
   ok(/6 öğrenci|6 students/.test(await p.textContent('#bcount')),'shows how many students sent a result');
-  ok(/Soru 1: 6\/6 doğru · Soru 2: 2\/6 doğru/.test(await p.textContent('#bitems'))&&/500 \+ 500 × \(2 − P\)/.test(await p.textContent('#board')),'shows right answers per question and the formula');
+  ok(/Soru 1: 6\/6 doğru · Soru 2: 2\/6 doğru · Soru 3: 3\/6 doğru/.test(await p.textContent('#bitems'))&&/500 \+ 500 × \(2 − P\)/.test(await p.textContent('#board')),'shows right answers per question and the formula');
   ok(!(await p.$('#blist b')),'codes are shown as text (no HTML from the Sheet)');
   await p.screenshot({path:'board.png'});
-  const n1=gets.length; await p.click('#bround'); await p.waitForTimeout(300);
-  const s1=+new URL(gets[gets.length-1]).searchParams.get('since'); ok(gets.length>n1&&s1>s0+19*60e3,'"New round" starts the window now');
+  // next round
+  await p.click('#bnext'); await p.waitForTimeout(300);
+  ok(last().get('test')==='mid2'&&/Mini quiz 2\/2/.test(await p.textContent('#board h2'))&&new URL(p.url()).hash==='#board2','"Next round" shows round 2 (Test "mid2", address #board2)');
+  ok(!(await p.isDisabled('#bprev'))&&await p.isDisabled('#bnext'),'last round: "previous" on, "next" off');
+  const n1=gets.length; await p.click('#breset'); await p.waitForTimeout(300);
+  const s1=+last().get('since'); ok(gets.length>n1&&s1>s0+19*60e3&&last().get('test')==='mid2'&&/yeni grup|new group/.test(await p.textContent('#breset')),'"Reset (new group)" starts the window of round 2 now');
+  await p.click('#bprev'); await p.waitForTimeout(300);
+  ok(last().get('test')==='mid1'&&+last().get('since')<s1-19*60e3,'back to round 1: its own window (the reset of round 2 does not change it)');
+  const k0=gets.length; await p.clock.runFor(5200); await p.waitForTimeout(300); const k1=gets.slice(k0);
+  ok(k1.length===1&&/test=mid1/.test(k1[0]),'one poll every 5 s, for the round on screen only');
   reply={ok:false,error:'x'}; await p.clock.runFor(5200); await p.waitForTimeout(300);
   ok(/tekrar deneniyor|trying again/.test(await p.textContent('#bnote')),'error: "trying again" message, board kept');
   await p.click('#bclose'); await p.waitForTimeout(200);
   ok(!(await p.isVisible('#board'))&&await p.isVisible('#v-giris'),'Close returns to the start page');
   const k=gets.length; await p.clock.runFor(11000); await p.waitForTimeout(200); ok(gets.length===k,'polling stops after Close');
-  const q=await ctx.newPage(); await q.goto(plain+'#board'); await q.waitForTimeout(300);
-  ok(/SHEET_URL/.test(await q.textContent('#bnote')),'template without SHEET_URL: board explains why it is empty');
+  reply={ok:true,n:0,top:[]};
+  const q=await ctx.newPage(); await q.goto(base+'#board2'); await q.waitForTimeout(300);
+  ok(/test=mid2/.test(gets[gets.length-1])&&/Mini quiz 2\/2/.test(await q.textContent('#board h2')),'QR/link #board2 opens the round 2 board directly');
+  await q.goto(base+'#board9'); await q.waitForTimeout(300);
+  ok(/Mini quiz 2\/2/.test(await q.textContent('#board h2'))&&new URL(q.url()).hash==='#board2','#board9 (no such round) shows the last round');
+  if(one){ await q.goto(one+'#board'); await q.waitForTimeout(300);
+    ok(!(await q.$('#bnext'))&&!(await q.$('#bprev'))&&/^Mini quiz · Liderlik tablosu$/.test((await q.textContent('#board h2')).trim())&&/test=mid1/.test(gets[gets.length-1]),'one round: no round buttons, plain title, Test "mid1"'); }
+  const r=await ctx.newPage(); await r.goto(plain+'#board'); await r.waitForTimeout(300);
+  ok(/SHEET_URL/.test(await r.textContent('#bnote')),'template without SHEET_URL: board explains why it is empty');
   ok(errs.length===0,'no script errors '+JSON.stringify(errs));
   console.log(out.join('\n')); await b.close(); })();

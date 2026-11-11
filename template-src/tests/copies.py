@@ -7,6 +7,9 @@ confoff.html as midoff, CONFIDENCE=false
 nopredict.html as midoff, PREDICT=false
 edit.html    as midoff, typo fix in item 2 (item code test)
 whyedit.html as midoff, item 1 explanation changed (item code test)
+one.html     as midon, one mini-quiz round only (no list of rounds, no board buttons)
+mid4.html    as midon, round 2 has 4 items (the author check must report it)
+flat.html    as midon, QUIZ_MID as the old 2026-11f flat list (3 items; read as one round, reported)
 """
 import os, sys
 src, out = sys.argv[1], sys.argv[2]
@@ -40,4 +43,16 @@ save("nopredict.html", sub(off, "const PREDICT=true;", "const PREDICT=false;"))
 # item codes: a typo fix in item 2 (comma removed) must change only that code; an explanation edit in item 1 must change none
 save("edit.html", sub(off, "Negatif geri bildirim, değişkendeki değişikliği büyütür.", "Negatif geri bildirim değişkendeki değişikliği büyütür."))
 save("whyedit.html", sub(off, "Negatif geri bildirimde etkileyici, sapmanın tersi yönde çalışır ve değişkeni ayar noktasına doğru geri çeker.", "Negatif geri bildirimde etkileyici sapmanın tersi yönde çalışır; değişkeni ayar noktasına doğru geri çeker."))
+# mini-quiz rounds (engine 2026-11g)
+r2s = on.index(" ]},\n {items:[   // round 2")
+r2e = on.index("\n ]}\n];", r2s) + len("\n ]}\n];")
+save("one.html", on[:r2s] + " ]}\n];" + on[r2e:])
+TF = ('  {type:"tf",mod:"ornek2",\n'
+      '   q:{tr:"Doğru mu, yanlış mı?",en:"True or false?"},\n'
+      '   o:{tr:["Akım basınç farkıyla doğru orantılıdır."],en:["Flow is directly proportional to the pressure difference."]},a:[true],\n'
+      '   why:{tr:"Doğru.",en:"True."}}')
+END = 'en:"True: flow = pressure difference / resistance."}}\n ]}'
+save("mid4.html", sub(on, END, END[:-4] + ",\n" + TF + "\n ]}"))
+flat = on[:r2s] + "\n];" + on[r2e:]
+save("flat.html", sub(flat, "const QUIZ_MID=[\n {items:[   // round 1\n", "const QUIZ_MID=[\n"))
 print("copies in", out)

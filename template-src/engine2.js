@@ -1,4 +1,5 @@
-/* ---------------- TEST ENGINE 2026-11f ----------------
+/* ---------------- TEST ENGINE 2026-11g ----------------
+   2026-11g: mini-quiz rounds (QUIZ_MID = list of rounds of 3 items; links #mid1… and #board1…; Q126–Q143).
    Any number of items, any order. Item types: mcq, tf, order, match, fill, open.
    Default test: 6 automatic items, 84 points (see QUIZ). Points rule: all item points + 2 per automatic item + 4 = 100.
    Automatic items are scored here; open items (special cases) are scored by the lecturer (Sheet columns).
@@ -44,9 +45,11 @@ const QT={
   oneTry:{tr:"Her test bir kez çözülür. Kontrolden sonra cevaplar değiştirilemez.",en:"Each test can be taken once. Answers cannot be changed after checking."},
   lockPre:{tr:"Doğru cevaplar son testten sonra açılacak.",en:"The correct answers will open after the post-test."},
   preClosed:{tr:"Son testi çözdüğünüz için ön test kapandı.",en:"The pre-test is closed because you have already taken the post-test."},
-  midClosed:{tr:"Son testi çözdüğünüz için mini quiz kapandı.",en:"The mini-quiz is closed because you have already taken the post-test."},
-  kT:{tr:"Mini quiz",en:"Mini-quiz"},
-  kIntro:{tr:"{n} kısa soru. Her sorunun süresi var (10–30 saniye). Doğru ve hızlı cevap daha çok puan alır; grubun zorlandığı sorular daha çok puan verir. Süre telefonunuzda ölçülür; internet hızı puanınızı etkilemez. Puanlar herkes bitirince tahtada hesaplanır. Mini quiz bir kez çözülür.",en:"{n} short questions. Each question has a time limit (10–30 seconds). Right and fast answers earn more points; questions the group finds hard give more points. Time is measured on your phone, so your internet speed does not change your score. Points are calculated on the board when everyone has finished. The mini-quiz can be taken once."},
+  midClosed:{tr:"Son testi çözdüğünüz için mini quiz turları kapandı.",en:"The mini-quiz rounds are closed because you have already taken the post-test."},
+  kT:{tr:"Mini quiz",en:"Mini-quiz"}, kRound:{tr:"Tur {r}/{n}",en:"Round {r}/{n}"}, kList:{tr:"Mini quiz turları",en:"Mini-quiz rounds"},
+  kListHint:{tr:"Eğitimcinin gösterdiği turu açın (QR kod ya da aşağıdaki liste). Her tur 3 kısa sorudur.",en:"Open the round the lecturer shows (QR code or the list below). Each round has 3 short questions."},
+  kAll:{tr:"‹ Tüm turlar",en:"‹ All rounds"}, kClosed:{tr:"kapalı",en:"closed"}, kPill:{tr:"{r}/{n} doğru ({k} tur)",en:"{r}/{n} right ({k} rounds)"},
+  kIntro:{tr:"{n} kısa soru. Her sorunun süresi var (10–30 saniye). Doğru ve hızlı cevap daha çok puan alır; grubun zorlandığı sorular daha çok puan verir. Süre telefonunuzda ölçülür; internet hızı puanınızı etkilemez. Puanlar herkes bitirince tahtada hesaplanır. Her tur bir kez çözülür.",en:"{n} short questions. Each question has a time limit (10–30 seconds). Right and fast answers earn more points; questions the group finds hard give more points. Time is measured on your phone, so your internet speed does not change your score. Points are calculated on the board when everyone has finished. Each round can be taken once."},
   kStart:{tr:"Başla",en:"Start"}, kNext:{tr:"Sonraki soru",en:"Next question"}, kSee:{tr:"Sonucumu gör",en:"See my result"}, kSubmit:{tr:"Cevapla",en:"Answer"},
   kQ:{tr:"Soru {i}/{n}",en:"Question {i}/{n}"}, kSoFar:{tr:"{r}/{n} doğru",en:"{r}/{n} right"},
   kRight:{tr:"Doğru! ({s} sn)",en:"Correct! ({s} s)"}, kWrong:{tr:"Yanlış.",en:"Wrong."}, kTimeout:{tr:"Süre doldu.",en:"Time is up."},
@@ -74,7 +77,7 @@ const QT={
   resetQ:{tr:"Bu tarayıcıdaki test kayıtları silinsin mi? (Ortak bilgisayar için)",en:"Delete the test records in this browser? (For a shared computer)"},
   testP_base:{tr:"Ön testi dersten önce, son testi dersin son 10 dakikasında çözün. Her test bir kez çözülür. Ön testte toplam puanınızı ve konu başına sonucunuzu görürsünüz; doğru cevaplar son testten sonra açılır.",en:"Take the pre-test before the lecture and the post-test in the last 10 minutes of the lecture. Each test can be taken once. In the pre-test you see your total and your result by topic; the correct answers open after the post-test."},
   testP_open:{tr:" Açık uçlu soruyu eğitimci puanlar.",en:" The lecturer scores the open-ended question."},
-  testP_mid:{tr:" Dersin ortasında süreli bir mini quiz vardır.",en:" There is a timed mini-quiz in the middle of the lecture."},
+  testP_mid:{tr:" Ders boyunca süreli mini quiz turları vardır.",en:" There are timed mini-quiz rounds during the lecture."},
   testP_late:{tr:" Son testten {n} gün sonra aynı sorularla gecikmeli test açılır.",en:" A delayed test with the same questions opens {n} days after the post-test."}
 };
 const FB=[ // M4 feedback form (handbook p. 114 style); M5 one-minute paper
@@ -87,13 +90,23 @@ const MP=[{k:"learned",tr:"Bugün öğrendiğim en önemli şey:",en:"The most i
 const qt=(k,o)=>{let s=(QT[k][LANG]||QT[k].tr); if(o) for(const p in o) s=s.split("{"+p+"}").join(o[p]); return s;};
 const LU="ABCDEFGH", ll="abcdefgh", r2=v=>Math.round(v*100)/100, nf=v=>dec(r2(v),Number.isInteger(r2(v))?0:(Number.isInteger(r2(v)*10)?1:2));
 const MODES=["pre","mid","post","late"].filter(m=>TESTS[m]);
-const setOf=m=>m==="mid"?QUIZ_MID:QUIZ;
+/* mini-quiz rounds (2026-11g): a 2026-11f flat list of items is read as one round (checkMid reports it) */
+const ROUNDS=(Array.isArray(QUIZ_MID)&&QUIZ_MID.length&&QUIZ_MID[0]&&QUIZ_MID[0].type)?[{items:QUIZ_MID}]:(QUIZ_MID||[]).map(r=>({items:(r&&r.items)||[]}));
+const NR=ROUNDS.length, MIDS=ROUNDS.flatMap(r=>r.items);
+let kr=1;   // round shown on the test tab (1…NR); 0 = list of rounds
+const mk=r=>"mid"+r, RQ=()=>(ROUNDS[kr-1]||{items:[]}).items;
+const setOf=m=>m==="mid"?RQ():QUIZ;
 const isAuto=q=>q.type!=="open";
 const HAS_OPEN=QUIZ.some(q=>!isAuto(q));
 const maxOf=set=>r2(set.filter(isAuto).reduce((a,q)=>a+q.pts,0));
 const nOf=q=>q.type==="mcq"?1:q.type==="match"?tx(q.left).length:q.type==="fill"?q.blanks.length:tx(q.o).length;
-let ST=store.get(KST); if(!ST||typeof ST!=="object") ST={}; ["pre","mid","post","late"].forEach(m=>{if(!(m in ST)) ST[m]=null;});
+let ST=store.get(KST); if(!ST||typeof ST!=="object") ST={};
+if("mid" in ST){ if(ST.mid&&!ST.mid1) ST.mid1=ST.mid; delete ST.mid; store.set(KST,ST); }   // a 2026-11f mini-quiz result counts as round 1 (stored once)
+["pre","post","late"].concat(ROUNDS.map((_,i)=>mk(i+1))).forEach(m=>{if(!(m in ST)) ST[m]=null;});
 const saveST=()=>store.set(KST,ST);
+const curKey=()=>qmode==="mid"?mk(kr):qmode;
+const hashOf=()=>qmode==="mid"?(kr?mk(kr):"mini"):qmode;   // #mid1… for a round, #mini for the list of rounds
+const hashSync=()=>{ try{ if(location.hash.slice(1)!==hashOf()) history.replaceState(null,"","#"+hashOf()); }catch(e){} };
 let qmode=MODES[0], seq={}, warned=false, devMem=null;   // seq[i] = rows of order item i in the order they were tapped
 const ordAns=(q,i)=>{ const s=seq[i]||[]; return s.concat(tx(q.o).map((_,k)=>k).filter(k=>!s.includes(k))); };   // steps without a number go to the end
 UI.testP={tr:QT.testP_base.tr+(HAS_OPEN?QT.testP_open.tr:"")+(TESTS.mid?QT.testP_mid.tr:"")+(TESTS.late?QT.testP_late.tr.replace("{n}",LATE_DAYS):""),en:QT.testP_base.en+(HAS_OPEN?QT.testP_open.en:"")+(TESTS.mid?QT.testP_mid.en:"")+(TESTS.late?QT.testP_late.en.replace("{n}",LATE_DAYS):"")};
@@ -102,7 +115,7 @@ function countWords(s){return (s||"").split(/[\s,;:.!?()\/\-–—>→←↑↓=
 const CODE_RE=/^PHY-[A-Z2-9]{4}$/;
 function myCode(){ let c=store.get("sim-code")||devMem; const old=typeof c==="string"&&c.match(/^NF-([A-Z2-9]{4})$/); if(old){ c="PHY-"+old[1]; store.set("sim-code",c); }
   if(!c||!CODE_RE.test(c)){ const A="ABCDEFGHJKLMNPRSTUVYZ23456789"; c="PHY-"+Array.from({length:4},()=>A[Math.floor(Math.random()*A.length)]).join(""); store.set("sim-code",c); } devMem=c; return c; }
-const anyDone=()=>["pre","mid","post","late"].some(m=>ST[m]);
+const anyDone=()=>Object.keys(ST).some(m=>ST[m]);
 const prog=()=>{ const p=store.get("sim-program"); return PROGRAMS.some(x=>x.k===p)?p:""; };
 const progOK=()=>PROGRAMS.length<2||!!prog();
 function progHtml(){ if(PROGRAMS.length<2) return ""; const p=prog();
@@ -113,7 +126,7 @@ function renderCodeBox(){
     (anyDone()?"":`<details class="othercode"><summary>${qt("otherDev")}</summary><label for="rumuz">${qt("enterCode")}</label> <input id="rumuz" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="PHY-7KQ2"> <button class="btn ghost" type="button" id="codeok">OK</button> <span id="codemsg" role="status"></span></details>`);
   const ok=$("#codeok"); if(ok) ok.onclick=()=>{ const v=($("#rumuz").value||"").trim().toLocaleUpperCase("tr-TR").replace(/^NF-?/,"PHY-").replace(/^PHY(?!-)/,"PHY-");
     if(!CODE_RE.test(v)){ $("#codemsg").textContent=qt("codeBad"); return; } store.set("sim-code",v); devMem=v; $("#mycode").textContent=v; $("#codemsg").textContent=qt("codeSet"); };
-  const ps=$("#prog"); if(ps) ps.onchange=()=>{ store.set("sim-program",ps.value||null); if(qmode==="mid"&&!ST.mid) renderQuiz(); else renderCodeBox(); };
+  const ps=$("#prog"); if(ps) ps.onchange=()=>{ store.set("sim-program",ps.value||null); if(qmode==="mid"&&kr&&!ST[mk(kr)]) renderQuiz(); else renderCodeBox(); };
 }
 /* ----- delayed test ----- */
 const lateAt=()=>ST.post?ST.post.t+LATE_DAYS*864e5:null;
@@ -150,12 +163,12 @@ const confPts=(set,rec)=>r2(set.reduce((a,q,i)=>a+(isAuto(q)?confOf(q,(rec.qs[i]
 const totMax=set=>Math.min(100,r2(maxOf(set)+(CONFIDENCE?2*set.filter(isAuto).length:0)+GIFT));
 const totalOf=(set,rec)=>cl(r2(rec.auto+confPts(set,rec)+GIFT),0,100);
 const sgn=v=>v>0?"+"+nf(v):v<0?"−"+nf(-v):"0";
-const totalStr=(set,rec)=>set===QUIZ_MID?`${nf(rec.auto)}/${nf(maxOf(set))}`:`${nf(totalOf(set,rec))}/${nf(totMax(set))}`;
+const totalStr=(set,rec)=>`${nf(totalOf(set,rec))}/${nf(totMax(set))}`;
 /* ----- rendering ----- */
 function renderModes(){
   const box=$("#qmode"); if(!box) return;
   box.innerHTML=MODES.map(m=>`<button type="button" data-m="${m}" aria-pressed="${m===qmode}">${t(UI["mode_"+m])}</button>`).join("");
-  box.querySelectorAll("button").forEach(b=>b.onclick=()=>{qmode=b.dataset.m; renderModes(); renderQuiz(); try{history.replaceState(null,"","#"+qmode);}catch(e){} });
+  box.querySelectorAll("button").forEach(b=>b.onclick=()=>{qmode=b.dataset.m; if(qmode==="mid") kr=NR===1?1:0; renderModes(); renderQuiz(); hashSync(); });
 }
 function itemHtml(q,i,done){
   const o=q.o?tx(q.o):[], id=`${qmode}-${i}`; let body="";
@@ -183,7 +196,7 @@ function renderOrder(i,locked){
 }
 function gateHtml(){
   if(qmode==="pre"&&!ST.pre&&ST.post) return qt("preClosed");
-  if(qmode==="mid"&&!ST.mid&&ST.post) return qt("midClosed");
+  if(qmode==="mid"&&kr&&!ST[mk(kr)]&&ST.post) return qt("midClosed");
   if(qmode==="late"&&!ST.late&&!lateOpen()) return ST.post?qt("lateWhen",{d:fmtDate(lateAt())}):qt("lateNoPost",{n:LATE_DAYS});
   return "";
 }
@@ -273,7 +286,10 @@ function updateTotal(){
 }
 function showCompare(){
   const el=$("#qcmp"); if(!el) return; let h="";
-  ["pre","mid","post","late"].forEach(m=>{ if(ST[m]) h+=`<span class="pill">${t(UI["mode_"+m])}: ${totalStr(setOf(m),ST[m])}</span>`; });
+  ["pre","mid","post","late"].forEach(m=>{
+    if(m==="mid"){ let r=0,n=0,k=0; ROUNDS.forEach((R,i)=>{ const x=ST[mk(i+1)]; if(x){ r+=x.auto; n+=R.items.length; k++; } });   // one pill for all rounds
+      if(k) h+=`<span class="pill">${t(UI.mode_mid)}: ${qt("kPill",{r,n,k})}</span>`; return; }
+    if(ST[m]) h+=`<span class="pill">${t(UI["mode_"+m])}: ${totalStr(setOf(m),ST[m])}</span>`; });
   if(ST.pre&&ST.post){const d=r2(totalOf(QUIZ,ST.post)-totalOf(QUIZ,ST.pre)); h+=`<span class="pill" style="color:var(--ok)">${d>=0?"+":""}${nf(d)} ${qt("pts")}</span>`;}
   el.innerHTML=h;
 }
@@ -350,9 +366,9 @@ $("#quiz").addEventListener("input",e=>{ const el=e.target;
    time that is left. ----- */
 const KRUN=KST+"-mid", KLIM={tf:10,mcq:20,fill:20,match:30};
 const kSec=q=>q.sec||KLIM[q.type]||20;
-QUIZ_MID.forEach(q=>{ q.pts=1; });   // the test page counts right answers; points come from the board
+MIDS.forEach(q=>{ q.pts=1; });   // the test page counts right answers; points come from the board
 let kTick=null;
-if(store.get(KRUN)&&MODES.includes("mid")) qmode="mid";   // a mini-quiz in progress opens first
+{ const run=store.get(KRUN); if(run&&MODES.includes("mid")){ const r=run.r||1; if(r>=1&&r<=NR){ qmode="mid"; kr=r; } else store.set(KRUN,null); } }   // a round in progress opens first (a 2026-11f run is round 1)
 const kKey=q=>q.type==="mcq"?q.a:q.type==="fill"?q.blanks.map(b=>b.a):q.a;
 const kOK=(q,a)=>a!==null&&a!==undefined&&(q.type==="mcq"?a===q.a:Array.isArray(a)&&kKey(q).every((k,j)=>a[j]===k));
 const kRightN=run=>run.ok.reduce((x,y)=>x+(y?1:0),0);
@@ -364,21 +380,35 @@ function kRightStr(q){ const o=q.o?tx(q.o):[];
   if(q.type==="tf") return q.a.map(v=>v?qt("kTrue"):qt("kFalse")).join(", ");
   if(q.type==="fill") return q.blanks.map(b=>tx(b.o)[b.a]).join(", ");
   return tx(q.left).map((h,j)=>h+" → "+o[q.a[j]]).join("; "); }
+const kHead=()=>`${qt("kT")}${NR>1?" · "+qt("kRound",{r:kr,n:NR}):""}`;
+const kBack=()=>NR>1?`<button class="btn ghost" type="button" id="kall">${qt("kAll")}</button>`:"";
+function kBackOn(){ const b=$("#kall"); if(b) b.onclick=()=>{ kr=0; hashSync(); renderKahoot(); }; }
+function kList(){   // list of rounds (the "Mini quiz" button when there are several rounds)
+  const f=$("#quiz"); renderCodeBox(); testNote();
+  f.innerHTML=`<div class="q kq"><h3 class="kh">${qt("kList")}</h3><p>${qt("kListHint")}</p><ul class="klist kround">`+
+    ROUNDS.map((R,i)=>{ const r=i+1, rec=ST[mk(r)];
+      return `<li><button type="button" class="btn ghost" data-kr="${r}">${qt("kRound",{r,n:NR})}</button> `+
+        (rec?`<span class="tm ok">✓</span> ${qt("kSum",{r:rec.auto,n:R.items.length})}`:ST.post?`<small>${qt("kClosed")}</small>`:"")+`</li>`; }).join("")+`</ul></div>`;
+  f.querySelectorAll("[data-kr]").forEach(b=>b.onclick=()=>{ kr=+b.dataset.kr; hashSync(); renderKahoot(); });
+  showCompare();
+}
 function renderKahoot(){
-  const f=$("#quiz"), set=QUIZ_MID, n=set.length; clearInterval(kTick);
-  const g=gateHtml(); if(g&&!ST.mid){ f.innerHTML=`<div class="q qnote">${g}</div>`; testNote(); renderCodeBox(); return; }
+  const f=$("#quiz"); clearInterval(kTick);
+  const run=store.get(KRUN); if(run&&(run.r||1)!==kr){ kr=run.r||1; hashSync(); }   // a started round must be finished first
+  if(!kr) return kList();
+  const set=RQ(), n=set.length, rec=ST[mk(kr)];
+  const g=gateHtml(); if(g&&!rec){ f.innerHTML=`<div class="q qnote">${g}</div>${NR>1?`<div class="score">${kBack()}</div>`:""}`; kBackOn(); testNote(); renderCodeBox(); return; }
   renderCodeBox(); testNote();
-  if(ST.mid) return kDone();
-  const run=store.get(KRUN);
-  if(!run){ f.innerHTML=`<div class="q kq"><h3 class="kh">${qt("kT")}</h3><p>${qt("kIntro",{n})}</p>`+
-      `<div class="score"><button class="btn" type="button" id="kstart" ${progOK()?"":"disabled"}>${qt("kStart")}</button>${progOK()?"":`<span class="testmode">${qt("progNeed")}</span>`}</div></div>`;
-    $("#kstart").onclick=()=>{ store.set(KRUN,{i:0,ans:[],ms:[],ok:[],ph:"q",t0:null}); renderKahoot(); }; return; }
+  if(rec) return kDone();
+  if(!run){ f.innerHTML=`<div class="q kq"><h3 class="kh">${kHead()}</h3><p>${qt("kIntro",{n})}</p>`+
+      `<div class="score"><button class="btn" type="button" id="kstart" ${progOK()?"":"disabled"}>${qt("kStart")}</button>${kBack()}${progOK()?"":`<span class="testmode">${qt("progNeed")}</span>`}</div></div>`;
+    kBackOn(); $("#kstart").onclick=()=>{ store.set(KRUN,{r:kr,i:0,ans:[],ms:[],ok:[],ph:"q",t0:null}); renderKahoot(); }; return; }
   if(run.i>=n) return kFinish(run);
   if(run.ph==="fb") return kFeedback(run);
   kQuestion(run);
 }
 function kQuestion(run){
-  const set=QUIZ_MID, q=set[run.i], n=set.length, lim=kSec(q)*1000, f=$("#quiz");
+  const set=RQ(), q=set[run.i], n=set.length, lim=kSec(q)*1000, f=$("#quiz");
   if(!run.t0){ run.t0=Date.now(); store.set(KRUN,run); }
   if(Date.now()-run.t0>=lim) return kAnswer(null);
   const o=q.o?tx(q.o):[]; let body="";
@@ -386,7 +416,7 @@ function kQuestion(run){
   if(q.type==="tf") body=`<p class="kstmt">${o[0]}</p><div class="kopts two"><button type="button" class="kopt" data-tf="1"><b>${qt("T")}</b> ${qt("kTrue")}</button><button type="button" class="kopt" data-tf="0"><b>${qt("F")}</b> ${qt("kFalse")}</button></div>`;
   if(q.type==="fill"){ const sg=tx(q.segs); body=`<p class="kstmt">${sg[0]}<span class="kblank">____</span>${sg[1]||""}</p><div class="kopts">${tx(q.blanks[0].o).map((x,k)=>`<button type="button" class="kopt" data-k="${k}">${x}</button>`).join("")}</div>`; }
   if(q.type==="match") body=`<div class="match">${tx(q.left).map((h,j)=>`<div class="mrow"><label for="ksel-${j}"><b>${j+1}.</b> ${h}</label><select id="ksel-${j}"><option value="">${qt("choose")}</option>${o.map((x,k)=>`<option value="${k}">${ll[k]}) ${x}</option>`).join("")}</select></div>`).join("")}</div><div class="score"><button class="btn" type="button" id="kgo">${qt("kSubmit")}</button></div>`;
-  f.innerHTML=`<div class="q kq"><div class="khead"><span>${qt("kQ",{i:run.i+1,n})} · ${kSec(q)} ${L("sn","s")}</span><span class="ktime" id="ktime"></span></div>`+
+  f.innerHTML=`<div class="q kq"><div class="khead"><span>${NR>1?qt("kRound",{r:kr,n:NR})+" · ":""}${qt("kQ",{i:run.i+1,n})} · ${kSec(q)} ${L("sn","s")}</span><span class="ktime" id="ktime"></span></div>`+
     `<div class="kbar"><i id="kbar"></i></div><p class="kstem">${tx(q.q)}</p>${body}</div>`;
   kFocus();
   f.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>kAnswer(q.type==="fill"?[+b.dataset.k]:+b.dataset.k));
@@ -398,14 +428,14 @@ function kQuestion(run){
 }
 function kAnswer(a){
   clearInterval(kTick); const run=store.get(KRUN); if(!run||run.ph!=="q") return;
-  const q=QUIZ_MID[run.i], lim=kSec(q)*1000, ms=Math.min(lim,Date.now()-(run.t0||Date.now()));
+  const q=RQ()[run.i], lim=kSec(q)*1000, ms=Math.min(lim,Date.now()-(run.t0||Date.now()));
   run.ans[run.i]=a; run.ms[run.i]=ms; run.ok[run.i]=kOK(q,a)?1:0; run.ph="fb";
   store.set(KRUN,run); kFeedback(run);
 }
 function kFeedback(run){
-  const set=QUIZ_MID, q=set[run.i], a=run.ans[run.i], right=run.ok[run.i], last=run.i===set.length-1;
+  const set=RQ(), q=set[run.i], a=run.ans[run.i], right=run.ok[run.i], last=run.i===set.length-1;
   const msg=right?qt("kRight",{s:dec(run.ms[run.i]/1000,1)}):(a===null?qt("kTimeout"):qt("kWrong"));
-  $("#quiz").innerHTML=`<div class="q kq"><div class="khead"><span>${qt("kQ",{i:run.i+1,n:set.length})}</span><span>${qt("kSoFar",{r:kRightN(run),n:run.i+1})}</span></div>`+
+  $("#quiz").innerHTML=`<div class="q kq"><div class="khead"><span>${NR>1?qt("kRound",{r:kr,n:NR})+" · ":""}${qt("kQ",{i:run.i+1,n:set.length})}</span><span>${qt("kSoFar",{r:kRightN(run),n:run.i+1})}</span></div>`+
     `<p class="kres ${right?"ok":"bad"}">${msg}</p><p>${qt("rightAns")} <b>${kRightStr(q)}</b></p><p class="why">${tx(q.why)}</p>`+
     `<div class="score"><button class="btn" type="button" id="knext">${last?qt("kSee"):qt("kNext")}</button></div></div>`;
   kFocus();
@@ -413,62 +443,73 @@ function kFeedback(run){
 }
 function kFocus(){ const rb=$("#rumuzbox"); if(rb) rb.hidden=true; const k=$("#quiz .kq"); if(k&&k.scrollIntoView) k.scrollIntoView({block:"start"}); }   // during the run only the question is shown
 function kFinish(run){
-  ST.mid={raw:{ans:run.ans,ms:run.ms,ok:run.ok,conf:[]}, qs:run.ok.slice(), auto:kRightN(run), self:{}, fb:null, mp:null, sent:false, t:Date.now()};
+  ST[mk(kr)]={raw:{ans:run.ans,ms:run.ms,ok:run.ok,conf:[]}, qs:run.ok.slice(), auto:kRightN(run), self:{}, fb:null, mp:null, sent:false, t:Date.now()};
   saveST(); store.set(KRUN,null); kDone();
 }
 function kDone(){
-  const rec=ST.mid, set=QUIZ_MID;
-  $("#quiz").innerHTML=`<div class="q kq"><h3 class="kh">${qt("kT")}</h3><p class="kbig">${qt("kSum",{r:rec.auto,n:set.length})}</p>`+
+  const rec=ST[mk(kr)], set=RQ();
+  $("#quiz").innerHTML=`<div class="q kq"><h3 class="kh">${kHead()}</h3><p class="kbig">${qt("kSum",{r:rec.auto,n:set.length})}</p>`+
     `<ul class="klist">${set.map((q,i)=>`<li><span class="tm ${rec.qs[i]?"ok":"bad"}">${rec.qs[i]?"✓":"✗"}</span> ${qt("kQ",{i:i+1,n:set.length})}: ${dec((rec.raw.ms[i]||0)/1000,1)} ${L("sn","s")}</li>`).join("")}</ul>`+
     `<p>${qt("kPtsBoard")}</p><p class="kboard">${qt("kBoard")} <span class="code">${myCode()}</span></p>`+
-    `<div class="sendbox" id="sendbox"><button class="btn" type="button" id="qsend">${qt("kResend")}</button><span id="sendmsg" role="status"></span></div></div>`;
-  $("#qsend").onclick=sendResult;
+    `<div class="sendbox" id="sendbox"><button class="btn" type="button" id="qsend">${qt("kResend")}</button><span id="sendmsg" role="status"></span></div>`+
+    (NR>1?`<div class="score">${kBack()}</div>`:"")+`</div>`;
+  $("#qsend").onclick=sendResult; kBackOn();
   if(!SHEET_URL){ $("#qsend").disabled=true; $("#sendmsg").innerHTML=`<span class="testmode">${qt("testMode")}</span>`; }
   else if(rec.sent){ $("#qsend").hidden=true; $("#sendmsg").textContent=qt("sentBefore")+(rec.alias?" ("+rec.alias+")":""); }
   else if(!rec.tried){ rec.tried=true; saveST(); sendResult(); }
   showCompare();
 }
-function kPayload(rec,alias){
-  const cols=[];
-  QUIZ_MID.forEach((q,i)=>{ const n=i+1, lim=kSec(q)*1000, ms=Math.min(lim,rec.raw.ms[i]||lim), ok=rec.raw.ok[i]?1:0;
+function kPayload(rec,alias){   // one row per student and round (Q134-A): Test = mid1, mid2 …
+  const set=RQ(), cols=[["Round",kr]];
+  set.forEach((q,i)=>{ const n=i+1, lim=kSec(q)*1000, ms=Math.min(lim,rec.raw.ms[i]||lim), ok=rec.raw.ok[i]?1:0;
     cols.push([`R${n}`,ok],[`S${n}`,ok?r2(1-ms/lim):0],[`A${n}`,kAnsStr(q,rec.raw.ans[i])],[`T${n} sec`,r2(ms/1000)]); });
-  cols.push(["Mini-quiz right",rec.auto],["Mini-quiz items",QUIZ_MID.length]);
+  cols.push(["Mini-quiz right",rec.auto],["Mini-quiz items",set.length]);
   if(PROGRAMS.length>1) cols.push(["Program",prog()]);
-  cols.push(["Version",SURUM],["Language",LANG]);
-  return {schema:2, course:COURSE+"-quiz", alias, test:"mid", cols};
+  cols.push(["Item codes",itemCodes(set)],["Version",SURUM],["Language",LANG]);
+  return {schema:2, course:COURSE+"-quiz", alias, test:mk(kr), cols};
 }
-function checkMid(){
-  QUIZ_MID.forEach((q,i)=>{ const err=m=>console.error(`QUIZ_MID[${i}] (${q.type}): ${m}`); const L=x=>(tx(x)||[]).length;
-    if(!["mcq","tf","match","fill"].includes(q.type)) err("mini-quiz types: mcq, tf, match, fill");
-    if(!q.mod||!M[q.mod]) err("mod is not a module key: "+q.mod);
-    if(q.type==="mcq"&&!(q.a>=0&&q.a<L(q.o))) err("a out of range");
-    if(q.type==="tf"&&(L(q.o)!==1||q.a.length!==1)) err("tf: one statement and one answer");
-    if(q.type==="match"&&(L(q.left)!==2||q.a.length!==2||L(q.o)<3)) err("match: 2 left items, 2 answers, 3 options");
-    if(q.type==="fill"&&(q.blanks.length!==1||L(q.segs)!==2)) err("fill: 1 blank and 2 text pieces"); });
-  if(QUIZ_MID.length<4||QUIZ_MID.length>5) console.error("QUIZ_MID: use 4–5 items");
+function checkMid(){   // 2026-11g: 1–10 rounds, exactly 3 items per round (Q126-A, Q127-A, Q128-A)
+  if(Array.isArray(QUIZ_MID)&&QUIZ_MID.length&&QUIZ_MID[0]&&QUIZ_MID[0].type) console.error("QUIZ_MID: write rounds: [ {items:[3 items]}, {items:[…]}, … ] (engine 2026-11g); this flat list is read as one round");
+  if(NR<1||NR>10) console.error(`QUIZ_MID: use 1–10 rounds (this file has ${NR})`);
+  ROUNDS.forEach((R,ri)=>{
+    if(R.items.length!==3) console.error(`QUIZ_MID round ${ri+1}: use exactly 3 items (this round has ${R.items.length})`);
+    R.items.forEach((q,i)=>{ const err=m=>console.error(`QUIZ_MID round ${ri+1}, item ${i+1} (${q.type}): ${m}`); const L=x=>(tx(x)||[]).length;
+      if(!["mcq","tf","match","fill"].includes(q.type)) err("mini-quiz types: mcq, tf, match, fill");
+      if(!q.mod||!M[q.mod]) err("mod is not a module key: "+q.mod);
+      if(q.type==="mcq"&&!(q.a>=0&&q.a<L(q.o))) err("a out of range");
+      if(q.type==="tf"&&(L(q.o)!==1||q.a.length!==1)) err("tf: one statement and one answer");
+      if(q.type==="match"&&(L(q.left)!==2||q.a.length!==2||L(q.o)<3)) err("match: 2 left items, 2 answers, 3 options");
+      if(q.type==="fill"&&(q.blanks.length!==1||L(q.segs)!==2)) err("fill: 1 blank and 2 text pieces"); }); });
 }
-/* ----- leaderboard for the projector (#board). Reads the "-quiz" tab through the Apps Script every 5 s. ----- */
-const BT={tr:{t:"Mini quiz · Liderlik tablosu",n:"{n} öğrenci gönderdi",none:"Henüz sonuç yok. Öğrenciler mini quizi bitirince burada görünür.",
-    round:"Yeni tur",close:"Kapat",q:"Soru {k}: {r}/{n} doğru",formula:"Doğru cevap = 500 + 500 × (2 − P) × hız · P = soruyu doğru yapanların oranı",off:"SHEET_URL boş: tablo yalnızca sonuç gönderen bir simülatörde çalışır.",err:"Bağlantı yok, tekrar deneniyor…",pts:"puan",upd:"Son güncelleme"},
-  en:{t:"Mini-quiz · Leaderboard",n:"{n} students sent a result",none:"No results yet. Students appear here when they finish the mini-quiz.",
-    round:"New round",close:"Close",q:"Question {k}: {r}/{n} right",formula:"Right answer = 500 + 500 × (2 − P) × speed · P = share who got the question right",off:"SHEET_URL is empty: the board only works in a simulator that sends results.",err:"No connection, trying again…",pts:"points",upd:"Last update"}};
-let bTimer=null;
+/* ----- leaderboard for the projector: #board1, #board2 … (#board = round 1). Reads the "-quiz" tab through the Apps Script
+   every 5 s; only the rows of that round (Test = mid1, mid2 …; Apps Script 2026-11g). "Reset (new group)" restarts the time
+   window of this round only (e.g. a second class section); the default window is the last 20 minutes (Q136–Q138, Q143-A). ----- */
+const BT={tr:{t:"Mini quiz · Liderlik tablosu",tr_:"Mini quiz {r}/{n} · Liderlik tablosu",prev:"‹ Önceki tur",next:"Sonraki tur ›",n:"{n} öğrenci gönderdi",none:"Henüz sonuç yok. Öğrenciler mini quizi bitirince burada görünür.",
+    reset:"Sıfırla (yeni grup)",close:"Kapat",q:"Soru {k}: {r}/{n} doğru",formula:"Doğru cevap = 500 + 500 × (2 − P) × hız · P = soruyu doğru yapanların oranı",off:"SHEET_URL boş: tablo yalnızca sonuç gönderen bir simülatörde çalışır.",err:"Bağlantı yok, tekrar deneniyor…",pts:"puan",upd:"Son güncelleme"},
+  en:{t:"Mini-quiz · Leaderboard",tr_:"Mini-quiz {r}/{n} · Leaderboard",prev:"‹ Previous round",next:"Next round ›",n:"{n} students sent a result",none:"No results yet. Students appear here when they finish the mini-quiz.",
+    reset:"Reset (new group)",close:"Close",q:"Question {k}: {r}/{n} right",formula:"Right answer = 500 + 500 × (2 − P) × speed · P = share who got the question right",off:"SHEET_URL is empty: the board only works in a simulator that sends results.",err:"No connection, trying again…",pts:"points",upd:"Last update"}};
+let bTimer=null, bR=1;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const bt=(k,v)=>{ let s=BT[LANG][k]; if(v) Object.keys(v).forEach(x=>s=s.replace("{"+x+"}",v[x])); return s; };
-function boardSince(){ const s=store.get(KST+"-board"); return (s&&Date.now()-s<3*3600e3)?s:Date.now()-20*60e3; }   // default: the last 20 minutes
-function showBoard(){
-  let el=$("#board"); if(!el){ el=document.createElement("div"); el.id="board"; el.setAttribute("role","dialog"); el.setAttribute("aria-label",bt("t")); document.body.appendChild(el); }
-  el.hidden=false; document.body.classList.add("boardon");
-  el.innerHTML=`<div class="bwrap"><div class="bhead"><h2>${bt("t")}</h2><div class="bbtn"><button class="btn" type="button" id="bround">${bt("round")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
+const bTitle=()=>NR>1?bt("tr_",{r:bR,n:NR}):bt("t");
+function boardSince(){ const s=store.get(KST+"-board"+bR); return (s&&Date.now()-s<3*3600e3)?s:Date.now()-20*60e3; }   // default: the last 20 minutes
+function showBoard(r){
+  bR=Math.min(Math.max(1,r||1),Math.max(1,NR));
+  try{ if(location.hash.slice(1)!=="board"+bR) history.replaceState(null,"","#board"+bR); }catch(e){}
+  let el=$("#board"); if(!el){ el=document.createElement("div"); el.id="board"; el.setAttribute("role","dialog"); document.body.appendChild(el); }
+  el.setAttribute("aria-label",bTitle()); el.hidden=false; document.body.classList.add("boardon");
+  const nav=NR>1?`<button class="btn ghost" type="button" id="bprev" ${bR>1?"":"disabled"}>${bt("prev")}</button><button class="btn" type="button" id="bnext" ${bR<NR?"":"disabled"}>${bt("next")}</button>`:"";
+  el.innerHTML=`<div class="bwrap"><div class="bhead"><h2>${bTitle()}</h2><div class="bbtn">${nav}<button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
     `<p class="bcount" id="bcount"></p><ol class="blist" id="blist"></ol><p class="bitems" id="bitems"></p><p class="bnote">${bt("formula")}</p><p class="bnote" id="bnote" role="status"></p></div>`;
-  $("#bround").onclick=()=>{ store.set(KST+"-board",Date.now()); boardLoad(); };
+  $("#breset").onclick=()=>{ store.set(KST+"-board"+bR,Date.now()); boardLoad(); };
+  if(NR>1){ $("#bprev").onclick=()=>showBoard(bR-1); $("#bnext").onclick=()=>showBoard(bR+1); }
   $("#bclose").onclick=()=>{ clearInterval(bTimer); el.hidden=true; document.body.classList.remove("boardon"); open("giris"); };
   clearInterval(bTimer);
   if(!SHEET_URL){ $("#bnote").textContent=bt("off"); return; }
   boardLoad(); bTimer=setInterval(boardLoad,5000);
 }
 function boardLoad(){
-  const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"board="+encodeURIComponent(COURSE+"-quiz")+"&since="+boardSince()+"&n="+BOARD_TOP;
+  const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"board="+encodeURIComponent(COURSE+"-quiz")+"&test="+mk(bR)+"&since="+boardSince()+"&n="+BOARD_TOP;
   fetch(u,{cache:"no-store"}).then(r=>r.json()).then(d=>{
     if(!d||!d.ok) throw new Error(d&&d.error||"bad");
     $("#bcount").textContent=bt("n",{n:d.n});
@@ -567,7 +608,7 @@ function payloadOf(mode,rec,alias){
   return {schema:2, course:COURSE, alias, test:mode, cols};
 }
 async function sendResult(){
-  const rec=ST[qmode]; if(!rec||rec.sent||!SHEET_URL) return;
+  const rec=ST[curKey()]; if(!rec||rec.sent||!SHEET_URL) return;
   const alias=myCode(), payload=payloadOf(qmode,rec,alias);
   const btn=$("#qsend"); btn.disabled=true; $("#sendmsg").textContent=qt("sending");
   try{
@@ -576,7 +617,7 @@ async function sendResult(){
     document.querySelectorAll("[data-rb],[data-fb]").forEach(x=>x.disabled=true); document.querySelectorAll("[data-mp]").forEach(x=>x.readOnly=true);
   }catch(err){ btn.disabled=false; $("#sendmsg").textContent=qt("sendFail"); }
 }
-function resetCheck(){ if(location.hash!=="#test-sifirla") return; if(confirm(qt("resetQ"))){ ST={pre:null,mid:null,post:null,late:null}; saveST(); store.set(KRUN,null); M2={}; store.set(KM2,null); qmode=MODES[0]; renderModes(); } try{history.replaceState(null,"","#test");}catch(e){} }
+function resetCheck(){ if(location.hash!=="#test-sifirla") return; if(confirm(qt("resetQ"))){ ST={pre:null,post:null,late:null}; ROUNDS.forEach((_,i)=>{ ST[mk(i+1)]=null; }); saveST(); store.set(KRUN,null); kr=1; M2={}; store.set(KM2,null); qmode=MODES[0]; renderModes(); } try{history.replaceState(null,"","#test");}catch(e){} }
 resetCheck(); window.addEventListener("hashchange",resetCheck);
 /* ----- format check for template authors: problems are listed in the browser console -----
    Rules (engine 2026-11f): all item points + 2 per automatic item (confidence) + 4 (gift) = 100;
