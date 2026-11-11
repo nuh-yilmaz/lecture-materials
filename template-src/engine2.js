@@ -1,11 +1,12 @@
-/* ---------------- TEST ENGINE 2026-11d ----------------
+/* ---------------- TEST ENGINE 2026-11f ----------------
    Any number of items, any order. Item types: mcq, tf, order, match, fill, open.
-   Automatic items are scored here; open items are scored by the lecturer (Sheet columns).
+   Default test: 6 automatic items, 84 points (see QUIZ). Points rule: all item points + 2 per automatic item + 4 = 100.
+   Automatic items are scored here; open items (special cases) are scored by the lecturer (Sheet columns).
    Pre-test: total + topic feedback only. Mid, post, delayed: key, item scores, topics.
    One row per test is sent to the Sheet (schema 2: values go under their column names). */
 const tx=v=>(v&&typeof v==="object"&&!Array.isArray(v)&&("tr" in v))?v[LANG]:v;
 const QT={
-  up:{tr:"Yukarı taşı",en:"Move up"}, down:{tr:"Aşağı taşı",en:"Move down"}, choose:{tr:"Seçin…",en:"Choose…"},
+  choose:{tr:"Seçin…",en:"Choose…"},
   T:{tr:"D",en:"T"}, F:{tr:"Y",en:"F"}, pts:{tr:"puan",en:"points"},
   type_mcq:{tr:"Çoktan seçmeli",en:"Multiple choice"}, type_tf:{tr:"Doğru / yanlış",en:"True / false"}, type_order:{tr:"Sıralama",en:"Ordering"},
   type_match:{tr:"Eşleştirme",en:"Matching"}, type_fill:{tr:"Boşluk doldurma",en:"Fill in the blanks"}, type_open:{tr:"Açık uçlu",en:"Open-ended"},
@@ -20,13 +21,18 @@ const QT={
   answer:{tr:"Cevabınız",en:"Your answer"},
   autoNote:{tr:"otomatik puan; açık uçlu soruyu eğitimci puanlar",en:"automatic score; the lecturer scores the open-ended question"},
   sure:{tr:"Bu cevaptan emin misiniz?",en:"Are you sure of this answer?"}, sureY:{tr:"Eminim",en:"Sure"}, sureN:{tr:"Emin değilim",en:"Not sure"},
+  scoreBox:{tr:"Puanlama: «Eminim» işaretli soru doğruysa +2, yanlışsa −4 puan; «Emin değilim» 0 puan. Kısmen doğru sorularda puan orantılıdır. 4 puan bizden hediye.",en:"Scoring: a 'sure' item earns +2 if right and costs 4 if wrong; 'not sure' gives 0. Partly right items count in proportion. 4 points are a gift from us."},
+  scoreBoxGift:{tr:"Puanlama: 4 puan bizden hediye.",en:"Scoring: 4 points are a gift from us."},
+  totT:{tr:"Toplam",en:"Total"}, totItems:{tr:"sorular",en:"items"}, totConf:{tr:"güven",en:"confidence"}, totGift:{tr:"hediye",en:"gift"},
   sureWrong:{tr:"Emin olduğunuz hâlde yanlış: {list}. Bu soruların konularını tekrar edin.",en:"Sure but wrong: {list}. Review the topics of these questions."},
   topicsT:{tr:"Konulara göre sonucunuz",en:"Your result by topic"}, topicHint:{tr:"✓ iyi (en az %75) · ~ kısmen (%50–74) · ✗ tekrar edin (%50'nin altında)",en:"✓ good (75% or more) · ~ partly (50–74%) · ✗ review (below 50%)"},
   send:{tr:"Sonucumu eğitimciye gönder",en:"Send my result to the lecturer"},
   sent:{tr:"Gönderildi. Teşekkürler! Kodunuz: {a}",en:"Sent. Thank you! Your code: {a}"}, sending:{tr:"Gönderiliyor…",en:"Sending…"},
   sentBefore:{tr:"Bu test için sonucunuz gönderildi.",en:"Your result for this test has been sent."},
   sendFail:{tr:"Gönderilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.",en:"Could not send. Check your internet connection and try again."},
-  sendHint:{tr:"Önce açık uçlu sorudaki kontrolü ve yukarıdaki kısa formu doldurun, sonra gönderin. Gönderdikten sonra değiştirilemez.",en:"First complete the self-check and the short form above, then send. You cannot change them after sending."},
+  sendHint:{tr:"Gönderdikten sonra değiştirilemez.",en:"You cannot change it after sending."},
+  sendHintOpen:{tr:"Önce açık uçlu sorudaki kendi kontrolünüzü yapın.",en:"First complete the self-check of the open-ended question."},
+  sendHintForm:{tr:"Önce yukarıdaki kısa formu doldurun, sonra gönderin.",en:"First complete the short form above, then send."},
   myCode:{tr:"Kodunuz",en:"Your code"},
   testMode:{tr:"Test modu: SHEET_URL boş, sonuçlar gönderilmez.",en:"Test mode: SHEET_URL is empty, so results are not sent."},
   codeHelp:{tr:"Bu kod size rastgele verildi; adınız kaydedilmez. Kodunuzu not edin. Testlerin hepsini aynı cihazda çözün; böylece sonuçlarınız eşleşir.",en:"This code was given to you at random; your name is not stored. Write your code down. Take all the tests on the same device so that your results match."},
@@ -58,13 +64,16 @@ const QT={
   wcount:{tr:"Kelime sayısı: {n} (puanlama için en az 10)",en:"Word count: {n} (at least 10 for scoring)"},
   noneAns:{tr:"Hiç cevap yok. Önce soruları cevaplayın.",en:"No answers yet. Answer the questions first."},
   blankWarn:{tr:"Boş ya da eksik soru var: {list}. Yine de kontrol edilsin mi? Kontrolden sonra cevaplar değiştirilemez.",en:"Unanswered or incomplete: {list}. Check anyway? Answers cannot be changed after checking."},
-  bOrder:{tr:"{n} (sıra değiştirilmedi)",en:"{n} (order not changed)"},
+  bOrder:{tr:"{n} (numarasız adım: {u})",en:"{n} (steps without a number: {u})"},
+  ordHint:{tr:"Adımlara doğru sırayla dokunun. Numarayı silmek için numaralı adıma yeniden dokunun. Numarasız adımlar sona eklenir.",en:"Tap the steps in the correct order. To remove a number, tap the numbered step again. Steps without a number go to the end."},
+  ordClear:{tr:"Sırayı temizle",en:"Clear order"}, ordNone:{tr:"numara yok",en:"no number"},
   bShort:{tr:"{n} (10 kelimeden kısa: eğitimci 0 puan verir)",en:"{n} (under 10 words: the lecturer gives 0 points)"},
   force:{tr:"Yine de kontrol et",en:"Check anyway"}, back:{tr:"Geri dön",en:"Go back"},
   fbT:{tr:"Kısa değerlendirme (isteğe bağlı)",en:"Short feedback (optional)"},
   fbScale:{tr:"1 = Kesinlikle katılmıyorum · 5 = Kesinlikle katılıyorum",en:"1 = Strongly disagree · 5 = Strongly agree"},
   resetQ:{tr:"Bu tarayıcıdaki test kayıtları silinsin mi? (Ortak bilgisayar için)",en:"Delete the test records in this browser? (For a shared computer)"},
-  testP_base:{tr:"Ön testi dersten önce, son testi dersin son 10 dakikasında çözün. Her test bir kez çözülür. Ön testte toplam puanınızı ve konu başına sonucunuzu görürsünüz; doğru cevaplar son testten sonra açılır. Açık uçlu soruyu eğitimci puanlar.",en:"Take the pre-test before the lecture and the post-test in the last 10 minutes of the lecture. Each test can be taken once. In the pre-test you see your total and your result by topic; the correct answers open after the post-test. The lecturer scores the open-ended question."},
+  testP_base:{tr:"Ön testi dersten önce, son testi dersin son 10 dakikasında çözün. Her test bir kez çözülür. Ön testte toplam puanınızı ve konu başına sonucunuzu görürsünüz; doğru cevaplar son testten sonra açılır.",en:"Take the pre-test before the lecture and the post-test in the last 10 minutes of the lecture. Each test can be taken once. In the pre-test you see your total and your result by topic; the correct answers open after the post-test."},
+  testP_open:{tr:" Açık uçlu soruyu eğitimci puanlar.",en:" The lecturer scores the open-ended question."},
   testP_mid:{tr:" Dersin ortasında süreli bir mini quiz vardır.",en:" There is a timed mini-quiz in the middle of the lecture."},
   testP_late:{tr:" Son testten {n} gün sonra aynı sorularla gecikmeli test açılır.",en:" A delayed test with the same questions opens {n} days after the post-test."}
 };
@@ -80,12 +89,14 @@ const LU="ABCDEFGH", ll="abcdefgh", r2=v=>Math.round(v*100)/100, nf=v=>dec(r2(v)
 const MODES=["pre","mid","post","late"].filter(m=>TESTS[m]);
 const setOf=m=>m==="mid"?QUIZ_MID:QUIZ;
 const isAuto=q=>q.type!=="open";
+const HAS_OPEN=QUIZ.some(q=>!isAuto(q));
 const maxOf=set=>r2(set.filter(isAuto).reduce((a,q)=>a+q.pts,0));
 const nOf=q=>q.type==="mcq"?1:q.type==="match"?tx(q.left).length:q.type==="fill"?q.blanks.length:tx(q.o).length;
 let ST=store.get(KST); if(!ST||typeof ST!=="object") ST={}; ["pre","mid","post","late"].forEach(m=>{if(!(m in ST)) ST[m]=null;});
 const saveST=()=>store.set(KST,ST);
-let qmode=MODES[0], ord={}, ordT={}, warned=false, devMem=null;
-UI.testP={tr:QT.testP_base.tr+(TESTS.mid?QT.testP_mid.tr:"")+(TESTS.late?QT.testP_late.tr.replace("{n}",LATE_DAYS):""),en:QT.testP_base.en+(TESTS.mid?QT.testP_mid.en:"")+(TESTS.late?QT.testP_late.en.replace("{n}",LATE_DAYS):"")};
+let qmode=MODES[0], seq={}, warned=false, devMem=null;   // seq[i] = rows of order item i in the order they were tapped
+const ordAns=(q,i)=>{ const s=seq[i]||[]; return s.concat(tx(q.o).map((_,k)=>k).filter(k=>!s.includes(k))); };   // steps without a number go to the end
+UI.testP={tr:QT.testP_base.tr+(HAS_OPEN?QT.testP_open.tr:"")+(TESTS.mid?QT.testP_mid.tr:"")+(TESTS.late?QT.testP_late.tr.replace("{n}",LATE_DAYS):""),en:QT.testP_base.en+(HAS_OPEN?QT.testP_open.en:"")+(TESTS.mid?QT.testP_mid.en:"")+(TESTS.late?QT.testP_late.en.replace("{n}",LATE_DAYS):"")};
 UI.mode_pre=UI.pre; UI.mode_post=UI.post; UI.mode_mid={tr:"Mini quiz",en:"Mini-quiz"}; UI.mode_late={tr:"Gecikmeli test",en:"Delayed test"};
 function countWords(s){return (s||"").split(/[\s,;:.!?()\/\-–—>→←↑↓=+]+/).filter(w=>/\p{L}{2,}|\d/u.test(w)).length;}
 const CODE_RE=/^PHY-[A-Z2-9]{4}$/;
@@ -130,7 +141,16 @@ function topics(set,rec){
 }
 const topicStr=(set,rec)=>topics(set,rec).map(x=>`${x.label}: ${Math.round(x.pc*100)}%`).join(" · ");
 const selfOf=(set,rec)=>set.map((q,i)=>q.type==="open"?r2((rec.self[i]||[]).filter(Boolean).length*q.pts/tx(q.rubric).length):null);
-const totalStr=(set,rec)=>`${nf(rec.auto)}/${nf(maxOf(set))}`;
+/* Confidence points and gift (Q107-B, Q108-A, Q109-A): per automatic item "sure" = +2·s − 4·(1 − s), s = item score share
+   (fully right +2, fully wrong −4); "not sure" or no mark = 0. Gift: 4 points per test. Total = items + confidence + 4,
+   never below 0, at most 100. Topic feedback and item analysis use the item points only. Not used in the mini-quiz. */
+const GIFT=4;
+const confOf=(q,s,c)=>CONFIDENCE&&isAuto(q)&&c===1?r2(2*s-4*(1-s)):0;
+const confPts=(set,rec)=>r2(set.reduce((a,q,i)=>a+(isAuto(q)?confOf(q,(rec.qs[i]||0)/q.pts,rec.raw.conf[i]):0),0));
+const totMax=set=>Math.min(100,r2(maxOf(set)+(CONFIDENCE?2*set.filter(isAuto).length:0)+GIFT));
+const totalOf=(set,rec)=>cl(r2(rec.auto+confPts(set,rec)+GIFT),0,100);
+const sgn=v=>v>0?"+"+nf(v):v<0?"−"+nf(-v):"0";
+const totalStr=(set,rec)=>set===QUIZ_MID?`${nf(rec.auto)}/${nf(maxOf(set))}`:`${nf(totalOf(set,rec))}/${nf(totMax(set))}`;
 /* ----- rendering ----- */
 function renderModes(){
   const box=$("#qmode"); if(!box) return;
@@ -140,7 +160,7 @@ function renderModes(){
 function itemHtml(q,i,done){
   const o=q.o?tx(q.o):[], id=`${qmode}-${i}`; let body="";
   if(q.type==="mcq") body=`<div class="opts">${o.map((x,j)=>`<label class="opt" id="o${i}_${j}"><input type="radio" name="q${i}" value="${j}" id="r-${id}-${j}"><span><b>${LU[j]})</b> ${x}</span></label>`).join("")}</div>`;
-  if(q.type==="order") body=`<ol class="ord" id="ord${i}"></ol>`;
+  if(q.type==="order") body=`<div class="ordbox" id="ord${i}"></div>`;
   if(q.type==="match") body=`<div class="match">${tx(q.left).map((h,j)=>`<div class="mrow" id="m${i}_${j}"><label for="sel-${id}-${j}"><b>${j+1}.</b> ${h}</label><select id="sel-${id}-${j}"><option value="">${qt("choose")}</option>${o.map((x,k)=>`<option value="${k}">${ll[k]}) ${x}</option>`).join("")}</select></div>`).join("")}</div>`;
   if(q.type==="tf") body=`<div class="tfl">${o.map((x,j)=>`<div class="tfrow" id="tf${i}_${j}"><span><b>${ll[j]})</b> ${x}</span><span class="tfbtns"><label><input type="radio" name="tf${i}_${j}" value="1" id="tf-${id}-${j}-d"> ${qt("T")}</label><label><input type="radio" name="tf${i}_${j}" value="0" id="tf-${id}-${j}-y"> ${qt("F")}</label></span><div class="fix" id="fix${i}_${j}" hidden></div></div>`).join("")}</div>`;
   if(q.type==="fill"){ const sg=tx(q.segs); body=`<p class="filltext">`+sg.map((s,j)=>s+(j<q.blanks.length?`<span class="fblank" id="f${i}_${j}"><label class="sr" for="fl-${id}-${j}">${j+1}</label><select id="fl-${id}-${j}"><option value="">${j+1} …</option>${tx(q.blanks[j].o).map((x,k)=>`<option value="${k}">${x}</option>`).join("")}</select></span>`:"")).join("")+`</p>`; }
@@ -149,9 +169,17 @@ function itemHtml(q,i,done){
   const tag=`${i+1} · ${tx(q.tag)||qt("type_"+q.type)} · ${nf(q.pts)} ${qt("pts")}${isAuto(q)?"":" · "+qt("lecturerTag")}`;
   return `<div class="q" id="q${i}"><fieldset><legend><span class="qtag">${tag}</span>${tx(q.q)}</legend>${body}${conf}<div class="why" id="w${i}" hidden></div></fieldset></div>`;
 }
+/* Tap ordering (Q105-A): tap the steps in order; each tap shows the next number; tapping a numbered step removes its
+   number and the later numbers move down (Q115-A); "Clear order" starts again; steps without a number go to the end.
+   After checking, the steps are shown in the student's order (right / wrong marks per row). */
 function renderOrder(i,locked){
-  const q=setOf(qmode)[i], o=tx(q.o), ul=document.getElementById("ord"+i); if(!ul) return; const n=o.length;
-  ul.innerHTML=ord[i].map((idx,pos)=>`<li class="ordrow" id="ordrow${i}_${pos}"><span class="pos">${pos+1}</span><span class="otext"><b>${LU[idx]})</b> ${o[idx]}</span><span class="obtns"><button type="button" class="mini" data-q="${i}" data-mv="${pos}" data-d="-1" aria-label="${qt("up")}" ${pos===0||locked?"disabled":""}>↑</button><button type="button" class="mini" data-q="${i}" data-mv="${pos}" data-d="1" aria-label="${qt("down")}" ${pos===n-1||locked?"disabled":""}>↓</button></span></li>`).join("");
+  const q=setOf(qmode)[i], o=tx(q.o), box=document.getElementById("ord"+i); if(!box) return;
+  if(locked){ const r=ST[qmode].raw.ans[i];
+    box.innerHTML=`<ol class="ord">${r.map((idx,pos)=>`<li class="ordrow" id="ordrow${i}_${pos}"><span class="tnum on">${pos+1}</span><span class="otext"><b>${LU[idx]})</b> ${o[idx]}</span></li>`).join("")}</ol>`; return; }
+  const s=seq[i]||(seq[i]=[]);
+  box.innerHTML=`<p class="ordhint">${qt("ordHint")}</p><div class="tapord" role="group" aria-label="${qt("type_order")}">`+
+    o.map((x,k)=>{ const at=s.indexOf(k); return `<button type="button" class="tstep" data-q="${i}" data-tap="${k}" aria-pressed="${at>=0}"><span class="tnum">${at>=0?at+1:`<span class="sr">${qt("ordNone")}</span>`}</span><span class="otext"><b>${LU[k]})</b> ${x}</span></button>`; }).join("")+
+    `</div><div class="ordbar"><button type="button" class="btn ghost" data-oclear="${i}" ${s.length?"":"disabled"}>${qt("ordClear")}</button></div>`;
 }
 function gateHtml(){
   if(qmode==="pre"&&!ST.pre&&ST.post) return qt("preClosed");
@@ -170,9 +198,9 @@ function renderQuiz(){
   clearInterval(kTick); if(qmode==="mid") return renderKahoot();
   const set=setOf(qmode), rec=ST[qmode], done=!!rec, f=$("#quiz"); warned=false;
   const g=gateHtml(); if(g&&!done){ f.innerHTML=`<div class="q qnote">${g}</div>`; testNote(); renderCodeBox(); return; }
-  set.forEach((q,i)=>{ if(q.type==="order"){ ord[i]=done?rec.raw.ans[i].slice():tx(q.o).map((_,k)=>k); ordT[i]=done; } });
+  set.forEach((q,i)=>{ if(q.type==="order") seq[i]=[]; });
   const note=noteHtml();
-  f.innerHTML=(note?`<div class="q qnote" id="qnote">${note}</div>`:"")+set.map((q,i)=>itemHtml(q,i,done)).join("")+
+  f.innerHTML=(note?`<div class="q qnote" id="qnote">${note}</div>`:"")+`<div class="q scorebox" id="qscorebox" role="note">${qt(CONFIDENCE?"scoreBox":"scoreBoxGift")}</div>`+set.map((q,i)=>itemHtml(q,i,done)).join("")+
     `<div class="q"><div class="blankwarn" id="qwarn" role="alert" hidden></div><div class="score">${done?"":`<button class="btn" type="submit" id="qsubmit">${qt("check")}</button><button class="btn ghost" type="button" id="qclear">${qt("clear")}</button>`}<span id="qres"></span></div>`+
     `<div class="topics" id="qtopics" hidden></div><div class="surewrong" id="qsure" hidden></div><div class="compare" id="qcmp" style="margin-top:12px"></div>`+
     `<div class="fbform" id="fbform" hidden></div><div class="sendbox" id="sendbox" hidden><button class="btn" type="button" id="qsend">${qt("send")}</button><span id="sendmsg" role="status"></span></div></div>`;
@@ -193,20 +221,21 @@ function fillAnswers(set,rec){
   });
   $("#quiz").querySelectorAll("input:not([data-rb]):not([data-fb]),select").forEach(x=>x.disabled=true);
 }
-function wh(i,p,q,txt,link){const w=document.getElementById("w"+i); w.hidden=false; w.innerHTML=(p==null?"":`<b>${nf(p)}/${nf(q.pts)} ${qt("pts")}.</b> `)+txt+(link&&q.mod&&M[q.mod]?` <a href="#${q.mod}" data-go="${q.mod}">${qt("tryIt")}</a>`:"");}
+function wh(i,p,q,txt,link,cp){const w=document.getElementById("w"+i); w.hidden=false; w.innerHTML=(p==null?"":`<b>${nf(p)}/${nf(q.pts)} ${qt("pts")}${cp==null?"":" · "+qt("totConf")+" "+sgn(cp)}.</b> `)+txt+(link&&q.mod&&M[q.mod]?` <a href="#${q.mod}" data-go="${q.mod}">${qt("tryIt")}</a>`:"");}
 function markKey(set,rec){
-  set.forEach((q,i)=>{ const r=rec.raw.ans[i], o=q.o?tx(q.o):[], s=rec.qs[i];
+  set.forEach((q,i)=>{ const r=rec.raw.ans[i], o=q.o?tx(q.o):[], s=rec.qs[i], cp=CONFIDENCE&&isAuto(q)&&rec.raw.conf[i]===1?confOf(q,s/q.pts,1):null;
+    const W=(i,p,q,txt,link)=>wh(i,p,q,txt,link,cp);   // item line with the confidence points of this item
     if(q.type==="mcq"){ o.forEach((_,j)=>{const el=document.getElementById(`o${i}_${j}`); el.classList.toggle("right",j===q.a); el.classList.toggle("wrong",j===r&&j!==q.a);});
-      wh(i,s,q,(r===q.a?qt("right")+" ":qt("rightAns")+" "+LU[q.a]+") "+o[q.a]+". ")+tx(q.why),true); }
+      W(i,s,q,(r===q.a?qt("right")+" ":qt("rightAns")+" "+LU[q.a]+") "+o[q.a]+". ")+tx(q.why),true); }
     if(q.type==="order"){ const pos=k=>q.a.indexOf(k); r.forEach((idx,p)=>{ const okNext=p<r.length-1&&pos(r[p+1])===pos(idx)+1, okPrev=p>0&&pos(r[p-1])===pos(idx)-1; document.getElementById(`ordrow${i}_${p}`).classList.add(okNext||okPrev?"right":"wrong"); });
-      wh(i,s,q,qt("rightOrder")+" "+q.a.map(k=>LU[k]).join(" → ")+". "+qt("pairNote")+" "+tx(q.why),true); }
+      W(i,s,q,qt("rightOrder")+" "+q.a.map(k=>LU[k]).join(" → ")+". "+qt("pairNote")+" "+tx(q.why),true); }
     if(q.type==="match"){ q.a.forEach((k,j)=>document.getElementById(`m${i}_${j}`).classList.add(r[j]===k?"right":"wrong"));
-      wh(i,s,q,qt("rightMatch")+" "+q.a.map((k,j)=>(j+1)+"-"+ll[k]).join(", ")+". "+tx(q.why),true); }
+      W(i,s,q,qt("rightMatch")+" "+q.a.map((k,j)=>(j+1)+"-"+ll[k]).join(", ")+". "+tx(q.why),true); }
     if(q.type==="fill"){ q.blanks.forEach((b,j)=>document.getElementById(`f${i}_${j}`).classList.add(r[j]===b.a?"right":"wrong"));
-      wh(i,s,q,qt("rightFill")+" "+q.blanks.map((b,j)=>(j+1)+") "+tx(b.o)[b.a]).join(", ")+". "+tx(q.why),true); }
+      W(i,s,q,qt("rightFill")+" "+q.blanks.map((b,j)=>(j+1)+") "+tx(b.o)[b.a]).join(", ")+". "+tx(q.why),true); }
     if(q.type==="tf"){ const fx=tx(q.fix); q.a.forEach((a,j)=>{document.getElementById(`tf${i}_${j}`).classList.add(r[j]===a?"right":"wrong"); const el=document.getElementById(`fix${i}_${j}`); el.hidden=false; el.textContent=fx[j];});
-      wh(i,s,q,tx(q.why),true); }
-    if(q.type==="open") wh(i,null,q,tx(q.why),true);
+      W(i,s,q,tx(q.why),true); }
+    if(q.type==="open") W(i,null,q,tx(q.why),true);
   });
 }
 function showResult(set,rec){
@@ -227,7 +256,7 @@ function showResult(set,rec){
   $("#sendbox").hidden=false;
   if(!SHEET_URL){ $("#qsend").disabled=true; $("#sendmsg").innerHTML=`<span class="testmode">${qt("testMode")}</span>`; }
   else { if(rec.sent){ $("#qsend").disabled=true; $("#sendmsg").textContent=qt("sentBefore")+(rec.alias?" ("+rec.alias+")":""); }
-    else if(keyed) $("#sendmsg").textContent=qt("sendHint"); }
+    else if(keyed) $("#sendmsg").textContent=[HAS_OPEN?qt("sendHintOpen"):"",qmode==="post"&&(FEEDBACK||MINUTE)?qt("sendHintForm"):"",qt("sendHint")].filter(Boolean).join(" "); }
 }
 function renderFb(rec){
   const box=$("#fbform"); box.hidden=false; rec.fb=rec.fb||{}; rec.mp=rec.mp||{};
@@ -236,7 +265,8 @@ function renderFb(rec){
 }
 function updateTotal(){
   const rec=ST[qmode], el=$("#qres"); if(!rec||!el) return; const set=setOf(qmode);
-  el.innerHTML=`<span class="big">${totalStr(set,rec)}</span> <span style="color:var(--muted)">(${qt("autoNote")})</span>`;
+  const parts=[`${qt("totItems")} ${nf(rec.auto)}/${nf(maxOf(set))}`].concat(CONFIDENCE?[`${qt("totConf")} ${sgn(confPts(set,rec))}`]:[],[`${qt("totGift")} ${GIFT}`]);
+  el.innerHTML=`<span class="big">${qt("totT")} ${totalStr(set,rec)}</span> <span class="tparts">${parts.join(" · ")}</span>`+(HAS_OPEN?` <span class="tnote">(${qt("autoNote")})</span>`:"");
   set.forEach((q,i)=>{ if(q.type!=="open"||qmode==="pre") return; const s=document.getElementById("self"+i); if(s) s.textContent=qt("selfPts",{x:nf(selfOf(set,rec)[i]),m:nf(q.pts)}); });
   const n=$("#qnote"); if(n) n.innerHTML=noteHtml();
   showCompare(); testNote();
@@ -244,7 +274,7 @@ function updateTotal(){
 function showCompare(){
   const el=$("#qcmp"); if(!el) return; let h="";
   ["pre","mid","post","late"].forEach(m=>{ if(ST[m]) h+=`<span class="pill">${t(UI["mode_"+m])}: ${totalStr(setOf(m),ST[m])}</span>`; });
-  if(ST.pre&&ST.post){const d=r2(ST.post.auto-ST.pre.auto); h+=`<span class="pill" style="color:var(--ok)">${d>=0?"+":""}${nf(d)} ${qt("pts")}</span>`;}
+  if(ST.pre&&ST.post){const d=r2(totalOf(QUIZ,ST.post)-totalOf(QUIZ,ST.pre)); h+=`<span class="pill" style="color:var(--ok)">${d>=0?"+":""}${nf(d)} ${qt("pts")}</span>`;}
   el.innerHTML=h;
 }
 function testNote(){
@@ -258,7 +288,7 @@ function readRaw(set){
   const id=i=>`${qmode}-${i}`;
   const ans=set.map((q,i)=>{
     if(q.type==="mcq"){ const s=document.querySelector(`input[name=q${i}]:checked`); return s?+s.value:-1; }
-    if(q.type==="order") return ord[i].slice();
+    if(q.type==="order") return ordAns(q,i);
     if(q.type==="match") return tx(q.left).map((_,j)=>{const e=document.getElementById(`sel-${id(i)}-${j}`); return e&&e.value!==""?+e.value:null;});
     if(q.type==="fill") return q.blanks.map((_,j)=>{const e=document.getElementById(`fl-${id(i)}-${j}`); return e&&e.value!==""?+e.value:null;});
     if(q.type==="tf") return tx(q.o).map((_,j)=>{const e=document.querySelector(`input[name=tf${i}_${j}]:checked`); return e?e.value==="1":null;});
@@ -271,12 +301,12 @@ function blankList(set,raw){
   const b=[];
   set.forEach((q,i)=>{ const r=raw.ans[i], n=i+1;
     if(q.type==="mcq"&&r<0) b.push(n);
-    if(q.type==="order"&&!ordT[i]) b.push(qt("bOrder",{n}));
+    if(q.type==="order"){ const u=tx(q.o).length-(seq[i]||[]).length; if(u>0) b.push(qt("bOrder",{n,u})); }
     if((q.type==="match"||q.type==="fill"||q.type==="tf")&&r.some(v=>v===null)) b.push(n);
     if(q.type==="open"){ const w=countWords(r); if(w===0) b.push(n); else if(w<MINW) b.push(qt("bShort",{n})); } });
   return b;
 }
-const isEmpty=(set,raw)=>set.every((q,i)=>{ const r=raw.ans[i]; return q.type==="mcq"?r<0:q.type==="order"?!ordT[i]:q.type==="open"?!countWords(r):r.every(v=>v===null); });
+const isEmpty=(set,raw)=>set.every((q,i)=>{ const r=raw.ans[i]; return q.type==="mcq"?r<0:q.type==="order"?!(seq[i]||[]).length:q.type==="open"?!countWords(r):r.every(v=>v===null); });
 function finish(set,raw){
   const qs=grade(set,raw);
   ST[qmode]={raw, qs, auto:r2(qs.reduce((a,b)=>a+(b||0),0)), self:{}, fb:null, mp:null, sent:false, t:Date.now()};
@@ -298,7 +328,13 @@ $("#quiz").addEventListener("submit",e=>{
   }
   finish(set,r);
 });
-$("#quiz").addEventListener("click",e=>{const b=e.target.closest("[data-mv]"); if(!b||ST[qmode]) return; const i=+b.dataset.q, p=+b.dataset.mv, d=+b.dataset.d, tt=p+d, n=ord[i].length; if(tt<0||tt>=n) return; [ord[i][p],ord[i][tt]]=[ord[i][tt],ord[i][p]]; ordT[i]=true; renderOrder(i,false); const nb=document.querySelector(`[data-q="${i}"][data-mv="${tt}"][data-d="${d}"]`); if(nb&&!nb.disabled) nb.focus();});
+$("#quiz").addEventListener("click",e=>{ if(qmode==="mid"||ST[qmode]) return;
+  const c=e.target.closest("[data-oclear]");
+  if(c){ const i=+c.dataset.oclear; seq[i]=[]; renderOrder(i,false); const f=document.querySelector(`#ord${i} [data-tap]`); if(f) f.focus(); return; }
+  const b=e.target.closest("[data-tap]"); if(!b) return;
+  const i=+b.dataset.q, k=+b.dataset.tap, s=seq[i]||(seq[i]=[]), at=s.indexOf(k);
+  if(at>=0) s.splice(at,1); else s.push(k);          // a numbered step loses its number; later numbers move down
+  renderOrder(i,false); const nb=document.querySelector(`#ord${i} [data-tap="${k}"]`); if(nb) nb.focus(); });
 $("#quiz").addEventListener("change",e=>{ const el=e.target, rec=ST[qmode]; if(!rec||rec.sent) return;
   if(el.dataset.rb!==undefined){ const i=+el.dataset.q; rec.self[i]=rec.self[i]||[]; rec.self[i][+el.dataset.rb]=el.checked; saveST(); updateTotal(); }
   if(el.dataset.fb!==undefined){ rec.fb=rec.fb||{}; rec.fb[el.dataset.fb]=+el.value; saveST(); } });
@@ -441,7 +477,46 @@ function boardLoad(){
     $("#bnote").textContent=bt("upd")+": "+new Date().toLocaleTimeString(LANG==="tr"?"tr-TR":"en-US");
   }).catch(()=>{ const n=$("#bnote"); if(n) n.textContent=bt("err"); });
 }
-/* ----- sending (schema 2: [column name, value] pairs; null = create the column, write nothing) ----- */
+/* ----- M2 "predict first" (Q100-A, Q122-A, Q123-A). A module with predict:{q,set,a,why} shows a box above its controls:
+   the student picks ↑ / ↓ / no change and presses "Lock" (one try). Lock applies the task's settings like a preset and runs
+   the module; the box then shows the prediction, the right answer and the explanation. "Skip" uses the try and shows the
+   answer and the explanation. 0 points. The post-test row sends "M2 answers" (U up, D down, S no change, - skipped / not
+   done; one letter per task in module order) and "M2 right" (number of right predictions). ----- */
+const KM2=PFX+"-m2", ARW={up:"↑",down:"↓",same:"="};
+const M2_TASKS=PREDICT?ORDER.filter(k=>M[k]&&M[k].predict):[];
+let M2=store.get(KM2); if(!M2||typeof M2!=="object") M2={};
+const M2T={title:{tr:"Önce tahmin edin",en:"Predict first"}, noPts:{tr:"(puan yok)",en:"(no points)"},
+  o_up:{tr:"Artar",en:"Rises"}, o_down:{tr:"Azalır",en:"Falls"}, o_same:{tr:"Değişmez",en:"No change"},
+  lock:{tr:"Kilitle",en:"Lock"}, skip:{tr:"Atla",en:"Skip"}, yours:{tr:"Tahmininiz",en:"Your prediction"}, answer:{tr:"Doğru cevap",en:"Right answer"},
+  skipped:{tr:"Atladınız.",en:"You skipped this task."},
+  note:{tr:"Tek deneme. Kilitleyince ayarlar uygulanır ve modül çalışır; sonra doğru cevabı görürsünüz.",en:"One try. When you lock, the settings are applied and the module runs; then you see the right answer."}};
+const m2t=k=>t(M2T[k]), m2Opt=a=>ARW[a]+"\u00a0"+m2t("o_"+a);   // no line break between arrow and word
+function renderPredict(){
+  const box=$("#m-predict"); if(!box) return; const m=M[cur], P=m&&M2_TASKS.includes(cur)?m.predict:null;
+  box.hidden=!P; if(!P){ box.innerHTML=""; return; }
+  const r=M2[cur], head=`<div class="phead"><b>${m2t("title")}</b> <small>${m2t("noPts")}</small></div><p class="pq">${t(P.q)}</p>`;
+  if(r){ const ok=r.p===P.a;
+    box.innerHTML=head+`<p class="pres" role="status">`+(r.p?`${m2t("yours")}: <b>${m2Opt(r.p)}</b> · ${m2t("answer")}: <b>${m2Opt(P.a)}</b> <span class="tm ${ok?"ok":"bad"}">${ok?"✓":"✗"}</span>`
+      :`${m2t("skipped")} ${m2t("answer")}: <b>${m2Opt(P.a)}</b>`)+`</p><p class="pwhy">${t(P.why)}</p>`; return; }
+  box.innerHTML=head+`<div class="popts" role="radiogroup" aria-label="${m2t("yours")}">${["up","down","same"].map(a=>`<label><input type="radio" name="m2opt" value="${a}"> ${m2Opt(a)}</label>`).join("")}</div>`+
+    `<div class="pbtns"><button type="button" class="btn" id="m2lock" disabled>${m2t("lock")}</button><button type="button" class="btn ghost" id="m2skip">${m2t("skip")}</button></div><small class="pnote">${m2t("note")}</small>`;
+  box.querySelectorAll("input[name=m2opt]").forEach(x=>x.onchange=()=>{ $("#m2lock").disabled=false; });
+  $("#m2lock").onclick=()=>{ const s=box.querySelector("input[name=m2opt]:checked"); if(s) m2Done(s.value); };
+  $("#m2skip").onclick=()=>m2Done(null);
+}
+function m2Done(p){
+  const m=M[cur], P=m.predict; M2[cur]={p, t:Date.now()}; store.set(KM2,M2);
+  if(p){ Object.keys(P.set||{}).forEach(id=>unPreset(m,id)); Object.assign(C,P.set||{}); buildControls(m);   // like a preset
+    if(paused){ paused=false; $("#b-pause").textContent=t(UI.pause); } uiTick(true); }                        // run the module
+  renderPredict(); const r=$("#m-predict .pres"); if(r){ r.tabIndex=-1; r.focus(); }
+}
+const m2Answers=()=>M2_TASKS.map(k=>{ const r=M2[k]; return r&&r.p?{up:"U",down:"D",same:"S"}[r.p]:"-"; }).join("");
+const m2Right=()=>M2_TASKS.filter(k=>M2[k]&&M2[k].p===M[k].predict.a).length;
+/* ----- sending (schema 2: [column name, value] pairs; null = create the column, write nothing) -----
+   Column order (engine 2026-11f): per item Q<n> <type> (<pts>), A<n>, K<n> parts (tf, match, fill, order), C<n> sure
+   (open item: Q<n> open: lecturer, notes, self-check, words, answer) → Auto total (84) → Confidence points → Gift (4) →
+   Total (100) → [Total incl. lecturer: only with an open item] → Topics → form answers → [M2 answers, M2 right] →
+   Program → Item codes → Version → Language. */
 function answerStr(q,r){
   if(q.type==="mcq") return r>=0?LU[r]:"-";
   if(q.type==="order") return r.map(k=>LU[k]).join("");
@@ -449,6 +524,22 @@ function answerStr(q,r){
   if(q.type==="tf") return r.map(v=>v===null?"-":(v?"D":"Y")).join("");
   return r;
 }
+/* Part marks "K<n> parts" (item analysis of sub-parts): one 1/0 per tf statement, match row, fill blank, or order key pair
+   (pair k = key steps k and k+1 next to each other in the student's order; the same pairs as the scoring). */
+function partsStr(q,r){
+  if(q.type==="order"){ const at=k=>r.indexOf(k); return q.a.slice(0,-1).map((k,j)=>at(q.a[j+1])===at(k)+1?1:0).join(""); }
+  if(q.type==="tf"||q.type==="match"||q.type==="fill") return Array.from({length:nOf(q)},(_,j)=>unitOK(q,r,j)?1:0).join("");
+  return null;
+}
+/* Item code (Q99-A, Q119-A): 6 characters made from the item's type, stem, options / rows / blanks and key, both languages.
+   Any edit of these (even a typo fix) gives a new code; the explanation (why, fix), module and points do not count.
+   "Item codes" = "<module>:<code>" per item, in item order (Q118-A); the item analysis pools rows by code. */
+function itemCode(q){
+  const s=JSON.stringify([q.type,q.q,q.o||null,q.left||null,q.segs||null,q.blanks?q.blanks.map(b=>[b.o,b.a]):null,q.a===undefined?null:q.a]);
+  let h=0x811c9dc5; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; }   // FNV-1a, 32 bit
+  const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let c=""; h>>>=2; for(let k=0;k<6;k++){ c+=A[h&31]; h>>>=5; } return c;
+}
+const itemCodes=set=>set.map(q=>q.mod+":"+itemCode(q)).join(" ");
 function payloadOf(mode,rec,alias){
   if(mode==="mid") return kPayload(rec,alias);
   const set=setOf(mode), cols=[], self=selfOf(set,rec), keyed=mode!=="pre";
@@ -458,15 +549,21 @@ function payloadOf(mode,rec,alias){
       cols.push([`Q${n} self-check (feedback)`,keyed?self[i]:null],[`Q${n} words`,countWords(r)],[`A${n} open answer`,r]);
     } else {
       cols.push([`Q${n} ${q.type} (${nf(q.pts)})`,rec.qs[i]],[`A${n}`,answerStr(q,r)]);
+      const k=partsStr(q,r); if(k!==null) cols.push([`K${n} parts`,k]);
       if(CONFIDENCE){ const c=rec.raw.conf[i]; cols.push([`C${n} sure`,c===1?"E":c===0?"D":"-"]); }
     } });
-  cols.push([`Auto total (${nf(maxOf(set))})`,rec.auto],[`Total incl. lecturer`,null],["Topics",topicStr(set,rec)]);
+  cols.push([`Auto total (${nf(maxOf(set))})`,rec.auto]);
+  if(CONFIDENCE) cols.push(["Confidence points",confPts(set,rec)]);
+  cols.push([`Gift (${GIFT})`,GIFT],[`Total (${nf(totMax(set))})`,totalOf(set,rec)]);
+  if(HAS_OPEN) cols.push([`Total incl. lecturer`,null]);   // lecturer columns only when the test has an open item
+  cols.push(["Topics",topicStr(set,rec)]);
   // form columns are sent with every test (empty except after the post-test), so the column order stays fixed
   const isPost=mode==="post";
   if(FEEDBACK) FB.forEach(x=>cols.push([`Feedback: ${x.k} (1-5)`,isPost?((rec.fb||{})[x.k]??""):null]));
   if(MINUTE) MP.forEach(x=>cols.push([x.k==="learned"?"Learned most":"Still unclear",isPost?((rec.mp||{})[x.k]||""):null]));
+  if(M2_TASKS.length) cols.push(["M2 answers",isPost?m2Answers():null],["M2 right",isPost?m2Right():null]);   // sent with the post-test row
   if(PROGRAMS.length>1) cols.push(["Program",prog()]);
-  cols.push(["Version",SURUM],["Language",LANG]);
+  cols.push(["Item codes",itemCodes(set)],["Version",SURUM],["Language",LANG]);
   return {schema:2, course:COURSE, alias, test:mode, cols};
 }
 async function sendResult(){
@@ -479,23 +576,35 @@ async function sendResult(){
     document.querySelectorAll("[data-rb],[data-fb]").forEach(x=>x.disabled=true); document.querySelectorAll("[data-mp]").forEach(x=>x.readOnly=true);
   }catch(err){ btn.disabled=false; $("#sendmsg").textContent=qt("sendFail"); }
 }
-function resetCheck(){ if(location.hash!=="#test-sifirla") return; if(confirm(qt("resetQ"))){ ST={pre:null,mid:null,post:null,late:null}; saveST(); store.set(KRUN,null); qmode=MODES[0]; renderModes(); } try{history.replaceState(null,"","#test");}catch(e){} }
+function resetCheck(){ if(location.hash!=="#test-sifirla") return; if(confirm(qt("resetQ"))){ ST={pre:null,mid:null,post:null,late:null}; saveST(); store.set(KRUN,null); M2={}; store.set(KM2,null); qmode=MODES[0]; renderModes(); } try{history.replaceState(null,"","#test");}catch(e){} }
 resetCheck(); window.addEventListener("hashchange",resetCheck);
-/* ----- format check for template authors: problems are listed in the browser console ----- */
+/* ----- format check for template authors: problems are listed in the browser console -----
+   Rules (engine 2026-11f): all item points + 2 per automatic item (confidence) + 4 (gift) = 100;
+   order: 4–7 rows and pts = 4 × (rows − 1); every item has a module (mod); tr and en have the same length. */
 function checkQuiz(set,name){
+  const nA=set.filter(isAuto).length, sum=r2(set.reduce((a,q)=>a+(q.pts||0),0));
+  if(r2(sum+2*nA+4)!==100) console.error(`${name}: item points ${nf(sum)} + 2 × ${nA} automatic items + 4 = ${nf(r2(sum+2*nA+4))}; it must be 100 (default: 84 points in 6 automatic items)`);
   set.forEach((q,i)=>{ const err=m=>console.error(`${name}[${i}] (${q.type}): ${m}`); const L=x=>(tx(x)||[]).length;
     if(!q.pts||q.pts<=0) err("pts missing");
+    if(q.type==="order"){ const n=L(q.o); if(n<4||n>7) err("order: use 4–7 rows"); if(r2(q.pts)!==4*(n-1)) err(`order: pts must be 4 × (rows − 1) = ${4*(n-1)} (4 points per consecutive pair)`); }
     if(!q.mod||!M[q.mod]) err("mod is not a module key: "+q.mod);
     ["tr","en"].forEach(lg=>{ const n=x=>x&&x[lg]?x[lg].length:-1;
       if(q.o&&q.o.tr&&n(q.o)!==q.o.tr.length) err("o."+lg+" length differs from o.tr");
       if(q.type==="fill"&&n(q.segs)!==q.blanks.length+1) err(`segs.${lg} must have ${q.blanks.length+1} pieces (one more than the blanks)`); });
     if(q.type==="mcq"&&!(q.a>=0&&q.a<L(q.o))) err("a out of range");
-    if(q.type==="order"&&q.a.slice().sort().join()!==L(q.o)&&q.a.slice().sort((x,y)=>x-y).join()!==[...Array(L(q.o)).keys()].join()) err("a is not an order of all rows");
+    if(q.type==="order"&&q.a.slice().sort((x,y)=>x-y).join()!==[...Array(L(q.o)).keys()].join()) err("a is not an order of all rows");
     if(q.type==="match"&&(q.a.length!==L(q.left)||q.a.some(k=>k<0||k>=L(q.o)))) err("a must give one option per left item");
     if(q.type==="tf"&&(q.a.length!==L(q.o)||L(q.fix)!==L(q.o))) err("a and fix need one entry per statement");
     if(q.type==="fill"&&q.blanks.some(b=>!(b.a>=0&&b.a<L(b.o)))) err("a blank answer is out of range");
     if(q.type==="open"&&L(q.rubric)<2) err("rubric needs steps");
     if(q.mods&&q.mods.some(m=>!M[m])) err("mods has an unknown module key"); });
 }
-checkQuiz(QUIZ,"QUIZ"); if(TESTS.mid) checkMid();
+function checkPredict(){   // M2 tasks: q and why in tr and en, a = up | down | same, set uses the module's control ids
+  M2_TASKS.forEach(k=>{ const P=M[k].predict, err=x=>console.error(`M.${k}.predict: ${x}`), ids=M[k].controls.map(c=>c.id);
+    if(!P.q||!P.q.tr||!P.q.en) err("q needs tr and en"); if(!P.why||!P.why.tr||!P.why.en) err("why needs tr and en");
+    if(!["up","down","same"].includes(P.a)) err('a must be "up", "down" or "same"');
+    Object.keys(P.set||{}).forEach(id=>{ if(!ids.includes(id)) err("set: unknown control id "+id); }); });
+  if(M2_TASKS.length&&(M2_TASKS.length<2||M2_TASKS.length>3)) console.warn(`M2: the design is 2–3 prediction tasks per simulator (one per main module); this file has ${M2_TASKS.length}.`);
+}
+checkQuiz(QUIZ,"QUIZ"); if(TESTS.mid) checkMid(); checkPredict();
 renderModes(); renderCodeBox(); testNote();

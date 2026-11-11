@@ -1,8 +1,12 @@
 /* ---------------- TEST ----------------
-   EXAMPLE QUESTIONS: replace them (format: see TEST at the top). One example per item type.
-   Default points: mcq 5 · tf 10 (5 statements) · order 15 · match 15 · fill 15 (5 blanks) · open 40 = 100 (automatic 60). */
+   EXAMPLE QUESTIONS: replace them (format: see TEST at the top). Default test: 6 automatic items, 84 points:
+     mcq 4 · tf 10 (5 statements, 2 each) · order 16 (5 steps) · match 15 (5 rows, 3 each) · fill 15 (5 blanks, 3 each)
+     · order 24 (mechanism chain, 7 steps; on another module than the 16-point order item).
+   Every order item: 4 points per consecutive pair (16 = 5 steps, 24 = 7 steps).
+   Total = items (84) + confidence points (−24 to +12) + 4-point gift = 100 at most; never below 0.
+   The open type stays for special cases (scored by the lecturer); the default test has no open item. */
 const QUIZ=[
-  {type:"mcq",pts:5,mod:"ornek1",
+  {type:"mcq",pts:4,mod:"ornek1",
    q:{tr:"Negatif geri bildirimle düzenlenen bir değişken ayar noktasının üstüne çıkıyor. Etkileyici ne yapar?",en:"A variable regulated by negative feedback rises above its set point. What does the effector do?"},
    o:{tr:["Değişkeni daha da yükseltir","Değişkeni ayar noktasına doğru geri çeker","Algılayıcının çalışmasını durdurur","Ayar noktasını kalıcı olarak yükseltir","Hiçbir yanıt vermez"],
       en:["It raises the variable even further","It pulls the variable back toward the set point","It stops the sensor from working","It raises the set point permanently","It gives no response"]},a:1,
@@ -14,11 +18,11 @@ const QUIZ=[
    fix:{tr:["Doğru: direnç 1/r⁴ ile değişir; 2⁴ = 16.","Yanlış: değişikliği küçültür; büyüten pozitif geri bildirimdir.","Doğru: akım = basınç farkı / direnç.","Yanlış: sapma küçülür ama çoğu zaman bir miktar kalır (kazanç sonsuz değildir).","Doğru: pozitif geri bildirim değişikliği büyütür; negatif geri bildirim küçültür."],
         en:["True: resistance changes with 1/r⁴; 2⁴ = 16.","False: it makes the change smaller; positive feedback makes it larger.","True: flow = pressure difference / resistance.","False: the deviation becomes smaller but usually some remains (the gain is not infinite).","True: positive feedback makes the change larger; negative feedback makes it smaller."]},
    why:{tr:"Her ifade eşit puan alır.",en:"Each statement earns equal points."}},
-  {type:"order",pts:15,mod:"ornek1",
-   q:{tr:"Bir negatif geri bildirim döngüsünün basamaklarını doğru sıraya koyun. Okları kullanarak satırları taşıyın.",en:"Put the steps of a negative feedback loop in the correct order. Use the arrows to move the rows."},
-   o:{tr:["Kontrol merkezi ölçülen değeri ayar noktasıyla karşılaştırır","Bir bozucu etki değişkeni ayar noktasından uzaklaştırır","Değişken ayar noktasına yaklaşır","Algılayıcı değişikliği ölçer","Etkileyici düzeltici yanıt verir"],
-      en:["The control center compares the measured value with the set point","A disturbance moves the variable away from its set point","The variable moves back toward the set point","The sensor measures the change","The effector gives a corrective response"]},a:[1,3,0,4,2],
-   why:{tr:"Bozucu etki → algılayıcı → kontrol merkezi → etkileyici → değişken ayar noktasına döner.",en:"Disturbance → sensor → control center → effector → the variable returns toward the set point."}},
+  {type:"order",pts:16,mod:"ornek2",
+   q:{tr:"Damar 1 daralınca olanları doğru sıraya koyun.",en:"Put the events that follow the narrowing of vessel 1 in the correct order."},
+   o:{tr:["Damar 1'in direnci artar","Basınç farkı sabitken akım azalır","Damar 1'in duvarındaki düz kas kasılır","Seri bağlı iki damarın toplam direnci artar","Damar 1'in yarıçapı azalır"],
+      en:["The resistance of vessel 1 rises","At a constant pressure difference, flow falls","The smooth muscle in the wall of vessel 1 contracts","The total resistance of the two vessels in series rises","The radius of vessel 1 falls"]},a:[2,4,0,3,1],
+   why:{tr:"Düz kas kasılır → yarıçap azalır → damar 1'in direnci artar (direnç 1/r⁴ ile değişir) → seri dirençler toplandığı için toplam direnç artar → akım = basınç farkı / direnç olduğundan akım azalır.",en:"Smooth muscle contracts → the radius falls → the resistance of vessel 1 rises (resistance changes with 1/r⁴) → series resistances add, so the total resistance rises → flow = pressure difference / resistance, so flow falls."}},
   {type:"match",pts:15,mod:"ornek1",
    q:{tr:"Her terimi tanımıyla eşleştirin. Bir seçenek açıkta kalacak.",en:"Match each term with its definition. One option will be left over."},
    left:{tr:["Algılayıcı","Kontrol merkezi","Etkileyici","Ayar noktası","Pozitif geri bildirim"],en:["Sensor","Control center","Effector","Set point","Positive feedback"]},
@@ -35,13 +39,18 @@ const QUIZ=[
            {o:{tr:["toplamına","farkına","çarpımına"],en:["sum","difference","product"]},a:0},
            {o:{tr:["küçültecek","büyütecek","değiştirmeyecek"],en:["reduces","enlarges","does not change"]},a:0}],
    why:{tr:"Akım = basınç farkı / direnç; direnç 1/r⁴ ile değişir; seri dirençler toplanır; negatif geri bildirim sapmayı küçültür.",en:"Flow = pressure difference / resistance; resistance changes with 1/r⁴; series resistances add; negative feedback reduces the deviation."}},
-  {type:"open",pts:40,mod:"ornek1",
-   q:{tr:"Bir negatif geri bildirim döngüsünü bir örnekle adım adım açıklayın.",en:"Explain a negative feedback loop step by step, using an example."},
-   ph:{tr:"Örneğin: Bozucu etki → … → …",en:"For example: disturbance → … → …"},
-   rubric:{tr:["Bir bozucu etki değişkeni ayar noktasından uzaklaştırır","Algılayıcı değişikliği ölçer","Kontrol merkezi değeri ayar noktasıyla karşılaştırır ve etkileyiciyi yönetir","Etkileyicinin yanıtı değişkeni ayar noktasına geri getirir"],
-           en:["A disturbance moves the variable away from its set point","The sensor measures the change","The control center compares the value with the set point and directs the effector","The effector's response brings the variable back toward the set point"]},
-   why:{tr:"Cevabınızı ölçütle karşılaştırın. Bu soruyu eğitimci, her basamak için tam / kısmen / yok olarak puanlar.",en:"Compare your answer with the guide. The lecturer scores this question as full / partial / none for each step."}}
+  {type:"order",pts:24,mod:"ornek1",
+   q:{tr:"Bir negatif geri bildirim döngüsünün basamaklarını doğru sıraya koyun.",en:"Put the steps of a negative feedback loop in the correct order."},
+   o:{tr:["Kontrol merkezi ölçülen değeri ayar noktasıyla karşılaştırır","Bir bozucu etki değişkeni ayar noktasından uzaklaştırır","Değişken ayar noktasına yaklaşır","Algılayıcı kontrol merkezine sinyal gönderir (afferent yol)","Algılayıcı değişikliği ölçer","Etkileyici düzeltici yanıt verir","Kontrol merkezi etkileyiciye sinyal gönderir (efferent yol)"],
+      en:["The control center compares the measured value with the set point","A disturbance moves the variable away from its set point","The variable moves back toward the set point","The sensor sends a signal to the control center (afferent pathway)","The sensor measures the change","The effector gives a corrective response","The control center sends a signal to the effector (efferent pathway)"]},a:[1,4,3,0,6,5,2],
+   why:{tr:"Bozucu etki → algılayıcı ölçer → afferent yol → kontrol merkezi karşılaştırır → efferent yol → etkileyici yanıt verir → değişken ayar noktasına döner.",en:"Disturbance → the sensor measures → afferent pathway → the control center compares → efferent pathway → the effector responds → the variable returns toward the set point."}}
 ];
+/* OPEN ITEM (special cases only; scored by the lecturer in the Sheet). Example format:
+  {type:"open",pts:26,mod:"ornek1",
+   q:{tr:"…",en:"…"}, ph:{tr:"Örneğin: …",en:"For example: …"},
+   rubric:{tr:["step 1","step 2","step 3","step 4"],en:[…]},
+   why:{tr:"Cevabınızı ölçütle karşılaştırın. Bu soruyu eğitimci, her basamak için tam / kısmen / yok olarak puanlar.",en:"Compare your answer with the guide. The lecturer scores this question as full / partial / none for each step."}}
+  With an open item the points rule still holds: all item points + 2 per automatic item + 4 = 100. */
 /* M6 MINI-QUIZ (Kahoot style; used when TESTS.mid is true). 4–5 quick items, one try, timed on the phone.
    Types: mcq · tf (1 statement) · match (2 pairs, 1 option left over) · fill (1 blank).
    Time: tf 10 s · mcq 20 s · fill 20 s · match 30 s (sec:* to change).

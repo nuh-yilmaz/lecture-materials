@@ -41,7 +41,7 @@ function modText(){
   $("#m-legend").innerHTML=m.series.map(s=>`<span><i style="background:var(${s.c})"></i>${t(s.n)}: <span class="v" id="lv-${s.k}">–</span></span>`).join("");
   $("#m-chartbox").hidden=!m.series.length;
   $("#m-drawbox").hidden=!m.draw; if(m.draw) $("#draw").style.height=(m.draw.h||260)+"px";
-  lastNowHTML="";
+  lastNowHTML=""; renderPredict();
 }
 function open(key){
   if(key==="board"){ showBoard(); return; }                         // leaderboard for the projector

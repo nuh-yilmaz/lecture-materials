@@ -68,6 +68,9 @@ M.ornek2={
   sub:{tr:"Akım = basınç farkı / direnç. Yarıçap küçülünce direnç çok artar.",en:"Flow = pressure difference / resistance. When the radius falls, resistance rises steeply."},
   card:{tr:"Bloklar: hazır durum düğmeleri, Guyton ↔ Ganong anahtarı, denklem paneli, gösterge, pay çubuğu ve çubuk listesi.",en:"Blocks: preset buttons, Guyton ↔ Ganong switch, equation panel, gauge, share bar, and bar list."},
   init:()=>({q:1,R:1,R1:1,R2:1}),
+  predict:{q:{tr:"Damar yarıçapları normalken basınç farkı iki katına çıkarsa akım ne olur?",en:"If the pressure difference doubles while both radii stay normal, what happens to flow?"},
+    set:{dp:2,r1:1,r2:1}, a:"up",
+    why:{tr:"Akım = basınç farkı / direnç. Yarıçaplar değişmediği için direnç aynı kalır; basınç farkı iki katına çıkınca akım da iki katına çıkar.",en:"Flow = pressure difference / resistance. The radii do not change, so resistance stays the same; when the pressure difference doubles, flow doubles too."}},
   controls:[
     {type:"preset",id:"scen",label:{tr:"Hazır durum",en:"Preset"},value:0,options:[
       {label:{tr:"Normal",en:"Normal"},set:{dp:1,r1:1,r2:1}},

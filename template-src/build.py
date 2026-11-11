@@ -86,6 +86,31 @@ body.boardon{overflow:hidden}
 #board .bempty{display:block;font-size:20px;color:var(--muted)}
 #board .bnote{color:var(--muted);margin-top:16px}
 #board .bitems{font-size:18px;font-weight:700;margin-top:18px}
+/* M2 predict first (2026-11f) */
+.predict{background:var(--surface);border:2px solid var(--navy);border-radius:var(--r);padding:14px;display:grid;gap:8px;margin-bottom:12px}
+.predict .phead small{color:var(--muted)}
+.predict .pq{margin:0;font-weight:700}
+.popts{display:flex;flex-wrap:wrap;gap:8px}
+.popts label{display:inline-flex;gap:6px;align-items:center;min-height:44px;padding:8px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);cursor:pointer;font-weight:600}
+.popts label:has(input:checked){border-color:var(--navy);outline:2px solid var(--navy)}
+.pbtns{display:flex;flex-wrap:wrap;gap:8px}
+.predict .pnote{color:var(--muted)}
+.predict .pres{margin:0} .predict .pwhy{margin:0;color:var(--ink)}
+/* Test 2026-11f: scoring box, total line */
+.scorebox{border:2px solid var(--navy);background:color-mix(in srgb,var(--navy) 9%,var(--surface));font-weight:600;font-size:15px;line-height:1.5}
+.score .tparts{color:var(--muted);font-size:15px;font-weight:600;white-space:nowrap}
+.score .tnote{color:var(--muted);font-size:14px}
+/* Test 2026-11f: tap ordering */
+.ordhint{margin:2px 0 8px;font-size:14px;color:var(--muted)}
+.tapord{display:grid;gap:8px}
+.tstep{display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;align-items:center;width:100%;min-height:48px;padding:8px 10px;font:inherit;text-align:left;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;cursor:pointer;touch-action:manipulation}
+.tstep:hover{border-color:var(--navy)}
+.tstep:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.tstep[aria-pressed="true"]{border-color:var(--navy);background:var(--surface-2)}
+.tnum{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:2px dashed var(--line);font-family:var(--f-mono);font-weight:700;color:var(--navy)}
+.tstep[aria-pressed="true"] .tnum,.tnum.on{border:2px solid var(--navy);background:var(--navy);color:var(--surface)}
+.ordrow .tnum{width:28px;height:28px}
+.ordbar{margin-top:8px}
 @media (max-width:520px){.kopts{grid-template-columns:1fr}}
 @media (max-width:640px){.likert{grid-template-columns:1fr}}
 """
