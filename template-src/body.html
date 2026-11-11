@@ -1,0 +1,89 @@
+<header class="top"><div class="wrap">
+  <div>
+    <div class="eyebrow" data-i="eyebrow"></div>
+    <h1 data-i="title"></h1>
+    <p data-i="lead"></p>
+  </div>
+  <div class="seg" role="group" id="lang" data-ia="langAria">
+    <button type="button" data-l="tr" aria-pressed="true">TR</button><button type="button" data-l="en" aria-pressed="false">EN</button>
+  </div>
+</div></header>
+
+<nav class="tabs" data-ia="tabsAria"><div class="wrap" id="tabs" role="tablist"></div></nav>
+
+<main><div class="wrap">
+  <section class="view" id="v-giris">
+    <div class="card testnote" id="testnote" role="status" hidden></div>
+    <div class="intro">
+      <div class="card">
+        <h2 data-i="howTitle"></h2>
+        <p data-i="howP"></p>
+        <ol class="steps">
+          <li><span data-ih="st1"></span></li>
+          <li><span data-ih="st2"></span></li>
+          <li><span data-ih="st3"></span></li>
+          <li><span data-ih="st4"></span></li>
+        </ol>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+          <button class="btn" type="button" data-go="test" data-mode="pre" data-i="goPre"></button>
+          <button class="btn ghost" type="button" id="gofirst" data-go="" data-i="goFirst"></button>
+        </div>
+      </div>
+      <div class="card">
+        <h2 style="font-size:20px" data-i="seeTitle"></h2>
+        <p style="margin:6px 0 10px" data-i="seeP"></p>
+        <div class="node" style="max-width:240px">
+          <div class="nl" data-i="sampleL"></div><div class="ns" data-i="sampleS"></div>
+          <div class="nv" style="color:var(--signal)" data-i="sampleV"></div>
+          <div class="meter"><i style="width:80%;background:var(--signal)"></i></div>
+        </div>
+        <p style="margin:12px 0 0;font-size:14px;color:var(--muted)" data-i="seeNote"></p>
+        <h2 style="font-size:20px;margin-top:18px" data-i="srcTitle"></h2>
+        <p style="margin:6px 0 6px;font-size:14px;color:var(--muted)" data-i="srcP"></p>
+        <ul class="srclist">
+          <li>Hall, J. E., &amp; Hall, M. E. (2026). <i>Guyton and Hall textbook of medical physiology</i> (15th ed.). Elsevier.</li>
+          <li>Barrett, K. E., Barman, S. M., Brooks, H. L., &amp; Yuan, J. X.-J. (2025). <i>Ganong's review of medical physiology</i> (27th ed.). McGraw Hill.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="modgrid" id="modgrid"></div>
+  </section>
+
+  <section class="view" id="v-mod" hidden>
+    <div class="mod-head">
+      <div><div class="eyebrow" id="m-eyebrow"></div><h2 id="m-title"></h2><p id="m-sub"></p></div>
+      <div class="simbar">
+        <button class="btn ghost" type="button" id="b-pause"></button>
+        <button class="btn ghost" type="button" id="b-reset" data-i="reset"></button>
+        <div class="seg" role="group" data-ia="speedAria" id="speed">
+          <button type="button" data-s="1" aria-pressed="true">1×</button><button type="button" data-s="2" aria-pressed="false">2×</button><button type="button" data-s="4" aria-pressed="false">4×</button>
+        </div>
+      </div>
+    </div>
+    <div class="mod-grid">
+      <div class="col">
+        <div class="controls" id="m-controls"></div>
+        <div class="path"><h3 data-i="path"></h3><div id="m-path"></div><div id="m-fb"></div></div>
+        <div class="drawbox" id="m-drawbox" hidden><canvas id="draw" data-ia="drawAria" role="img"></canvas></div>
+        <div class="chartbox" id="m-chartbox"><canvas id="chart" data-ia="chartAria" role="img"></canvas><div class="legend" id="m-legend"></div></div>
+      </div>
+      <div class="col">
+        <div class="panel"><h3 data-i="now"></h3><div class="now" id="m-now" aria-live="polite"></div><div id="m-visual" style="margin-top:12px"></div></div>
+        <div class="daily" id="m-daily"></div>
+        <div class="panel"><h3 data-i="tasks"></h3><ul class="tasks" id="m-tasks"></ul></div>
+        <div class="panel note"><h3 data-i="note"></h3><div id="m-note"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-test" hidden>
+    <div class="mod-head">
+      <div><div class="eyebrow" data-i="testEyebrow"></div><h2 data-i="testTitle"></h2>
+      <p data-i="testP"></p></div>
+      <div class="seg" role="group" data-ia="testAria" id="qmode"></div>
+    </div>
+    <div class="q rumuz" id="rumuzbox" hidden></div>
+    <form class="quiz" id="quiz"></form>
+  </section>
+</div></main>
+<footer><div class="wrap" data-i="footer"></div></footer>

@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="tr"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sindirim Simülatörü</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+
+/* Düzen: üstte başlık bandı, yapışkan modül sekmeleri; her modül = solda kontrol + yol + grafik, sağda "Ne oluyor?" + ders notu */
+:root{
+  --bg:#F3F6FB; --surface:#FFFFFF; --surface-2:#E8EEF8; --ink:#0E1A33; --muted:#566381; --line:#D3DCEB;
+  --navy:#0B2A6B; --signal:#B3122E; --ok:#0F7A5F; --warn:#B45309;
+  --h1:#2457C5; --h2:#C2410C; --h3:#0F7A5F; --h4:#8E2E6B; --h5:#6B4FD3;
+  --band:rgba(15,122,95,.12); --grid:rgba(14,26,51,.08);
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1222; --surface:#121C31; --surface-2:#1A2742; --ink:#E5ECF8; --muted:#9BA9C4; --line:#28385A;
+  --navy:#9DB8FF; --signal:#FF6F86; --ok:#4CD3A7; --warn:#F5A453;
+  --h1:#7FA6FF; --h2:#FF9A63; --h3:#4CD3A7; --h4:#E28AC2; --h5:#B4A2FF;
+  --band:rgba(76,211,167,.14); --grid:rgba(229,236,248,.08); color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0B1222; --surface:#121C31; --surface-2:#1A2742; --ink:#E5ECF8; --muted:#9BA9C4; --line:#28385A;
+  --navy:#9DB8FF; --signal:#FF6F86; --ok:#4CD3A7; --warn:#F5A453;
+  --h1:#7FA6FF; --h2:#FF9A63; --h3:#4CD3A7; --h4:#E28AC2; --h5:#B4A2FF;
+  --band:rgba(76,211,167,.14); --grid:rgba(229,236,248,.08); color-scheme:dark;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .wrap{padding-block:22px 18px;display:flex;flex-wrap:wrap;gap:8px 24px;align-items:flex-end;justify-content:space-between}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(28px,4.4vw,42px);font-weight:800;color:var(--navy);letter-spacing:-.01em}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.top p{margin:6px 0 0;color:var(--muted);max-width:60ch}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+nav.tabs .wrap{display:flex;gap:6px;overflow-x:auto;padding-block:10px;scrollbar-width:thin}
+nav.tabs button{flex:0 0 auto;font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{background:var(--navy);color:var(--surface);border-color:var(--navy)}
+button:focus-visible,input:focus-visible,label:focus-within{outline:3px solid var(--h1);outline-offset:2px}
+main .wrap{padding-block:22px 48px}
+.view[hidden]{display:none!important}
+
+/* Giriş */
+.intro{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:22px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.intro h2{font-size:26px;color:var(--navy);margin-bottom:8px}
+.steps{display:grid;gap:10px;margin:14px 0 0;padding:0;list-style:none;counter-reset:s}
+.steps li{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:start}
+.steps li::before{counter-increment:s;content:counter(s);display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--surface-2);color:var(--navy);font-weight:700;font-family:var(--f-mono)}
+.modgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:22px}
+.modcard{all:unset;cursor:pointer;display:grid;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.modcard:hover{border-color:var(--navy)}
+.modcard:focus-visible{outline:3px solid var(--h1);outline-offset:2px}
+.modcard strong{font-family:var(--f-display);font-size:19px;color:var(--navy)}
+.modcard span{color:var(--muted);font-size:14px}
+.modcard em{font-style:normal;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--signal)}
+.btn{font:inherit;font-weight:700;font-size:15px;border:1px solid var(--navy);background:var(--navy);color:var(--surface);padding:9px 14px;border-radius:10px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--navy)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.legendkey{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:14px;color:var(--muted)}
+
+/* Modül */
+.mod-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 20px;align-items:flex-end;margin-bottom:14px}
+.mod-head h2{font-size:clamp(24px,3.4vw,32px);color:var(--navy)}
+.mod-head p{margin:4px 0 0;color:var(--muted);max-width:62ch}
+.simbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.simbar .btn{padding:7px 11px;font-size:14px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{font:inherit;font-size:13px;font-weight:700;border:0;background:var(--surface);color:var(--muted);padding:7px 10px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface-2);color:var(--ink)}
+.mod-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;align-items:start}
+.col{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-width:0}
+.col>*{min-width:0}
+.controls{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.ctl{display:grid;gap:6px;background:var(--surface-2);border-radius:12px;padding:12px}
+.ctl label,.ctl .lab{font-weight:700;font-size:14px}
+.ctl small{color:var(--muted);font-size:12.5px;line-height:1.35}
+.ctl input[type=range]{width:100%;accent-color:var(--navy)}
+.ctl .ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.ctl .btn{width:100%}
+.switch{display:flex;align-items:center;gap:10px;cursor:pointer}
+.switch input{appearance:none;width:44px;height:26px;border-radius:999px;background:var(--line);position:relative;flex:0 0 auto;cursor:pointer;transition:background .2s}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--surface);transition:left .2s}
+.switch input:checked{background:var(--navy)}
+.switch input:checked::after{left:21px}
+
+.path{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.path h3,.panel h3{font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-family:var(--f-body);font-weight:700;margin-bottom:10px}
+.prow{display:flex;align-items:stretch;gap:0;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
+.prow + .prow{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.node{flex:1 1 0;min-width:118px;background:var(--surface-2);border-radius:12px;padding:10px;display:grid;gap:4px;align-content:start}
+.node .nl{font-weight:700;font-size:14px;line-height:1.25}
+.node .ns{font-size:12px;color:var(--muted);line-height:1.25}
+.node .nv{font-family:var(--f-mono);font-size:18px;font-weight:700}
+.meter{position:relative;height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.meter i{position:absolute;inset:0 auto 0 0;border-radius:99px}
+.meter b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.55}
+.state{font-size:12px;font-weight:700}
+.state.hi{color:var(--signal)} .state.lo{color:var(--h1)} .state.ok{color:var(--ok)}
+.arrow{flex:0 0 26px;display:grid;place-items:center;color:var(--muted);font-weight:700;font-size:18px}
+.fb{margin-top:10px;display:flex;gap:10px;align-items:center;font-size:14px;padding:8px 10px;border-radius:10px;border:1px dashed var(--line);color:var(--muted)}
+.fb .dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;background:var(--line)}
+.fb.on.neg{border-color:var(--h1);color:var(--ink)} .fb.on.neg .dot{background:var(--h1)}
+.fb.on.pos{border-color:var(--signal);color:var(--ink)} .fb.on.pos .dot{background:var(--signal)}
+.fb.off{opacity:.7}
+
+.chartbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.chartbox canvas{width:100%;height:240px;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:13px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.legend .v{font-family:var(--f-mono);font-weight:700}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.now{font-size:16px}
+.now p{margin:0 0 8px}
+.now p:last-child{margin-bottom:0}
+.now .tag{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:99px;background:var(--surface-2);color:var(--navy);margin-right:6px}
+.note p{margin:0 0 10px;max-width:65ch}
+.note ul{margin:0 0 10px;padding-left:20px}
+.note strong{color:var(--navy)}
+.tasks{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.tasks li{display:grid;grid-template-columns:22px 1fr;gap:8px;font-size:15px}
+.tasks li::before{content:"→";color:var(--signal);font-weight:700}
+.daily{background:color-mix(in srgb,var(--h2) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--h2) 30%,var(--line));border-radius:var(--r);padding:14px 16px;font-size:15px}
+.daily b{color:var(--h2)}
+.visual{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.cup{width:64px;height:96px;border:3px solid var(--muted);border-top:0;border-radius:0 0 14px 14px;position:relative;overflow:hidden;flex:0 0 auto}
+.cup i{position:absolute;left:0;right:0;bottom:0}
+.gland{flex:0 0 auto;width:120px;height:80px;display:grid;place-items:center}
+.progress{height:14px;border-radius:99px;background:var(--line);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--signal)}
+.clock{font-family:var(--f-mono);font-size:34px;font-weight:700;color:var(--navy)}
+
+/* Test */
+.quiz{display:grid;gap:14px;max-width:860px}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.q legend{font-weight:700;font-size:17px;padding:0;margin-bottom:10px}
+.q fieldset{border:0;margin:0;padding:0;min-width:0}
+.opts{display:grid;gap:8px}
+.opt{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:var(--surface)}
+.opt input{accent-color:var(--navy);width:18px;height:18px;flex:0 0 auto}
+.opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--surface))}
+.opt.wrong{border-color:var(--signal);background:color-mix(in srgb,var(--signal) 10%,var(--surface))}
+.why{margin-top:10px;font-size:15px;color:var(--muted)}
+.why b{color:var(--ink)}
+.why a{color:var(--navy);font-weight:700}
+.score{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.score .big{font-family:var(--f-mono);font-size:30px;font-weight:700;color:var(--navy)}
+.compare{display:flex;gap:10px;flex-wrap:wrap}
+.pill{font-size:14px;font-weight:700;border-radius:99px;padding:4px 12px;background:var(--surface-2)}
+
+.qtag{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--signal);margin-bottom:4px}
+.ord{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.ordrow{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.ordrow .pos{font-family:var(--f-mono);font-weight:700;color:var(--navy);text-align:center}
+.obtns{display:flex;gap:4px}
+.mini{font:inherit;font-weight:700;width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer}
+.mini:disabled{opacity:.35;cursor:default}
+.match{display:grid;gap:8px}
+.mrow{display:grid;grid-template-columns:minmax(110px,160px) minmax(0,1fr);gap:10px;align-items:center;padding:6px 10px;border:1px solid var(--line);border-radius:10px}
+.mrow select{font:inherit;font-size:15px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%;min-width:0}
+.tfl{display:grid;gap:8px}
+.tfrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+.tfbtns{display:flex;gap:12px;font-weight:700}
+.tfbtns label{display:flex;gap:4px;align-items:center;cursor:pointer}
+.tfbtns input{accent-color:var(--navy);width:18px;height:18px}
+.fix{grid-column:1/-1;font-size:14px;color:var(--muted)}
+textarea{font:inherit;width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface);color:var(--ink);resize:vertical}
+.rubric{display:grid;gap:8px;margin-top:12px;padding:12px;border-radius:10px;background:var(--surface-2)}
+.rb{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.rb input{accent-color:var(--ok);width:18px;height:18px;margin-top:3px;flex:0 0 auto}
+.rb em{font-style:normal;font-size:12px;font-weight:700;color:var(--muted);margin-left:auto;white-space:nowrap}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.ordrow.right,.mrow.right,.tfrow.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,var(--surface))}
+.ordrow.wrong,.mrow.wrong,.tfrow.wrong{border-color:var(--signal);background:color-mix(in srgb,var(--signal) 8%,var(--surface))}
+@media (max-width:600px){.mrow{grid-template-columns:minmax(0,1fr)}}
+.rumuz{display:grid;gap:6px;max-width:860px;margin-bottom:14px}
+.rumuz input{font:inherit;font-family:var(--f-mono);font-size:20px;letter-spacing:.12em;text-transform:uppercase;width:9ch;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+.rumuz small{color:var(--muted)}
+.sendbox{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+footer{color:var(--muted);font-size:13px;padding-block:0 30px}
+@media (max-width:600px){.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.ctl{padding:10px}.prow{flex-wrap:wrap;gap:8px}.prow .arrow{display:none}.node{flex:1 1 calc(50% - 8px);min-width:0}}
+@media (max-width:860px){.mod-grid,.intro{grid-template-columns:minmax(0,1fr)}.chartbox canvas{height:210px}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+
+/* Sindirim simülatörü ekleri / additions */
+header.top .wrap{align-items:flex-start}
+#lang button{font-family:var(--f-mono);min-width:44px}
+.stack{display:flex;height:14px;border-radius:99px;overflow:hidden;background:var(--line)}
+.stack i{display:block;height:100%}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.bars{display:grid;gap:6px}
+.bar{display:grid;grid-template-columns:110px minmax(0,1fr) 70px;gap:8px;align-items:center;font-size:14px}
+.bar i{display:block;height:10px;border-radius:99px;background:var(--h5)}
+.bar em{font-style:normal;font-family:var(--f-mono);font-size:13px;text-align:right}
+.note .src{font-size:13px;color:var(--muted);margin-top:6px}
+.srclist{margin:0;padding-left:18px;font-size:13.5px;color:var(--muted);display:grid;gap:4px}
+.node .nv.sm{font-size:14px;font-family:var(--f-body)}
+.ctl output{font-family:var(--f-mono);font-weight:700;color:var(--navy)}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;padding:0}
+img{max-width:100%}
+
+
+/* 2026-11b test flow */
+.qnote{border-left:4px solid var(--navy);font-size:15px}
+.qnote .btn{margin-left:6px;padding:6px 12px;font-size:14px}
+.blankwarn{margin-bottom:12px;padding:12px;border-radius:10px;border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--surface))}
+.blankwarn p{margin:0 0 10px}
+.testnote{margin-bottom:16px;border-left:4px solid var(--warn);display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-weight:700}
+.rbnote{margin:0;color:var(--warn);font-weight:700}
+.wc{display:block;margin-top:4px;color:var(--muted);font-size:13px}
+textarea[readonly]{background:var(--surface-2)}
+.codeline{font-size:18px;font-weight:700}
+.code{font-family:var(--f-mono,monospace);font-size:24px;letter-spacing:.08em;color:var(--navy);margin-left:6px}
+.othercode{margin-top:4px;font-size:14px}
+.rumuz .othercode input{font:inherit;font-family:var(--f-mono,monospace);width:12ch;letter-spacing:.04em;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);text-transform:uppercase}
+.othercode .btn{padding:6px 12px;font-size:14px}
+</style></head><body>
+<header class="top"><div class="wrap">
+  <div>
+    <div class="eyebrow" data-i="eyebrow"></div>
+    <h1 data-i="title"></h1>
+    <p data-i="lead"></p>
+  </div>
+  <div class="seg" role="group" id="lang" data-ia="langAria">
+    <button type="button" data-l="tr" aria-pressed="true">TR</button><button type="button" data-l="en" aria-pressed="false">EN</button>
+  </div>
+</div></header>
+
+<nav class="tabs" data-ia="tabsAria"><div class="wrap" id="tabs" role="tablist"></div></nav>
+
+<main><div class="wrap">
+  <section class="view" id="v-giris">
+    <div class="card testnote" id="testnote" role="status" hidden></div>
+    <div class="intro">
+      <div class="card">
+        <h2 data-i="howTitle"></h2>
+        <p data-i="howP"></p>
+        <ol class="steps">
+          <li><span data-ih="st1"></span></li>
+          <li><span data-ih="st2"></span></li>
+          <li><span data-ih="st3"></span></li>
+          <li><span data-ih="st4"></span></li>
+        </ol>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+          <button class="btn" type="button" data-go="test" data-mode="pre" data-i="goPre"></button>
+          <button class="btn ghost" type="button" data-go="mide" data-i="goFirst"></button>
+        </div>
+      </div>
+      <div class="card">
+        <h2 style="font-size:20px" data-i="seeTitle"></h2>
+        <p style="margin:6px 0 10px" data-i="seeP"></p>
+        <div class="node" style="max-width:240px">
+          <div class="nl" data-i="sampleL"></div><div class="ns" data-i="sampleS"></div>
+          <div class="nv" style="color:var(--signal)" data-i="sampleV"></div>
+          <div class="meter"><i style="width:80%;background:var(--signal)"></i></div>
+        </div>
+        <p style="margin:12px 0 0;font-size:14px;color:var(--muted)" data-i="seeNote"></p>
+        <h2 style="font-size:20px;margin-top:18px" data-i="srcTitle"></h2>
+        <p style="margin:6px 0 6px;font-size:14px;color:var(--muted)" data-i="srcP"></p>
+        <ul class="srclist">
+          <li>Hall, J. E., &amp; Hall, M. E. (2026). <i>Guyton and Hall textbook of medical physiology</i> (15th ed.). Elsevier.</li>
+          <li>Barrett, K. E., Barman, S. M., Brooks, H. L., &amp; Yuan, J. X.-J. (2025). <i>Ganong's review of medical physiology</i> (27th ed.). McGraw Hill.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="modgrid" id="modgrid"></div>
+  </section>
+
+  <section class="view" id="v-mod" hidden>
+    <div class="mod-head">
+      <div><div class="eyebrow" id="m-eyebrow"></div><h2 id="m-title"></h2><p id="m-sub"></p></div>
+      <div class="simbar">
+        <button class="btn ghost" type="button" id="b-pause"></button>
+        <button class="btn ghost" type="button" id="b-reset" data-i="reset"></button>
+        <div class="seg" role="group" data-ia="speedAria" id="speed">
+          <button type="button" data-s="1" aria-pressed="true">1×</button><button type="button" data-s="2" aria-pressed="false">2×</button><button type="button" data-s="4" aria-pressed="false">4×</button>
+        </div>
+      </div>
+    </div>
+    <div class="mod-grid">
+      <div class="col">
+        <div class="controls" id="m-controls"></div>
+        <div class="path"><h3 data-i="path"></h3><div id="m-path"></div><div id="m-fb"></div></div>
+        <div class="chartbox"><canvas id="chart" data-ia="chartAria" role="img"></canvas><div class="legend" id="m-legend"></div></div>
+      </div>
+      <div class="col">
+        <div class="panel"><h3 data-i="now"></h3><div class="now" id="m-now" aria-live="polite"></div><div id="m-visual" style="margin-top:12px"></div></div>
+        <div class="daily" id="m-daily"></div>
+        <div class="panel"><h3 data-i="tasks"></h3><ul class="tasks" id="m-tasks"></ul></div>
+        <div class="panel note"><h3 data-i="note"></h3><div id="m-note"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-test" hidden>
+    <div class="mod-head">
+      <div><div class="eyebrow" data-i="testEyebrow"></div><h2 data-i="testTitle"></h2>
+      <p data-i="testP"></p></div>
+      <div class="seg" role="group" data-ia="testAria" id="qmode">
+        <button type="button" data-m="pre" aria-pressed="true" data-i="pre"></button><button type="button" data-m="post" aria-pressed="false" data-i="post"></button>
+      </div>
+    </div>
+    <div class="q rumuz" id="rumuzbox" hidden>
+      <label for="rumuz"><b data-i="rumuz"></b></label>
+      <input id="rumuz" maxlength="4" autocomplete="off" autocapitalize="characters">
+      <small data-i="rumuzHelp"></small>
+    </div>
+    <form class="quiz" id="quiz"></form>
+  </section>
+</div></main>
+<footer><div class="wrap" data-i="footer"></div></footer>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ap=(x,t,tau,dt)=>x+(t-x)*Math.min(1,dt/tau);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const store={get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+let LANG=store.get("sind-lang")==="en"?"en":"tr";
+const L=(tr,en)=>LANG==="en"?en:tr;
+const t=x=>x==null?"":(typeof x!=="object"||Array.isArray(x))?x:(x[LANG]!==undefined?x[LANG]:x.tr);
+const pct=v=>{const n=Math.round(v*100); return LANG==="en"?n+"%":"%"+n;};
+
+/* ---------------- ARAYÜZ METİNLERİ / UI TEXT ---------------- */
+const UI={
+  title:{tr:"Sindirim Simülatörü",en:"Digestion Simulator"},
+  eyebrow:{tr:"Sindirim ve Beslenme Fizyolojisi · Tıp Fakültesi 1–2. sınıf",en:"Gastrointestinal and Nutrition Physiology · Medicine, years 1–2"},
+  lead:{tr:"Sindirim kanalını kendiniz yönetin: yemeği koklayın, yiyin, enzimleri kapatın, bağırsaktaki sıvı akışını izleyin. Değerlerin nasıl değiştiğini canlı izleyin.",en:"Run the gut yourself: smell the food, eat it, switch enzymes off, and follow the fluid flow in the gut. Watch the values change live."},
+  tabStart:{tr:"Başla",en:"Start"}, tabTest:{tr:"Ön / son test",en:"Pre / post test"},
+  howTitle:{tr:"Nasıl kullanılır?",en:"How to use it"},
+  howP:{tr:"Her modül sindirimin bir bölümünü canlandırır. Değerler gerçek zamanlı hesaplanır; yaptığınız her değişikliğin sonucunu birkaç saniye içinde görürsünüz.",en:"Each module animates one part of digestion. Values are calculated in real time, so you see the result of every change within a few seconds."},
+  st1:{tr:"<b>Önce ön testi çözün.</b> 5 soru, 5 farklı soru türü. Not için değil, neyi bildiğinizi görmek için.",en:"<b>Take the pre-test first.</b> 5 questions, 5 question types. It is not graded; it shows what you already know."},
+  st2:{tr:"<b>Bir modül seçin.</b> Düğmelere basın, kaydırıcıları oynatın.",en:"<b>Choose a module.</b> Press the buttons and move the sliders."},
+  st3:{tr:"<b>“Ne oluyor?” kutusunu okuyun.</b> Ekranda olanı adım adım açıklar.",en:"<b>Read the “What is happening?” box.</b> It explains the screen step by step."},
+  st4:{tr:"<b>Ders notunu okuyun ve görevleri yapın,</b> sonra son testi çözüp puanınızı karşılaştırın.",en:"<b>Read the lecture note and do the tasks,</b> then take the post-test and compare your scores."},
+  goPre:{tr:"Ön teste başla",en:"Start the pre-test"}, goFirst:{tr:"İlk modüle geç",en:"Go to the first module"},
+  seeTitle:{tr:"Ekranda ne göreceksiniz?",en:"What you will see"},
+  seeP:{tr:"Her basamak bir kutuda gösterilir. Çubuk, düzeyi gösterir.",en:"Each step is shown in a box. The bar shows the level."},
+  seeNote:{tr:"Hormon ve salgı düzeyleri, tipik bir öğündeki en yüksek düzeyin yüzdesi olarak verilir. pH, litre/gün, mm Hg, kcal ve VKİ gerçek birimleriyle gösterilir.",en:"Hormone and secretion levels are given as a percentage of the peak level after a typical meal. pH, liters/day, mm Hg, kcal, and BMI are shown in real units."},
+  sampleV:{tr:"%80",en:"80%"}, sampleL:{tr:"Paryetal hücre",en:"Parietal cell"}, sampleS:{tr:"HCl salgısı",en:"HCl secretion"},
+  srcTitle:{tr:"Kaynaklar",en:"Sources"},
+  srcP:{tr:"Değerler iki ders kitabından alınmıştır. Kitaplar farklı değer verdiğinde (ör. günlük salgı hacimleri) simülatör ikisini de gösterir.",en:"Values are taken from two textbooks. Where the books differ (e.g., daily secretion volumes), the simulator shows both."},
+  pause:{tr:"Duraklat",en:"Pause"}, resume:{tr:"Devam et",en:"Resume"}, reset:{tr:"Baştan başlat",en:"Restart"},
+  now:{tr:"Ne oluyor?",en:"What is happening?"}, tasks:{tr:"Bunu deneyin",en:"Try this"}, note:{tr:"Ders notu",en:"Lecture note"}, path:{tr:"Sindirim yolu",en:"Pathway"},
+  daily:{tr:"Günlük hayatta:",en:"In daily life:"},
+  chartAria:{tr:"Zamana göre değerler grafiği",en:"Chart of values over time"},
+  nowLbl:{tr:"şimdi",en:"now"}, sec:{tr:"sn",en:"s"}, normal:{tr:"normal",en:"normal"},
+  testEyebrow:{tr:"Kendinizi sınayın",en:"Test yourself"}, testTitle:{tr:"Ön test ve son test",en:"Pre-test and post-test"},
+  testP:{tr:"Aynı 5 soru, 5 farklı soru türü, toplam 100 puan. Dersten önce ön testi, dersin son 10 dakikasında son testi çözün. Her test bir kez çözülür. Ön testte yalnızca puanınızı görürsünüz; doğru cevaplar son testten sonra açılır. Puanlarınız bu tarayıcıda saklanır.",en:"The same 5 questions in 5 question types, 100 points in total. Take the pre-test before the lecture and the post-test in the last 10 minutes of the lecture. Each test can be taken once. In the pre-test you see only your score; the correct answers open after the post-test. Your scores are stored in this browser."},
+  pre:{tr:"Ön test",en:"Pre-test"}, post:{tr:"Son test",en:"Post-test"},
+  rumuz:{tr:"Rumuzunuz",en:"Your code name"},
+  rumuzHelp:{tr:"Annenizin adının ilk iki harfi + doğduğunuz günün iki hanesi. Ön ve son testte aynı rumuzu yazın. Adınız kaydedilmez.",en:"The first two letters of your mother's first name + the two digits of your birth day. Use the same code in both tests. Your name is not stored."},
+  footer:{tr:"Bu simülasyon, fizyolojiyi anlamak için basitleştirilmiş bir eğitim modelidir; sayılar gerçek bir hastanın değerleri değildir.",en:"This simulation is a simplified teaching model for understanding physiology; the numbers are not the values of a real patient."},
+  pts:{tr:"puan",en:"points"}, choose:{tr:"Seçin…",en:"Choose…"}, T:{tr:"D",en:"T"}, F:{tr:"Y",en:"F"},
+  check:{tr:"Cevapları kontrol et",en:"Check answers"}, clear:{tr:"Temizle",en:"Clear"},
+  right:{tr:"Doğru.",en:"Correct."}, rightAns:{tr:"Doğru cevap:",en:"Correct answer:"}, rightOrder:{tr:"Doğru sıra:",en:"Correct order:"}, rightMatch:{tr:"Doğru eşleşme:",en:"Correct matches:"},
+  tryIt:{tr:"Simülasyonda deneyin →",en:"Try it in the simulation →"},
+  rubricT:{tr:"Puanlama ölçütü: yazdığınız basamakları işaretleyin",en:"Scoring guide: tick the steps you wrote"},
+  answer:{tr:"Cevabınız",en:"Your answer"},
+  ph:{tr:"Örneğin: Safra → … → …",en:"For example: bile → … → …"},
+  up:{tr:"Yukarı taşı",en:"Move up"}, down:{tr:"Aşağı taşı",en:"Move down"},
+  q14:{tr:"1–4. sorular",en:"Questions 1–4"}, q5:{tr:"5. soru",en:"Question 5"},
+  send:{tr:"Sonucumu eğitimciye gönder",en:"Send my result to the lecturer"},
+  sent:{tr:"Gönderildi. Teşekkürler!",en:"Sent. Thank you!"}, sending:{tr:"Gönderiliyor…",en:"Sending…"},
+  sentBefore:{tr:"Bu test için sonucunuz daha önce gönderildi.",en:"Your result for this test has already been sent."},
+  sendFail:{tr:"Gönderilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.",en:"Could not send. Check your internet connection and try again."},
+  rumuzFirst:{tr:"Önce sayfanın üstündeki rumuz alanını doldurun (2 harf + 2 rakam, ör. AY07).",en:"First fill in the code-name field at the top (2 letters + 2 digits, e.g., AY07)."},
+  langAria:{tr:"Dil",en:"Language"}, speedAria:{tr:"Simülasyon hızı",en:"Simulation speed"}, testAria:{tr:"Test türü",en:"Test type"}, tabsAria:{tr:"Modüller",en:"Modules"}
+};
+
+/* ---------------- MODÜLLER / MODULES ---------------- */
+const M={};
+const tg=(tr,en)=>`<span class='tag'>${L(tr,en)}</span>`;
+const SRC=(tr,en)=>`<p class="src">${L(tr,en)}</p>`;
+
+/* 1. MİDE SALGISININ EVRELERİ */
+const AREF=1.35, GREF=1.0;
+M.mide={
+  tab:{tr:"Mide salgısı",en:"Gastric secretion"},
+  eyebrow:{tr:"Üç evre · negatif geri bildirim",en:"Three phases · negative feedback"},
+  title:{tr:"Mide salgısının evreleri",en:"Phases of gastric secretion"},
+  sub:{tr:"Sefalik, gastrik ve intestinal evre. Mide içeriği asitlendikçe gastrin frenlenir.",en:"Cephalic, gastric, and intestinal phases. As the gastric contents become acidic, gastrin release is braked."},
+  card:{tr:"Yemeği koklayın, yiyin ve asidin hangi evrede salgılandığını ölçün. Histamin uyarısını ya da proton pompasını kapatın.",en:"Smell the food, eat it, and measure in which phase the acid is secreted. Switch off the histamine stimulus or the proton pump."},
+  init:()=>({vc:0,F:0,D:0,gas:0.1,acid:0.05,H:0.15,pep:0.05,cum:[0,0,0]}),
+  controls:[
+    {type:"button",id:"smell",label:{tr:"Yemeği gör ve kokla",en:"See and smell the food"},help:{tr:"Görme, koku, düşünme ve tat vagus sinirini uyarır.",en:"Sight, smell, thought, and taste stimulate the vagus nerve."},act:s=>{s.vc=1;}},
+    {type:"button",id:"eat",label:{tr:"Yemeği ye",en:"Eat the meal"},help:{tr:"Besin mideye gelir: mide gerilir, protein ürünleri gastrin salgılatır.",en:"Food enters the stomach: the wall is stretched and protein products release gastrin."},act:s=>{s.vc=Math.max(s.vc,1);s.F=Math.min(1.5,s.F+1);}},
+    {type:"range",id:"prot",label:{tr:"Öğündeki protein",en:"Protein in the meal"},min:0,max:1,step:.05,value:.5,ends:[{tr:"Az",en:"Low"},{tr:"Çok",en:"High"}],help:{tr:"Protein ürünleri antrumdaki G hücrelerinden gastrin salgılatır.",en:"Protein products release gastrin from G cells in the antrum."}},
+    {type:"toggle",id:"fb",label:{tr:"Negatif geri bildirim",en:"Negative feedback"},value:true,help:{tr:"Kapatırsanız asit gastrini frenleyemez (deney).",en:"If you switch it off, acid cannot brake gastrin (experiment)."}},
+    {type:"toggle",id:"h2",label:{tr:"Histamin uyarısı yok",en:"No histamine stimulus"},value:false,help:{tr:"Gastrin, ECL hücrelerinden histamin salgılatır; histamin paryetal hücrede asit salgısını uyarır. Bu uyarı kapatılır.",en:"Gastrin releases histamine from ECL cells; histamine stimulates acid secretion by the parietal cell. This stimulus is switched off."}},
+    {type:"toggle",id:"ppi",label:{tr:"Proton pompası kapalı",en:"Proton pump off"},value:false,help:{tr:"Paryetal hücre H⁺'yı H⁺-K⁺ ATPaz (proton pompası) ile salgılar; bu pompa çalışmıyor.",en:"The parietal cell secretes H⁺ through the H⁺-K⁺ ATPase (proton pump); this pump is not working."}}
+  ],
+  step(s,dt,c){
+    s.vc=s.vc*Math.exp(-dt/10);
+    const em=Math.min(s.F,s.F/22*dt); s.F-=em; s.D=Math.max(0,s.D+em-s.D/12*dt);
+    const brake=c.fb?Math.exp(-4*Math.max(0,s.H-0.45)):1;
+    const gV=0.45*s.vc, gF=1.1*s.F*(0.3+0.7*c.prot), gD=0.28*s.D, gs=gV+gF+gD;
+    s.gas=ap(s.gas,0.08+gs*brake,2,dt);
+    const block=(c.ppi?0.1:1)*(c.h2?0.25:1);
+    const aV=0.55*s.vc, aF=0.34*s.F, aG=0.8*s.gas;
+    s.acid=ap(s.acid,(0.03+aV+aF+aG)*block,1.5,dt);
+    const pV=aV+aG*gV/(gs+0.08), pF=aF+aG*gF/(gs+0.08), pD=aG*gD/(gs+0.08), pt=pV+pF+pD;
+    if(pt>0.02){ const r=s.acid*dt/pt; s.cum[0]+=pV*r; s.cum[1]+=pF*r; s.cum[2]+=pD*r; }
+    const buf=0.25+1.1*s.F*(0.3+0.7*c.prot);
+    s.H=ap(s.H,s.acid/(s.acid+buf),3,dt);
+    const pg=0.05+0.5*s.vc+0.6*s.H;
+    s.pep=ap(s.pep,pg*cl((s.H-0.15)/0.35,0,1),2,dt);
+    s.acidN=s.acid/AREF; s.gasN=s.gas/GREF;
+  },
+  rows:s=>[[
+    {l:L("Beyin → vagus","Brain → vagus"),s:L("Sefalik uyarı","Cephalic drive"),v:s.vc,c:"--h5"},
+    {l:L("G hücresi","G cell"),s:"Gastrin",v:s.gasN,c:"--h1"},
+    {l:L("Paryetal hücre","Parietal cell"),s:L("HCl salgısı","HCl secretion"),v:s.acidN,c:"--signal"},
+    {l:L("Mide içeriği","Gastric contents"),s:L("Asitlik","Acidity"),v:s.H,c:"--h2"}
+  ],[
+    {l:L("Mide","Stomach"),s:L("İçindeki besin","Food inside"),v:s.F,c:"--h3"},
+    {l:L("Esas hücre","Chief cell"),s:L("Pepsinojen → pepsin","Pepsinogen → pepsin"),v:s.pep,c:"--h4"},
+    {l:"Duodenum",s:L("Kimus","Chyme"),v:s.D*2,c:"--h3"}
+  ]],
+  fb:(s,c)=>({kind:"neg",on:c.fb,strength:s.H,
+    text:c.fb?L("Negatif geri bildirim açık: mide içeriği asitlendikçe gastrin salgısı frenlenir.","Negative feedback on: as the gastric contents become acidic, gastrin release is braked."):L("Negatif geri bildirim KAPALI: asit ne kadar artarsa artsın gastrin frenlenmiyor.","Negative feedback OFF: gastrin is not braked, however acidic the contents become.")}),
+  series:[
+    {k:"acidN",n:{tr:"HCl salgısı",en:"HCl secretion"},c:"--signal",min:0,max:1.2,primary:true,axis:v=>pct(v)},
+    {k:"gasN",n:{tr:"Gastrin",en:"Gastrin"},c:"--h1",min:0,max:1.2},
+    {k:"H",n:{tr:"Asitlik",en:"Acidity"},c:"--h2",min:0,max:1.2}
+  ],
+  now(s,c){
+    const o=[];
+    if(s.vc>0.25&&s.F<0.05) o.push(tg("Sefalik evre","Cephalic phase")+L("Henüz mideye besin gelmedi ama vagus siniri paryetal hücreleri ve G hücrelerini uyardı. Asit salgısı başladı.","No food has reached the stomach yet, but the vagus nerve has stimulated the parietal cells and G cells. Acid secretion has started."));
+    if(s.F>0.15) o.push(tg("Gastrik evre","Gastric phase")+L("Mide gerildi ve protein ürünleri G hücrelerinden gastrin salgılattı. Bu evre, öğünle salgılanan asidin yaklaşık %60'ıdır.","The stomach is stretched and protein products have released gastrin from G cells. This phase gives about 60% of the acid secreted with a meal."));
+    if(s.D>0.15&&s.F<0.35) o.push(tg("İntestinal evre","Intestinal phase")+L("Kimus duodenumda. Duodenumdan az miktarda gastrin salgılanıyor; bu evre asidin yaklaşık %10'udur.","Chyme is in the duodenum. A small amount of gastrin is released from the duodenum; this phase gives about 10% of the acid."));
+    if(c.fb&&s.H>0.55) o.push(tg("Fren","Brake")+L("Mide içeriği çok asitli. Asit, gastrin salgısını frenliyor.","The gastric contents are very acidic. Acid is braking gastrin release."));
+    if(!c.fb&&s.H>0.55) o.push(tg("Fren yok","No brake")+L("Geri bildirim kapalı: asit arttığı hâlde gastrin düşmüyor ve asit salgısı sürüyor.","Feedback is off: gastrin does not fall although acidity rises, so acid secretion continues."));
+    if((c.ppi||c.h2)&&(s.F>0.1||s.vc>0.2)){
+      o.push(tg("Uyarı kapalı","Switched off")+(c.ppi?L("Proton pompası çalışmıyor: uyarı olsa da paryetal hücre H⁺ salgılayamıyor.","The proton pump is not working: the parietal cell cannot secrete H⁺ despite stimulation."):L("Histamin uyarısı yok: gastrin, histamin aracılığıyla paryetal hücreyi uyaramıyor; asit salgısı azaldı.","No histamine stimulus: gastrin cannot stimulate the parietal cell through histamine; acid secretion has fallen.")));
+      if(c.fb&&s.gasN>0.6) o.push(L("Mide içeriği az asitli olduğu için fren gevşedi: gastrin yükseldi.","Because the contents are only weakly acidic, the brake has loosened: gastrin has risen."));
+    }
+    if(!o.length) o.push((s.cum[0]+s.cum[1]+s.cum[2])>0.3?tg("Öğün bitti","Meal over")+L("Mide boşaldı, asit salgısı azaldı. Evrelerin payını aşağıda Guyton'un değerleriyle karşılaştırın.","The stomach has emptied and acid secretion has fallen. Compare the share of each phase below with Guyton's values."):L("Mide dinlenmede. Önce “Yemeği gör ve kokla”, sonra “Yemeği ye” düğmesine basın.","The stomach is at rest. Press “See and smell the food”, then “Eat the meal”."));
+    return o;
+  },
+  visual(s){
+    const t=s.cum[0]+s.cum[1]+s.cum[2]; if(t<0.3) return `<small style="color:var(--muted)">${L("Evrelerin payı, bir öğün sonrasında burada görünecek.","The share of each phase will appear here after a meal.")}</small>`;
+    const p=s.cum.map(v=>Math.round(100*v/t)); const lab=[L("Sefalik","Cephalic"),L("Gastrik","Gastric"),L("İntestinal","Intestinal")]; const col=["--h5","--h3","--h1"];
+    return `<div style="display:grid;gap:6px"><b>${L("Salgılanan asidin evrelere göre payı","Share of secreted acid by phase")}</b><div class="stack">${p.map((v,i)=>`<i style="width:${v}%;background:var(${col[i]})" title="${lab[i]}"></i>`).join("")}</div><div class="legendkey">${p.map((v,i)=>`<span><i class="sw" style="background:var(${col[i]})"></i>${lab[i]} ${pct(v/100)}</span>`).join("")}</div><small style="color:var(--muted)">${L("Guyton ve Hall: yaklaşık %30 / %60 / %10","Guyton and Hall: about 30% / 60% / 10%")}</small></div>`;
+  },
+  daily:{tr:"Yemeğin görüntüsü ve kokusu bile mide asit salgısını başlatır (sefalik evre).",en:"Even the sight and smell of food start gastric acid secretion (cephalic phase)."},
+  tasks:{tr:["Yalnızca “Yemeği gör ve kokla” düğmesine basın. Mideye besin gelmeden asit neden yükseliyor?","“Yemeği ye” düğmesine basın ve 1 dakika bekleyin. Hangi evre en çok asit salgılattı?","“Proton pompası kapalı”yı açıp yeniden yiyin. Asit düşerken gastrin neden yükseliyor?","Negatif geri bildirimi kapatıp aynı denemeyi yapın. Fark nedir?"],
+         en:["Press only “See and smell the food”. Why does acid rise before any food reaches the stomach?","Press “Eat the meal” and wait 1 minute. Which phase produced the most acid?","Switch on “Proton pump off” and eat again. Why does gastrin rise while acid falls?","Switch off negative feedback and repeat. What is the difference?"]},
+  note:()=>L(`<p><strong>Sefalik evre:</strong> Yemeğin görülmesi, kokusu, düşünülmesi ve tadı, vagus siniri yoluyla mide salgısını başlatır. Öğünle salgılanan asidin yaklaşık %30'u bu evrededir.</p>
+  <p><strong>Gastrik evre:</strong> Besin mideyi gerer (vagovagal ve yerel refleksler) ve protein ürünleri antrumdaki G hücrelerinden <strong>gastrin</strong> salgılatır. Asidin yaklaşık %60'ı bu evrededir. <strong>İntestinal evre</strong> yaklaşık %10'dur.</p>
+  <p><strong>Paryetal hücre</strong> HCl ve intrinsik faktör, <strong>esas hücre</strong> pepsinojen salgılar. Pepsin asitli ortamda etkindir (en uygun pH 1.8–3.5); pH 5'in üstünde etkisizdir.</p>
+  <p><strong>Negatif geri bildirim:</strong> Asit, gastrin salgısını frenler. <strong>Histamin:</strong> Gastrin, ECL hücrelerinden histamin salgılatır; histamin paryetal hücrede asit salgısını uyarır. Paryetal hücre H⁺'yı H⁺-K⁺ ATPaz (proton pompası) ile salgılar.</p>`
+  +SRC("Kaynak: Guyton ve Hall (15. baskı), s. 808, 829–831; Ganong (27. baskı), Bölüm 25.",""),
+  `<p><strong>Cephalic phase:</strong> The sight, smell, thought, and taste of food start gastric secretion through the vagus nerve. About 30% of the acid secreted with a meal is produced in this phase.</p>
+  <p><strong>Gastric phase:</strong> Food stretches the stomach (vagovagal and local reflexes), and protein products release <strong>gastrin</strong> from G cells in the antrum. About 60% of the acid is produced in this phase. The <strong>intestinal phase</strong> gives about 10%.</p>
+  <p>The <strong>parietal cell</strong> secretes HCl and intrinsic factor; the <strong>chief cell</strong> secretes pepsinogen. Pepsin is active in an acidic medium (optimum pH 1.8–3.5) and inactive above pH 5.</p>
+  <p><strong>Negative feedback:</strong> Acid brakes gastrin release. <strong>Histamine:</strong> Gastrin releases histamine from ECL cells; histamine stimulates acid secretion by the parietal cell. The parietal cell secretes H⁺ through the H⁺-K⁺ ATPase (proton pump).</p>`
+  +SRC("","Source: Guyton and Hall (15th ed.), pp. 808, 829–831; Ganong (27th ed.), Chapter 25."))
+};
+
+/* 2. DUODENUM: SEKRETİN VE CCK */
+M.duoden={
+  tab:{tr:"Sekretin ve CCK",en:"Secretin and CCK"},
+  eyebrow:{tr:"Duodenumun hormonları",en:"Hormones of the duodenum"},
+  title:{tr:"Duodenum: sekretin ve CCK",en:"Duodenum: secretin and CCK"},
+  sub:{tr:"Asit sekretini, yağ CCK'yı salgılatır. Bikarbonat asidi nötrler, safra yağı emülsifiye eder.",en:"Acid releases secretin and fat releases CCK. Bicarbonate neutralizes the acid and bile emulsifies the fat."},
+  card:{tr:"Asitli ve yağlı kimus gönderin. pH, sekretin, bikarbonat ve CCK'yı izleyin. Safra kesesini çıkarın.",en:"Send acidic, fatty chyme. Watch pH, secretin, bicarbonate, and CCK. Remove the gallbladder."},
+  init:()=>({Q:0,A:0,Fd:0,S:0.03,K:0.03,B:0.1,bile:0.15,E:0.1,ph:7,emp:1,fatIn:0,fatDig:0}),
+  controls:[
+    {type:"button",id:"send",label:{tr:"Kimus gönder",en:"Send chyme"},help:{tr:"Mideden duodenuma asitli kimus geçer.",en:"Acidic chyme passes from the stomach into the duodenum."},act:s=>{s.Q+=1;}},
+    {type:"range",id:"fat",label:{tr:"Kimustaki yağ",en:"Fat in the chyme"},min:0,max:1,step:.05,value:.5,ends:[{tr:"Az",en:"Low"},{tr:"Çok",en:"High"}],help:{tr:"Yağ sindirim ürünleri I hücrelerinden CCK salgılatır.",en:"Products of fat digestion release CCK from I cells."}},
+    {type:"toggle",id:"gb",label:{tr:"Safra kesesi alınmış",en:"Gallbladder removed"},value:false,help:{tr:"Karaciğer safrayı sürekli salgılar, ama safra artık depolanamaz ve CCK ile topluca boşaltılamaz.",en:"The liver still secretes bile continually, but bile can no longer be stored and emptied in bulk by CCK."}}
+  ],
+  step(s,dt,c){
+    s.emp=1/(1+1.6*s.K);
+    const out=Math.min(s.Q,s.Q/5*s.emp*dt); s.Q-=out;
+    s.A+=out*6; s.Fd+=out*c.fat; s.fatIn+=out*c.fat;
+    s.ph=7.0-4.6*s.A/(s.A+0.6);
+    s.S=ap(s.S,0.03+cl((5-s.ph)/2,0,1.3),1.2,dt);
+    s.K=ap(s.K,0.03+cl(2.5*s.Fd,0,1.5),1.5,dt);
+    s.B=ap(s.B,0.08+1.3*s.S+0.25*s.K,2,dt);
+    s.bile=ap(s.bile,c.gb?0.25:0.15+1.6*s.K,1.5,dt);
+    s.E=ap(s.E,0.08+1.1*s.K+0.1*s.S,2,dt);
+    s.A=Math.max(0,s.A-(0.9*s.B*s.A/(s.A+0.15)+0.02*s.A)*dt);
+    const dig=Math.min(s.Fd,0.7*Math.min(1,s.E)*Math.min(1,s.bile/0.8)*s.Fd*dt); s.Fd-=dig; s.fatDig+=dig; s.Fd=Math.max(0,s.Fd-0.05*s.Fd*dt);
+  },
+  rows:s=>[[
+    {l:"Duodenum",s:"pH",v:s.ph/8,c:"--h2",fmt:()=>s.ph.toFixed(1)},
+    {l:L("S hücresi","S cell"),s:L("Sekretin","Secretin"),v:s.S,c:"--h1"},
+    {l:L("Pankreas kanalları","Pancreatic ducts"),s:L("Bikarbonat (HCO₃⁻)","Bicarbonate (HCO₃⁻)"),v:s.B/1.6,c:"--h3"}
+  ],[
+    {l:"Duodenum",s:L("Sindirilmemiş yağ","Undigested fat"),v:s.Fd,c:"--warn"},
+    {l:L("I hücresi","I cell"),s:L("Kolesistokinin (CCK)","Cholecystokinin (CCK)"),v:s.K,c:"--h4"},
+    {l:L("Safra kesesi","Gallbladder"),s:L("Safra akışı","Bile flow"),v:s.bile,c:"--h5"},
+    {l:L("Pankreas asinusu","Pancreatic acinus"),s:L("Enzimler","Enzymes"),v:s.E,c:"--h3"},
+    {l:L("Mide","Stomach"),s:L("Boşalma","Emptying"),v:s.emp,c:"--h1"}
+  ]],
+  fb:s=>({kind:"neg",on:s.S>0.15,strength:cl(s.S,0,1),text:L("Negatif geri bildirim: bikarbonat asidi nötrledikçe pH yükselir ve sekretin salgısı azalır.","Negative feedback: as bicarbonate neutralizes the acid, pH rises and secretin release falls.")}),
+  series:[
+    {k:"ph",n:{tr:"Duodenum pH",en:"Duodenal pH"},c:"--h2",min:0,max:8,primary:true,axis:v=>v.toFixed(0),fmt:v=>"pH "+v.toFixed(1),refs:[{v:5,l:{tr:"sekretin başlar (4.5–5.0)",en:"secretin starts (4.5–5.0)"}},{v:3,l:{tr:"güçlü salgı (3.0)",en:"strong release (3.0)"}}]},
+    {k:"S",n:{tr:"Sekretin",en:"Secretin"},c:"--h1",min:0,max:1.5},
+    {k:"K",n:"CCK",c:"--h4",min:0,max:1.5}
+  ],
+  now(s,c){
+    const o=[];
+    if(s.ph<5&&s.S<0.6) o.push(tg("pH < 5","pH < 5")+L("Asit duodenuma geldi. pH 4.5–5.0'ın altına inince S hücreleri sekretin salgılamaya başlar; pH 3'e yaklaştıkça salgı çok artar.","Acid has reached the duodenum. When pH falls below 4.5–5.0, S cells start to release secretin; release rises steeply as pH approaches 3."));
+    if(s.B>0.7) o.push(tg("Bikarbonat","Bicarbonate")+L("Sekretin, pankreas kanallarından bikarbonattan zengin sıvı salgılatıyor (HCO₃⁻ 145 mEq/L'ye kadar). Asit nötrleşiyor.","Secretin is driving the pancreatic ducts to secrete bicarbonate-rich fluid (HCO₃⁻ up to 145 mEq/L). The acid is being neutralized."));
+    if(s.K>0.35&&!c.gb) o.push(tg("CCK","CCK")+L("Yağ ürünleri I hücrelerinden CCK salgılattı: safra kesesi kasılıyor, pankreas enzim salgılıyor, mide boşalması yavaşlıyor.","Fat products have released CCK from I cells: the gallbladder contracts, the pancreas secretes enzymes, and gastric emptying slows."));
+    if(s.K>0.35&&c.gb) o.push(tg("Safra kesesi yok","No gallbladder")+L("CCK yükseldi ama boşaltılacak bir safra deposu yok. Karaciğerden gelen safra sürekli ama az; yağın sindirimi yavaşladı.","CCK has risen, but there is no bile store to empty. Bile from the liver flows continually but in small amounts; fat digestion has slowed."));
+    if(s.ph>6.3&&s.B>0.25&&s.S<0.25&&s.Q<0.05) o.push(L("Asit nötrleşti: sekretin düştü, bikarbonat salgısı azalıyor.","The acid has been neutralized: secretin has fallen and bicarbonate secretion is decreasing."));
+    if(!o.length) o.push(s.Q>0.05?L("Kimus mideden duodenuma geçiyor…","Chyme is passing from the stomach into the duodenum…"):L("Duodenum sakin. “Kimus gönder” düğmesine basın.","The duodenum is quiet. Press “Send chyme”."));
+    return o;
+  },
+  visual(s){
+    const d=s.fatIn>0.05?Math.round(100*s.fatDig/s.fatIn):0;
+    return `<div style="display:grid;gap:6px"><b>${L("Gelen yağın sindirilen kısmı","Share of incoming fat digested")}: ${pct(d/100)}</b><div class="progress"><i style="width:${d}%;background:var(--h4)"></i></div><small style="color:var(--muted)">${L("Midede bekleyen kimus","Chyme waiting in the stomach")}: ${s.Q.toFixed(1)}</small></div>`;
+  },
+  daily:{tr:"Yağlı bir öğün mideden daha yavaş boşalır: yağ CCK salgılatır, CCK de mide boşalmasını yavaşlatır.",en:"A fatty meal leaves the stomach more slowly: fat releases CCK, and CCK slows gastric emptying."},
+  tasks:{tr:["“Kimus gönder”e basın. pH kaçın altına inince sekretin yükselmeye başlıyor?","Bikarbonat yükseldikten sonra pH'a ve sekretine ne oluyor? Bu hangi geri bildirim türü?","Yağı en yükseğe getirip üç kez kimus gönderin. Mide boşalma hızı neden düşüyor?","“Safra kesesi alınmış”ı açıp tekrar deneyin. Yağın sindirimi neden yavaşladı?"],
+         en:["Press “Send chyme”. Below which pH does secretin start to rise?","After bicarbonate rises, what happens to pH and secretin? Which type of feedback is this?","Set fat to the maximum and send chyme three times. Why does the gastric emptying rate fall?","Switch on “Gallbladder removed” and try again. Why has fat digestion slowed?"]},
+  note:()=>L(`<p><strong>Sekretin</strong>, duodenum ve jejunumdaki S hücrelerinden salgılanır. Duodenum pH'ı 4.5–5.0'ın altına inince salgılanmaya başlar, pH 3.0'a doğru çok artar. Pankreas kanallarından bikarbonattan zengin sıvı salgılatır (HCO₃⁻ 145 mEq/L'ye kadar; pankreas sıvısının pH'ı yaklaşık 8.0). Bikarbonat asidi nötrler.</p>
+  <p><strong>Kolesistokinin (CCK)</strong>, I hücrelerinden özellikle yağ sindirim ürünleri (yağ asitleri, monogliseritler) ile salgılanır. Safra kesesini kastırır, pankreas enzim salgısını artırır ve mide boşalmasını yavaşlatır.</p>
+  <p><strong>Safra</strong> karaciğerde sürekli yapılır, safra kesesinde depolanır ve yoğunlaştırılır. Safra tuzları yağları emülsifiye eder ve misel oluşturur.</p>
+  <p>Pankreas salgısının %70–80'i intestinal evrede olur.</p>`+SRC("Kaynak: Guyton ve Hall (15. baskı), s. 808, 833–837; Ganong (27. baskı), Bölüm 25 ve 27.",""),
+  `<p><strong>Secretin</strong> is released from S cells of the duodenum and jejunum. Its release starts when duodenal pH falls below 4.5–5.0 and rises steeply toward pH 3.0. It drives the pancreatic ducts to secrete bicarbonate-rich fluid (HCO₃⁻ up to 145 mEq/L; pancreatic juice pH about 8.0). Bicarbonate neutralizes the acid.</p>
+  <p><strong>Cholecystokinin (CCK)</strong> is released from I cells, mainly in response to products of fat digestion (fatty acids, monoglycerides). It contracts the gallbladder, increases pancreatic enzyme secretion, and slows gastric emptying.</p>
+  <p><strong>Bile</strong> is secreted continually by the liver and is stored and concentrated in the gallbladder. Bile salts emulsify fats and form micelles.</p>
+  <p>About 70%–80% of pancreatic secretion occurs in the intestinal phase.</p>`+SRC("","Source: Guyton and Hall (15th ed.), pp. 808, 833–837; Ganong (27th ed.), Chapters 25 and 27."))
+};
+
+/* 3. SİNDİRİM VE EMİLİM */
+const NUT=["c","l","p","f","b"];
+M.emilim={
+  tab:{tr:"Sindirim ve emilim",en:"Digestion and absorption"},
+  eyebrow:{tr:"Enzimler ve taşıyıcılar",en:"Enzymes and transporters"},
+  title:{tr:"Sindirim ve emilim",en:"Digestion and absorption"},
+  sub:{tr:"Bir öğün seçin ve her besinin ne kadarının emildiğini izleyin. Bir enzim ya da safra eksik olursa ne olur?",en:"Choose a meal and watch how much of each nutrient is absorbed. What happens when an enzyme or bile is missing?"},
+  card:{tr:"Laktaz, pankreas enzimleri, safra ya da intrinsik faktör olmadan sindirimi deneyin.",en:"Try digestion without lactase, pancreatic enzymes, bile, or intrinsic factor."},
+  init:()=>{const s={meals:0}; NUT.forEach(k=>{s["st"+k]=0;s["lu"+k]=0;s["dg"+k]=0;s["ab"+k]=0;s["co"+k]=0;s["to"+k]=0;}); s.absC=0;s.absP=0;s.absF=0;s.colon=0; return s;},
+  controls:[
+    {type:"range",id:"carb",label:{tr:"Nişasta ve şeker",en:"Starch and sugar"},min:0,max:1,step:.05,value:.6,ends:[{tr:"Yok",en:"None"},{tr:"Çok",en:"High"}],help:{tr:"Ekmek, pilav, meyve.",en:"Bread, rice, fruit."}},
+    {type:"range",id:"milk",label:{tr:"Süt (laktoz)",en:"Milk (lactose)"},min:0,max:1,step:.05,value:.4,ends:[{tr:"Yok",en:"None"},{tr:"Çok",en:"High"}],help:{tr:"Laktoz, sütün disakkaritidir.",en:"Lactose is the disaccharide of milk."}},
+    {type:"range",id:"prot",label:{tr:"Protein",en:"Protein"},min:0,max:1,step:.05,value:.5,ends:[{tr:"Yok",en:"None"},{tr:"Çok",en:"High"}],help:{tr:"Et, yumurta, baklagil. Hayvansal besinler B12 de içerir.",en:"Meat, eggs, legumes. Animal foods also contain vitamin B12."}},
+    {type:"range",id:"fat",label:{tr:"Yağ",en:"Fat"},min:0,max:1,step:.05,value:.5,ends:[{tr:"Yok",en:"None"},{tr:"Çok",en:"High"}],help:{tr:"Yağın çoğu trigliserittir.",en:"Most dietary fat is triglyceride."}},
+    {type:"button",id:"eat",label:{tr:"Öğünü ye",en:"Eat the meal"},help:{tr:"Seçtiğiniz öğün ağızdan mideye geçer.",en:"The chosen meal passes from the mouth to the stomach."},act:(s,c)=>{
+      const pre=0.3*c.carb; s.stc+=c.carb-pre; s.dgc+=pre; s.toc+=c.carb;
+      s.stl+=0.5*c.milk; s.tol+=0.5*c.milk;
+      const pp=0.15*c.prot; s.stp+=c.prot-pp; s.dgp+=pp; s.top+=c.prot;
+      s.stf+=0.6*c.fat; s.tof+=0.6*c.fat;
+      s.stb+=0.2*c.prot; s.tob+=0.2*c.prot; s.meals++;}},
+    {type:"toggle",id:"lac",label:{tr:"Laktaz yok",en:"No lactase"},value:false,help:{tr:"Fırçamsı kenarda laktaz yok.",en:"No lactase in the brush border."}},
+    {type:"toggle",id:"pan",label:{tr:"Pankreas enzimleri yok",en:"No pancreatic enzymes"},value:false,help:{tr:"Amilaz, tripsin, kimotripsin ve lipaz salgılanmıyor.",en:"No amylase, trypsin, chymotrypsin, or lipase is secreted."}},
+    {type:"toggle",id:"bile",label:{tr:"Safra yok",en:"No bile"},value:false,help:{tr:"Safra tuzları olmadan yağ emülsifiye edilemez, misel oluşmaz.",en:"Without bile salts, fat cannot be emulsified and micelles do not form."}},
+    {type:"toggle",id:"ifx",label:{tr:"İntrinsik faktör yok",en:"No intrinsic factor"},value:false,help:{tr:"Paryetal hücreler intrinsik faktör salgılamıyor.",en:"The parietal cells do not secrete intrinsic factor."}}
+  ],
+  step(s,dt,c){
+    const g=1/6;
+    NUT.forEach(k=>{const m=Math.min(s["st"+k],s["st"+k]*g*dt); s["st"+k]-=m; s["lu"+k]+=m;});
+    const en=c.pan?0:1, bi=c.bile?0.15:1;
+    const kd={c:1.2*en,l:c.lac?0:1.2,p:1.2*en,f:1.2*en*bi,b:0};
+    const ka={c:1.0,l:1.0,p:1.0,f:1.0*bi,b:c.ifx?0:0.5};
+    const kt={c:0.012,l:0.012,p:0.04,f:0.025,b:0.02};
+    NUT.forEach(k=>{
+      const d=s["lu"+k]*kd[k]*dt, tl=s["lu"+k]*(kt[k]+(kd[k]===0&&k!=="b"?0.06:0))*dt;
+      s["lu"+k]=Math.max(0,s["lu"+k]-d-tl); s["co"+k]+=tl;
+      if(k==="b"){ const a=s.lub*ka.b*dt; s.lub=Math.max(0,s.lub-a); s.abb+=a; return; }
+      s["dg"+k]+=d;
+      const a=s["dg"+k]*ka[k]*dt, td=s["dg"+k]*kt[k]*dt;
+      s["dg"+k]=Math.max(0,s["dg"+k]-a-td); s["ab"+k]+=a; s["co"+k]+=td;
+    });
+    const r=(a,b)=>b>0.01?a/b:0;
+    s.absC=r(s.abc+s.abl,s.toc+s.tol); s.absP=r(s.abp,s.top); s.absF=r(s.abf,s.tof);
+    const tot=s.toc+s.tol+s.top+s.tof; s.colon=r(s.coc+s.col+s.cop+s.cof,tot);
+    s.busy=NUT.reduce((a,k)=>a+s["st"+k]+s["lu"+k]+s["dg"+k],0);
+    s.inSt=NUT.reduce((a,k)=>a+s["st"+k],0);
+  },
+  rows:(s,c)=>{
+    const on=L("Etkin","Active"), off=L("Yok","Absent");
+    return [[
+      {l:L("Ağız","Mouth"),s:L("Tükürük amilazı","Salivary amylase"),v:1,c:"--h3",fmt:()=>on,small:true},
+      {l:L("Pankreas","Pancreas"),s:L("Pankreas amilazı","Pancreatic amylase"),v:c.pan?0:1,c:"--h3",fmt:()=>c.pan?off:on,small:true},
+      {l:L("Fırçamsı kenar","Brush border"),s:L("Laktaz, sükraz, maltaz","Lactase, sucrase, maltase"),v:c.lac?0.5:1,c:"--h3",fmt:()=>c.lac?L("Laktaz yok","No lactase"):on,small:true},
+      {l:L("Kan","Blood"),s:L("Emilen karbonhidrat","Carbohydrate absorbed"),v:s.absC,c:"--h2"}
+    ],[
+      {l:L("Mide","Stomach"),s:L("Pepsin","Pepsin"),v:1,c:"--h1",fmt:()=>on,small:true},
+      {l:L("Pankreas","Pancreas"),s:L("Tripsin, kimotripsin","Trypsin, chymotrypsin"),v:c.pan?0:1,c:"--h1",fmt:()=>c.pan?off:on,small:true},
+      {l:L("Kan","Blood"),s:L("Emilen protein","Protein absorbed"),v:s.absP,c:"--h1"}
+    ],[
+      {l:L("Safra","Bile"),s:L("Emülsifikasyon, misel","Emulsification, micelles"),v:c.bile?0:1,c:"--h4",fmt:()=>c.bile?off:on,small:true},
+      {l:L("Pankreas","Pancreas"),s:L("Lipaz","Lipase"),v:c.pan?0:1,c:"--h4",fmt:()=>c.pan?off:on,small:true},
+      {l:L("Lenf ve kan","Lymph and blood"),s:L("Emilen yağ","Fat absorbed"),v:s.absF,c:"--h4"},
+      {l:L("İleum","Ileum"),s:L("B12 (intrinsik faktör ile)","B12 (with intrinsic factor)"),v:s.tob>0.01?s.abb/s.tob:0,c:"--h5"}
+    ]];
+  },
+  fb:()=>null,
+  series:[
+    {k:"absC",n:{tr:"Karbonhidrat emilimi",en:"Carbohydrate absorbed"},c:"--h2",min:0,max:1,primary:true,axis:v=>pct(v),fmt:v=>pct(v)},
+    {k:"absP",n:{tr:"Protein emilimi",en:"Protein absorbed"},c:"--h1",min:0,max:1,fmt:v=>pct(v)},
+    {k:"absF",n:{tr:"Yağ emilimi",en:"Fat absorbed"},c:"--h4",min:0,max:1,fmt:v=>pct(v)},
+    {k:"colon",n:{tr:"Kalın bağırsağa geçen",en:"Passed to the colon"},c:"--muted",min:0,max:1,fmt:v=>pct(v)}
+  ],
+  now(s,c){
+    const o=[];
+    if(s.meals===0){ o.push(L("Kaydırıcılarla öğünü seçin ve “Öğünü ye” düğmesine basın.","Choose the meal with the sliders and press “Eat the meal”.")); return o; }
+    if(s.inSt>0.05) o.push(tg("Ağız ve mide","Mouth and stomach")+L("Tükürük amilazı nişastanın bir kısmını parçaladı (nişasta sindiriminin %20–40'ı). Pepsin proteinin yalnızca %10–20'sini parçalar.","Salivary amylase has digested part of the starch (20%–40% of starch digestion). Pepsin digests only 10%–20% of the protein."));
+    if(s.busy>0.05&&s.inSt<0.3) o.push(tg("İnce bağırsak","Small intestine")+L("Pankreas ve fırçamsı kenar enzimleri çalışıyor. Glukoz ve galaktoz Na⁺ ile sekonder aktif taşımayla, fruktoz kolaylaştırılmış difüzyonla, aminoasitler Na⁺ ile emilir. Yağ asitleri ve monogliseritler misellerle taşınır.","Pancreatic and brush-border enzymes are working. Glucose and galactose are absorbed by Na⁺-coupled secondary active transport, fructose by facilitated diffusion, and amino acids with Na⁺. Fatty acids and monoglycerides are carried in micelles."));
+    if(c.lac&&s.tol>0.01) o.push(tg("Laktaz yok","No lactase")+L("Laktoz glukoz ve galaktoza ayrılamıyor; emilmeden kalın bağırsağa geçiyor.","Lactose cannot be split into glucose and galactose; it passes unabsorbed into the colon."));
+    if(c.pan) o.push(tg("Pankreas enzimleri yok","No pancreatic enzymes")+L("Nişasta, protein ve yağ yeterince parçalanamıyor. Trigliseritleri en çok pankreas lipazı parçaladığı için yağ neredeyse hiç emilmiyor.","Starch, protein, and fat cannot be digested adequately. Because pancreatic lipase digests most triglyceride, almost no fat is absorbed."));
+    if(c.bile&&!c.pan) o.push(tg("Safra yok","No bile")+L("Yağ emülsifiye edilemiyor ve misel oluşmuyor; lipaz yağa zor ulaşıyor, yağ emilimi azaldı.","Fat cannot be emulsified and micelles do not form; lipase reaches the fat poorly, so fat absorption has fallen."));
+    if(c.ifx&&s.tob>0.01) o.push(tg("İntrinsik faktör yok","No intrinsic factor")+L("B12 vitamini ileumda emilemiyor.","Vitamin B12 cannot be absorbed in the ileum."));
+    if(s.busy<0.02) o.push(tg("Öğün bitti","Meal complete")+L("Normalde karbonhidratın yaklaşık %98'i, yağın %95'i, proteinin %92'si emilir. Sizin sonuçlarınız grafikte.","Normally about 98% of carbohydrate, 95% of fat, and 92% of protein are absorbed. Your results are in the chart."));
+    return o;
+  },
+  visual(s,c){
+    const b=s.tob>0.01?s.abb/s.tob:null; const out=[];
+    if(b!=null) out.push(`<b>B12:</b> ${b>0.5?L("ileumda emildi","absorbed in the ileum"):(c.ifx?L("emilemedi (intrinsik faktör yok)","not absorbed (no intrinsic factor)"):L("emiliyor…","being absorbed…"))}`);
+    if(s.col>0.02) out.push(`<b>${L("Kolonda laktoz","Lactose in the colon")}:</b> ${L("emilmeyen laktoz ozmotik etkiyle suyu bağırsak lümenine çeker; kolon bakterileri laktozu parçalayıp gaz oluşturur.","unabsorbed lactose draws water into the gut lumen by osmosis; colonic bacteria break the lactose down and produce gas.")}`);
+    if(s.cof>0.1) out.push(`<b>${L("Emilmeyen yağ","Unabsorbed fat")}:</b> ${L("dışkıyla atılır.","is lost in the feces.")}`);
+    return out.length?`<div style="display:grid;gap:6px">${out.map(x=>`<div>${x}</div>`).join("")}</div>`:"";
+  },
+  daily:{tr:"Laktaz etkinliği doğumda yüksektir, birçok insanda erişkinlikte azalır.",en:"Lactase activity is high at birth and falls in adulthood in many people."},
+  tasks:{tr:["Varsayılan öğünü yiyin. Hangi besin en çok, hangisi en az emiliyor?","“Laktaz yok”u açın, sütü artırın ve yiyin. Laktoz nereye gidiyor? Kolonda suyu neden lümene çeker?","“Pankreas enzimleri yok”u açın. En çok hangi besin etkileniyor? Neden?","“İntrinsik faktör yok”u açın. Hangi vitamin emilemiyor ve nerede emilmesi gerekirdi?"],
+         en:["Eat the default meal. Which nutrient is absorbed most, and which least?","Switch on “No lactase”, raise milk, and eat. Where does the lactose go? Why does it draw water into the lumen in the colon?","Switch on “No pancreatic enzymes”. Which nutrient is affected most? Why?","Switch on “No intrinsic factor”. Which vitamin cannot be absorbed, and where should it be absorbed?"]},
+  note:()=>L(`<p><strong>Karbonhidrat:</strong> Nişasta sindiriminin %20–40'ını tükürük amilazı, %50–80'ini pankreas amilazı yapar. Fırçamsı kenardaki laktaz, sükraz ve maltaz disakkaritleri monosakkaritlere ayırır. Glukoz ve galaktoz Na⁺ ile sekonder aktif taşımayla, fruktoz kolaylaştırılmış difüzyonla emilir.</p>
+  <p><strong>Protein:</strong> Pepsin protein sindiriminin yalnızca %10–20'sini yapar; çoğunu pankreas proteazları (tripsin, kimotripsin) yapar. Aminoasitler Na⁺ ile emilir.</p>
+  <p><strong>Yağ:</strong> Safra tuzları yağı emülsifiye eder. Trigliseritleri en çok pankreas lipazı parçalar (yağ asitleri + monogliserit). Ürünler misellerle mukozaya taşınır.</p>
+  <p><strong>B12:</strong> Paryetal hücrelerin salgıladığı intrinsik faktör ile ileumda reseptör aracılı emilir.</p>
+  <p>Emilen oranlar: karbonhidrat ~%98, yağ ~%95, protein ~%92.</p>`+SRC("Kaynak: Guyton ve Hall (15. baskı), s. 829, 842–852, 894; Ganong (27. baskı), Bölüm 26.",""),
+  `<p><strong>Carbohydrate:</strong> Salivary amylase performs 20%–40% and pancreatic amylase 50%–80% of starch digestion. Lactase, sucrase, and maltase in the brush border split disaccharides into monosaccharides. Glucose and galactose are absorbed by Na⁺-coupled secondary active transport and fructose by facilitated diffusion.</p>
+  <p><strong>Protein:</strong> Pepsin performs only 10%–20% of protein digestion; most is done by pancreatic proteases (trypsin, chymotrypsin). Amino acids are absorbed with Na⁺.</p>
+  <p><strong>Fat:</strong> Bile salts emulsify fat. Pancreatic lipase digests most triglyceride (fatty acids + monoglyceride). The products are carried to the mucosa in micelles.</p>
+  <p><strong>B12:</strong> It is absorbed in the ileum by receptor-mediated uptake, bound to intrinsic factor secreted by the parietal cells.</p>
+  <p>Fractions absorbed: carbohydrate ~98%, fat ~95%, protein ~92%.</p>`+SRC("","Source: Guyton and Hall (15th ed.), pp. 829, 842–852, 894; Ganong (27th ed.), Chapter 26."))
+};
+
+/* 4. SIVI DENGESİ */
+const BOOK={
+  g:{sec:[["saliva",1.0],["gastric",1.5],["bile",1.0],["pancreas",1.0],["intestine",2.0]],colSec:0.2,colIn:1.5,stool:0.1,intake:1.5},
+  n:{sec:[["saliva",1.5],["gastric",2.5],["bile",0.5],["pancreas",1.5],["intestine",1.0]],colSec:0,colIn:1.5,stool:0.2,intake:2.0}
+};
+const SECN={saliva:{tr:"Tükürük",en:"Saliva"},gastric:{tr:"Mide",en:"Gastric"},bile:{tr:"Safra",en:"Bile"},pancreas:{tr:"Pankreas",en:"Pancreas"},intestine:{tr:"İnce bağırsak",en:"Small intestine"}};
+const CAP=6.5;
+const lt=v=>v<1?Math.round(v*1000)+" mL":v.toFixed(1)+" L";
+M.sivi={
+  tab:{tr:"Sıvı dengesi",en:"Fluid balance"},
+  eyebrow:{tr:"Günde 8–9 litre",en:"8–9 liters a day"},
+  title:{tr:"Sindirim kanalında sıvı dengesi",en:"Fluid balance in the gut"},
+  sub:{tr:"Bağırsağa her gün içtiğinizden çok daha fazla sıvı girer. Çoğu ince bağırsakta geri emilir.",en:"Every day far more fluid enters the gut than you drink. Most of it is reabsorbed in the small intestine."},
+  card:{tr:"Günlük sıvı akışını izleyin, iki ders kitabının değerlerini karşılaştırın ve kolera ishalini deneyin.",en:"Follow the daily fluid flow, compare the values of two textbooks, and try cholera diarrhea."},
+  init:()=>({intake:1.5,sec:6.5,si:6.5,load:1.7,col:1.6,fec:0.1}),
+  controls:[
+    {type:"toggle",id:"gan",label:{tr:"Ganong değerlerini kullan",en:"Use Ganong values"},value:false,help:{tr:"Kapalı: Guyton ve Hall (15. baskı). Açık: Ganong (27. baskı). İki kitabın değerleri farklıdır.",en:"Off: Guyton and Hall (15th ed.). On: Ganong (27th ed.). The two books give different values."}},
+    {type:"range",id:"drink",label:{tr:"İçilen sıvı",en:"Fluid intake"},min:0.5,max:3,step:0.1,value:1.5,show:v=>v.toFixed(1)+" L/"+L("gün","day"),ends:[{tr:"0.5 L",en:"0.5 L"},{tr:"3 L",en:"3 L"}],help:{tr:"Günde içilen su ve içecek.",en:"Water and drinks per day."}},
+    {type:"toggle",id:"chol",label:{tr:"Kolera toksini",en:"Cholera toxin"},value:false,help:{tr:"Toksin, terminal ileum ve kalın bağırsaktaki kriptlerden günde 10 L veya daha fazla sıvı salgılatır.",en:"The toxin makes the crypts of the terminal ileum and colon secrete 10 L or more of fluid per day."}}
+  ],
+  step(s,dt,c){
+    const b=c.gan?BOOK.n:BOOK.g; const sec=b.sec.reduce((a,x)=>a+x[1],0);
+    const colIn=Math.max(1,b.colIn+0.1*(c.drink-b.intake));
+    const load=colIn+b.colSec+(c.chol?10:0);
+    const colAbs=Math.min(load-b.stool,CAP);
+    const T=(k,v)=>{s[k]=ap(s[k],v,2.5,dt);};
+    T("intake",c.drink); T("sec",sec); T("si",c.drink+sec-colIn); T("load",load); T("col",colAbs); T("fec",load-colAbs);
+  },
+  rows:(s,c)=>{const b=c.gan?BOOK.n:BOOK.g; return [[
+    {l:L("Ağız","Mouth"),s:L("İçilen","Drunk"),v:s.intake/10,c:"--h1",fmt:()=>lt(s.intake)},
+    {l:L("Salgılar","Secretions"),s:L("Tükürük, mide, safra, pankreas, bağırsak","Saliva, gastric, bile, pancreas, intestine"),v:s.sec/10,c:"--h5",fmt:()=>lt(s.sec)},
+    {l:L("İnce bağırsak","Small intestine"),s:L("Geri emilen","Reabsorbed"),v:s.si/10,c:"--h3",fmt:()=>lt(s.si)}
+  ],[
+    {l:L("Kalın bağırsak","Colon"),s:L("Gelen sıvı","Fluid entering"),v:s.load/12,c:"--h2",fmt:()=>lt(s.load)},
+    {l:L("Kalın bağırsak","Colon"),s:L("Geri emilen (en çok 5–8 L)","Reabsorbed (max 5–8 L)"),v:s.col/10,c:"--h3",fmt:()=>lt(s.col)},
+    {l:L("Dışkı","Feces"),s:L("Kaybedilen sıvı","Fluid lost"),v:s.fec/10,c:"--signal",fmt:()=>lt(s.fec)}
+  ]];},
+  fb:(s,c)=>{const over=s.load>CAP+0.3; return {kind:over?"pos":"neg",on:true,strength:over?1:0.4,text:over?L("Kolonun emme kapasitesi (günde en çok 5–8 L) aşıldı: fazla sıvı ishal olarak atılıyor.","The colon's absorptive capacity (at most 5–8 L per day) is exceeded: the excess is lost as diarrhea."):L("Kolona gelen sıvı kapasitenin altında: neredeyse tamamı geri emiliyor.","Fluid entering the colon is below its capacity: almost all of it is reabsorbed.")};},
+  series:[
+    {k:"load",n:{tr:"Kolona gelen",en:"Entering the colon"},c:"--h2",min:0,max:12,primary:true,band:[5,8],bandLabel:{tr:"kolon kapasitesi",en:"colon capacity"},axis:v=>v.toFixed(0)+" L",fmt:v=>lt(v)},
+    {k:"col",n:{tr:"Kolonda emilen",en:"Absorbed in the colon"},c:"--h3",min:0,max:12,fmt:v=>lt(v)},
+    {k:"fec",n:{tr:"Dışkıyla kaybedilen",en:"Lost in feces"},c:"--signal",min:0,max:12,fmt:v=>lt(v)}
+  ],
+  now(s,c){
+    const o=[]; const tot=s.intake+s.sec;
+    o.push(L(`Günde ${lt(s.intake)} içiyorsunuz, ama bağırsaktan ${lt(tot)} sıvı geçiyor: salgılar (${lt(s.sec)}) içtiğinizden çok daha fazla. İnce bağırsak bunun ${lt(s.si)} kadarını geri emiyor.`,`You drink ${lt(s.intake)} per day, but ${lt(tot)} of fluid passes through the gut: the secretions (${lt(s.sec)}) far exceed what you drink. The small intestine reabsorbs ${lt(s.si)} of it.`));
+    if(c.chol) o.push(tg("Kolera","Cholera")+L("Toksin kriptlerden çok fazla sıvı salgılatıyor. Kolona gelen sıvı, kolonun en çok emebileceği miktarı aşıyor; fazlası ishal olarak atılıyor.","The toxin makes the crypts secrete a large volume of fluid. Fluid entering the colon exceeds the maximum the colon can absorb; the excess is lost as diarrhea."));
+    else o.push(L(`Kolona yaklaşık ${lt(s.load)} geliyor; dışkıyla yalnızca ${lt(s.fec)} atılıyor.`,`About ${lt(s.load)} reaches the colon; only ${lt(s.fec)} is lost in the feces.`));
+    if(c.gan) o.push(tg("Ganong","Ganong")+L("Ganong'un değerleri Guyton'dan farklıdır (ör. mide salgısı 2500 mL, dışkı 200 mL). Sayılar kaynağa göre değişir, işleyiş aynıdır.","Ganong's values differ from Guyton's (e.g., gastric secretion 2500 mL, stool 200 mL). The numbers depend on the source; the mechanism is the same."));
+    return o;
+  },
+  visual(s,c){
+    const b=c.gan?BOOK.n:BOOK.g;
+    return `<div class="bars"><b>${L("Günlük salgılar","Daily secretions")} (${c.gan?"Ganong":"Guyton"})</b>${b.sec.map(([k,v])=>`<div class="bar"><span>${t(SECN[k])}</span><i style="width:${v/2.6*100}%"></i><em>${Math.round(v*1000)} mL</em></div>`).join("")}${b.colSec?`<small style="color:var(--muted)">${L("Guyton ayrıca kalın bağırsak salgısı 200 mL verir (toplam 6700 mL).","Guyton also lists 200 mL of large-intestine secretion (total 6700 mL).")}</small>`:""}</div>`;
+  },
+  daily:{tr:"Bağırsaklara günde yaklaşık 8–9 L sıvı girer; dışkıyla bunun çok azı atılır (Guyton: 100 mL'den az; Ganong: 200 mL).",en:"About 8–9 L of fluid enters the gut each day; only a small part leaves with the feces (Guyton: less than 100 mL; Ganong: 200 mL)."},
+  tasks:{tr:["İçtiğiniz sıvı ile bağırsaktan geçen toplam sıvıyı karşılaştırın. Fark nereden geliyor?","Ganong değerlerine geçin. Hangi sayılar değişti? İşleyiş değişti mi?","Kolera toksinini açın. Kolona gelen sıvı neden dışkıda kalıyor?","İçilen sıvıyı 3 L'ye çıkarın. Dışkıdaki sıvı neden pek değişmiyor?"],
+         en:["Compare what you drink with the total fluid passing through the gut. Where does the difference come from?","Switch to Ganong's values. Which numbers changed? Did the mechanism change?","Switch on the cholera toxin. Why does fluid entering the colon end up in the feces?","Raise fluid intake to 3 L. Why does fecal fluid hardly change?"]},
+  note:()=>L(`<p>Bağırsağa her gün yaklaşık 1.5 L içilen sıvı ve yaklaşık 7 L salgı girer; toplam 8–9 L. Bunun yaklaşık 1.5 L dışında tamamı ince bağırsakta emilir. Kolona geçen sıvının çoğu da emilir; dışkıyla 100 mL'den az sıvı atılır (Guyton).</p>
+  <p><strong>Guyton (Tablo 65.1):</strong> tükürük 1000, mide 1500, pankreas 1000, safra 1000, ince bağırsak 1800, Brunner bezleri 200, kalın bağırsak 200 mL; toplam 6700 mL.</p>
+  <p><strong>Ganong (Tablo 25-5):</strong> alım 2000 mL; salgılar 7000 mL (tükürük 1500, mide 2500, safra 500, pankreas 1500, bağırsak 1000); emilim jejunumda 5500, ileumda 2000, kolonda 1300 mL; dışkıyla 200 mL.</p>
+  <p>Kalın bağırsak günde en çok 5–8 L sıvı emebilir. Gelen sıvı bunu aşarsa fazlası ishal olarak atılır. Kolera toksini kriptlerden günde 10 L veya daha fazla sıvı salgılatabilir. Kalın bağırsakta Na⁺ ve Cl⁻ emilimi ozmotik gradyan oluşturur; su bu gradyanla emilir.</p>`+SRC("Kaynak: Guyton ve Hall (15. baskı), s. 827, 845, 850; Ganong (27. baskı), Tablo 25-5.",""),
+  `<p>About 1.5 L of ingested fluid and about 7 L of secretions enter the gut each day, 8–9 L in total. All but about 1.5 L is absorbed in the small intestine. Most of the fluid entering the colon is also absorbed; less than 100 mL is lost in the feces (Guyton).</p>
+  <p><strong>Guyton (Table 65.1):</strong> saliva 1000, gastric 1500, pancreatic 1000, bile 1000, small intestine 1800, Brunner glands 200, large intestine 200 mL; total 6700 mL.</p>
+  <p><strong>Ganong (Table 25-5):</strong> intake 2000 mL; secretions 7000 mL (saliva 1500, stomach 2500, bile 500, pancreas 1500, intestine 1000); absorption 5500 mL in the jejunum, 2000 mL in the ileum, and 1300 mL in the colon; 200 mL in the stool.</p>
+  <p>The large intestine can absorb at most 5–8 L of fluid per day. If more enters, the excess appears as diarrhea. Cholera toxin can make the crypts secrete 10 L or more per day. Absorption of Na⁺ and Cl⁻ in the colon creates an osmotic gradient that drives water absorption.</p>`+SRC("","Source: Guyton and Hall (15th ed.), pp. 827, 845, 850; Ganong (27th ed.), Table 25-5."))
+};
+
+/* 5. KALIN BAĞIRSAK VE DEFEKASYON */
+M.defek={
+  tab:{tr:"Defekasyon",en:"Defecation"},
+  eyebrow:{tr:"Refleks ve istemli kontrol",en:"Reflex and voluntary control"},
+  title:{tr:"Kalın bağırsak ve defekasyon",en:"Colon and defecation"},
+  sub:{tr:"Yemek kütlesel hareketleri tetikler ve rektum dolar. İç sfinkter istemsiz, dış sfinkter istemlidir.",en:"A meal triggers mass movements and the rectum fills. The internal sphincter is involuntary; the external sphincter is voluntary."},
+  card:{tr:"Yemek yiyin, dış sfinkteri tutun ya da gevşetin, ıkının. 18 ve 55 mm Hg eşiklerini görün.",en:"Eat, hold or relax the external sphincter, and strain. See the 18 and 55 mm Hg thresholds."},
+  init:()=>({dist:0,mm:0,tm:0,R:0,P:0,val:0,ias:1,eas:0.6,exp:0,n:0,why:""}),
+  controls:[
+    {type:"button",id:"eat",label:{tr:"Yemek ye",en:"Eat a meal"},help:{tr:"Mide gerilir: gastrokolik refleks kalın bağırsakta kütlesel hareketleri kolaylaştırır.",en:"The stomach is stretched: the gastrocolic reflex facilitates mass movements in the colon."},act:s=>{s.dist=1;s.tm=0;}},
+    {type:"toggle",id:"hold",label:{tr:"Dış sfinkteri kasılı tut",en:"Keep the external sphincter contracted"},value:true,help:{tr:"Uygun bir an gelene kadar dışkıyı istemli olarak tutmak. Kapatınca dış sfinkter gevşer.",en:"Voluntarily holding the feces until a suitable moment. Switch off to relax the external sphincter."}},
+    {type:"button",id:"push",label:{tr:"Ikın (Valsalva)",en:"Strain (Valsalva)"},help:{tr:"Derin nefes alıp karın kaslarını kasmak, dışkıyı aşağı iter ve refleksi güçlendirir.",en:"Taking a deep breath and contracting the abdominal muscles pushes the feces down and strengthens the reflex."},act:s=>{s.val=1;}},
+    {type:"toggle",id:"child",label:{tr:"Küçük çocuk",en:"Young child"},value:false,help:{tr:"İstemli kontrol erken çocukluk yıllarında öğrenilir; küçük çocukta henüz yoktur.",en:"Voluntary control is learned in the early years of life; a young child does not yet have it."}}
+  ],
+  step(s,dt,c){
+    s.dist=s.dist*Math.exp(-dt/30);
+    s.tm+=dt; if(s.dist>0.25&&s.tm>5){ s.tm=0; s.mm=1; s.R+=0.13*s.dist; }
+    s.mm=s.mm*Math.exp(-dt/0.9);
+    s.val=s.val*Math.exp(-dt/2.5);
+    s.P=60*s.R; const Pe=s.P+28*s.val; s.Pe=Pe;
+    s.ias=ap(s.ias,cl(1-(Pe-8)/25,0.1,1),0.8,dt);
+    const vol=c.hold&&!c.child;
+    let go=false;
+    if(Pe>=55){go=true; s.why="reflex";}
+    else if(Pe>=18&&(!c.hold||c.child)){go=true; s.why=c.child?"child":"vol";}
+    if(s.exp>0){ s.exp-=dt; s.R=Math.max(0,s.R-0.5*dt); if(s.R<0.01){s.exp=0;} }
+    else if(go&&s.R>0.05){ s.exp=3; s.n++; }
+    const easT=s.exp>0?0.05:(vol?0.6+0.6*cl(Pe/55,0,1):(c.child?0.6:0.1));
+    s.eas=ap(s.eas,easT,0.6,dt);
+  },
+  rows:s=>[[
+    {l:L("Mide","Stomach"),s:L("Gerilme","Distension"),v:s.dist,c:"--h3"},
+    {l:L("Kalın bağırsak","Colon"),s:L("Kütlesel hareket","Mass movement"),v:s.mm,c:"--h1"},
+    {l:L("Rektum","Rectum"),s:L("Basınç","Pressure"),v:(s.Pe||0)/70,c:"--h2",fmt:()=>Math.round(s.Pe||0)+" mm Hg"},
+    {l:L("İç anal sfinkter","Internal anal sphincter"),s:L("Düz kas, istemsiz","Smooth muscle, involuntary"),v:s.ias,c:"--h5"},
+    {l:L("Dış anal sfinkter","External anal sphincter"),s:L("İskelet kası, istemli","Skeletal muscle, voluntary"),v:s.eas/1.2,c:"--h4"}
+  ]],
+  fb:s=>{const P=s.Pe||0; if(P>=55) return {kind:"pos",on:true,strength:1,text:L("Basınç ~55 mm Hg: iç ve dış sfinkter refleks olarak gevşer.","Pressure ~55 mm Hg: both sphincters relax reflexly.")};
+    if(P>=18) return {kind:"neg",on:true,strength:0.7,text:L("Basınç ~18 mm Hg'yi aştı: dışkılama isteği.","Pressure has passed ~18 mm Hg: urge to defecate.")};
+    return {kind:"neg",on:false,strength:0,text:L("Rektum basıncı dışkılama isteği eşiğinin (~18 mm Hg) altında.","Rectal pressure is below the urge threshold (~18 mm Hg).")};},
+  series:[
+    {k:"Pe",n:{tr:"Rektum basıncı",en:"Rectal pressure"},c:"--h2",min:0,max:70,primary:true,axis:v=>Math.round(v),fmt:v=>Math.round(v)+" mm Hg",refs:[{v:18,l:{tr:"istek (~18)",en:"urge (~18)"}},{v:55,l:{tr:"refleks boşalma (~55)",en:"reflex emptying (~55)"}}]},
+    {k:"mm",n:{tr:"Kütlesel hareket",en:"Mass movement"},c:"--h1",min:0,max:1.4,fmt:v=>pct(v)},
+    {k:"eas",n:{tr:"Dış sfinkter",en:"External sphincter"},c:"--h4",min:0,max:1.4,fmt:v=>pct(v/1.2)}
+  ],
+  now(s,c){
+    const o=[]; const P=s.Pe||0;
+    if(s.dist>0.25) o.push(tg("Gastrokolik refleks","Gastrocolic reflex")+L("Mide gerildi. Yemekten sonra kalın bağırsakta kütlesel hareketler kolaylaşır ve dışkı rektuma itilir.","The stomach is stretched. After a meal, mass movements in the colon are facilitated and feces are pushed into the rectum."));
+    if(s.exp>0){
+      if(s.why==="reflex") o.push(tg("Refleks","Reflex")+L("Basınç ~55 mm Hg'ye ulaştı: iç ve dış sfinkter refleks olarak gevşedi, rektum boşalıyor. Bu yüzden omurilik yaralanmasında da refleks boşalma olabilir.","Pressure reached ~55 mm Hg: both sphincters relaxed reflexly and the rectum is emptying. This is why reflex emptying can occur even after spinal cord injury."));
+      else if(s.why==="child") o.push(tg("Küçük çocuk","Young child")+L("İstemli kontrol henüz öğrenilmediği için refleks kendiliğinden boşaltıyor. Çocuklarda yemekten sonra defekasyon bu yüzden sıktır.","Voluntary control has not yet been learned, so the reflex empties the rectum by itself. This is why defecation after meals is frequent in children."));
+      else o.push(tg("Defekasyon","Defecation")+L("Dış sfinkteri gevşettiniz; rektum boşalıyor.","You relaxed the external sphincter; the rectum is emptying."));
+    } else if(P>=18&&c.hold&&!c.child) o.push(tg("İstek","Urge")+L("Rektum basıncı ~18 mm Hg'yi aştı: dışkılama isteği. İç sfinkter gevşedi, ama dış sfinkteri istemli olarak kasılı tutuyorsunuz; gerilme onun kasılmasını da artırır.","Rectal pressure has passed ~18 mm Hg: urge to defecate. The internal sphincter has relaxed, but you are voluntarily holding the external sphincter; distension also strengthens its contraction."));
+    if(s.val>0.3) o.push(tg("Ikınma","Straining")+L("Derin nefes ve karın kasları karın içi basıncını artırıp dışkıyı aşağı itiyor.","A deep breath and the abdominal muscles raise intra-abdominal pressure and push the feces down."));
+    if(!o.length) o.push(s.R>0.05?L("Rektumda dışkı var ama basınç istek eşiğinin altında.","There are feces in the rectum, but the pressure is below the urge threshold."):L("Kalın bağırsak dinlenmede. “Yemek ye” düğmesine basın.","The colon is at rest. Press “Eat a meal”."));
+    return o;
+  },
+  visual:s=>`<div class="visual"><div class="clock">${s.n}</div><div><b>${L("Defekasyon sayısı","Number of defecations")}</b><br><small style="color:var(--muted)">${L("Rektum içeriği","Rectal content")}: ${pct(cl(s.R/1.2,0,1))}</small></div></div>`,
+  daily:{tr:"Kahvaltıdan sonra tuvalet ihtiyacı duymak gastrokolik refleksin bir örneğidir. Erişkinde zamanlamayı alışkanlık belirler.",en:"Needing the toilet after breakfast is an example of the gastrocolic reflex. In adults, habit determines the timing."},
+  tasks:{tr:["“Yemek ye”ye basın. Rektum basıncı neden yükseliyor?","Dış sfinkteri kasılı tutarken iki kez daha yiyin. Basınç ~55 mm Hg'ye ulaşınca ne oluyor?","Basınç 18–55 mm Hg arasındayken “Dış sfinkteri kasılı tut”u kapatın, sonra “Ikın”a basın.","“Küçük çocuk”u açıp yeniden yiyin. Fark nedir?"],
+         en:["Press “Eat a meal”. Why does rectal pressure rise?","Eat twice more while holding the external sphincter. What happens when pressure reaches ~55 mm Hg?","While pressure is between 18 and 55 mm Hg, switch off “Keep the external sphincter contracted”, then press “Strain”.","Switch on “Young child” and eat again. What is the difference?"]},
+  note:()=>L(`<p>Yemekten sonra midenin ve duodenumun gerilmesi, <strong>gastrokolik</strong> ve duodenokolik reflekslerle kalın bağırsakta <strong>kütlesel hareketleri</strong> kolaylaştırır; dışkı rektuma itilir.</p>
+  <p>Rektum gerilince <strong>iç anal sfinkter</strong> (düz kas, istemsiz) gevşer. <strong>Dış anal sfinkter</strong> iskelet kasıdır, pudendal sinirle uyarılır ve istemli kontrol edilir; orta derecede gerilme onun kasılmasını artırır.</p>
+  <p>Rektum basıncı yaklaşık <strong>18 mm Hg</strong>'ye çıkınca dışkılama isteği başlar. Yaklaşık <strong>55 mm Hg</strong>'de iç ve dış sfinkter birlikte gevşer ve rektum refleks olarak boşalır.</p>
+  <p>Derin nefes alıp karın kaslarını kasmak defekasyon refleksini güçlendirir. İstemli kontrol erken çocukluk yıllarında, doğal refleksin baskılanmasıyla öğrenilir.</p>`+SRC("Kaynak: Guyton ve Hall (15. baskı), s. 823, 854; Ganong (27. baskı), Bölüm 27.",""),
+  `<p>After a meal, distension of the stomach and duodenum facilitates <strong>mass movements</strong> in the colon through the <strong>gastrocolic</strong> and duodenocolic reflexes; feces are pushed into the rectum.</p>
+  <p>When the rectum is distended, the <strong>internal anal sphincter</strong> (smooth muscle, involuntary) relaxes. The <strong>external anal sphincter</strong> is skeletal muscle, supplied by the pudendal nerve and under voluntary control; moderate distension increases its contraction.</p>
+  <p>The urge to defecate begins when rectal pressure rises to about <strong>18 mm Hg</strong>. At about <strong>55 mm Hg</strong>, both sphincters relax and the rectum empties reflexly.</p>
+  <p>Taking a deep breath and contracting the abdominal muscles strengthens the defecation reflex. Voluntary control is learned in the early years of life by inhibiting the natural reflex.</p>`+SRC("","Source: Guyton and Hall (15th ed.), pp. 823, 854; Ganong (27th ed.), Chapter 27."))
+};
+
+/* 6. ENERJİ VE VKİ */
+function bmiClass(b){
+  if(b<25) return [L("25'in altında","Below 25"),"ok"];
+  if(b<30) return [L("Normalden fazla kilolu","Overweight"),"hi"];
+  return [L("Obez","Obesity"),"hi"];
+}
+M.enerji={
+  tab:{tr:"Enerji ve VKİ",en:"Energy and BMI"},
+  eyebrow:{tr:"Beslenme",en:"Nutrition"},
+  title:{tr:"Öğünün enerjisi ve vücut kitle indeksi",en:"Meal energy and body mass index"},
+  sub:{tr:"Karbonhidrat ve protein 4, yağ 9 kcal/g enerji verir. Vücut kitle indeksi (VKİ) = kilo / boy².",en:"Carbohydrate and protein provide 4 and fat 9 kcal/g. Body mass index (BMI) = weight / height²."},
+  card:{tr:"Günlük besinlerinizi girin, enerjinin nereden geldiğini görün. Boy ve kilonuzla VKİ'nizi hesaplayın.",en:"Enter your daily food, see where the energy comes from, and calculate your BMI from height and weight."},
+  init:()=>({bmi:24.2,kcal:1950}),
+  controls:[
+    {type:"range",id:"cg",label:{tr:"Karbonhidrat",en:"Carbohydrate"},min:0,max:500,step:10,value:250,show:v=>v+" g/"+L("gün","day"),ends:[{tr:"0 g",en:"0 g"},{tr:"500 g",en:"500 g"}],help:{tr:"× 4 kcal/g",en:"× 4 kcal/g"}},
+    {type:"range",id:"pg",label:{tr:"Protein",en:"Protein"},min:0,max:200,step:5,value:80,show:v=>v+" g/"+L("gün","day"),ends:[{tr:"0 g",en:"0 g"},{tr:"200 g",en:"200 g"}],help:{tr:"× 4 kcal/g",en:"× 4 kcal/g"}},
+    {type:"range",id:"fg",label:{tr:"Yağ",en:"Fat"},min:0,max:150,step:5,value:70,show:v=>v+" g/"+L("gün","day"),ends:[{tr:"0 g",en:"0 g"},{tr:"150 g",en:"150 g"}],help:{tr:"× 9 kcal/g",en:"× 9 kcal/g"}},
+    {type:"range",id:"h",label:{tr:"Boy",en:"Height"},min:140,max:200,step:1,value:170,show:v=>v+" cm",ends:[{tr:"140 cm",en:"140 cm"},{tr:"200 cm",en:"200 cm"}],help:{tr:"",en:""}},
+    {type:"range",id:"w",label:{tr:"Kilo",en:"Weight"},min:40,max:140,step:1,value:70,show:v=>v+" kg",ends:[{tr:"40 kg",en:"40 kg"},{tr:"140 kg",en:"140 kg"}],help:{tr:"",en:""}}
+  ],
+  step(s,dt,c){
+    s.kc=4*c.cg; s.kp=4*c.pg; s.kf=9*c.fg; const k=s.kc+s.kp+s.kf;
+    s.kcal=ap(s.kcal,k,0.6,dt); s.bmiT=c.w/Math.pow(c.h/100,2); s.bmi=ap(s.bmi,s.bmiT,0.6,dt);
+  },
+  rows:(s,c)=>{const k=Math.max(1,s.kc+s.kp+s.kf); const b=s.bmiT||0; return [[
+    {l:L("Karbonhidrat","Carbohydrate"),s:c.cg+" g × 4",v:s.kc/k,c:"--h2",fmt:()=>Math.round(s.kc)+" kcal"},
+    {l:"Protein",s:c.pg+" g × 4",v:s.kp/k,c:"--h1",fmt:()=>Math.round(s.kp)+" kcal"},
+    {l:L("Yağ","Fat"),s:c.fg+" g × 9",v:s.kf/k,c:"--h4",fmt:()=>Math.round(s.kf)+" kcal"},
+    {l:L("Toplam","Total"),s:"kcal/"+L("gün","day"),v:k/4000,c:"--navy",fmt:()=>Math.round(k)}
+  ],[
+    {l:L("Boy","Height"),s:"m",v:(c.h-140)/60,c:"--h3",fmt:()=>(c.h/100).toFixed(2)},
+    {l:L("Kilo","Weight"),s:"kg",v:(c.w-40)/100,c:"--h3",fmt:()=>c.w},
+    {l:L("VKİ","BMI"),s:"kg/m²",v:cl((b-10)/35,0,1),c:"--h5",fmt:()=>b.toFixed(1)},
+    {l:L("Sınıf","Class"),s:L("Guyton'un sınırları","Guyton's limits"),v:cl((b-10)/35,0,1),c:"--h5",fmt:()=>bmiClass(b)[0],small:true}
+  ]];},
+  fb:()=>null,
+  series:[
+    {k:"bmi",n:{tr:"VKİ",en:"BMI"},c:"--h5",min:10,max:45,primary:true,axis:v=>v.toFixed(0),fmt:v=>v.toFixed(1)+" kg/m²",refs:[{v:25,l:{tr:"fazla kilolu (25)",en:"overweight (25)"}},{v:30,l:{tr:"obez (30)",en:"obesity (30)"}}]},
+    {k:"kcal",n:{tr:"Enerji",en:"Energy"},c:"--navy",min:0,max:5000,fmt:v=>Math.round(v)+" kcal"}
+  ],
+  now(s,c){
+    const k=Math.max(1,s.kc+s.kp+s.kf); const p=[s.kc,s.kp,s.kf].map(v=>v/k); const b=s.bmiT||0; const [cn]=bmiClass(b);
+    const o=[L(`Günlük besinleriniz ${Math.round(k)} kcal veriyor: karbonhidrat ${pct(p[0])}, protein ${pct(p[1])}, yağ ${pct(p[2])}.`,`Your daily food provides ${Math.round(k)} kcal: carbohydrate ${pct(p[0])}, protein ${pct(p[1])}, fat ${pct(p[2])}.`),
+      L(`VKİ = ${c.w} / ${(c.h/100).toFixed(2)}² = <b>${b.toFixed(1)} kg/m²</b> → ${cn}.`,`BMI = ${c.w} / ${(c.h/100).toFixed(2)}² = <b>${b.toFixed(1)} kg/m²</b> → ${cn}.`)];
+    if(c.fg>0&&s.kf/k>0.35) o.push(tg("Yağ","Fat")+L("Gramı az görünse de yağ enerjinin büyük kısmını veriyor: 1 g yağ 9 kcal, 1 g karbonhidrat 4 kcal.","Although its weight looks small, fat supplies a large part of the energy: 1 g of fat gives 9 kcal, 1 g of carbohydrate 4 kcal."));
+    return o;
+  },
+  visual(s){
+    const k=Math.max(1,s.kc+s.kp+s.kf); const p=[s.kc,s.kp,s.kf].map(v=>Math.round(100*v/k)); const col=["--h2","--h1","--h4"]; const lab=[L("Karbonhidrat","Carbohydrate"),"Protein",L("Yağ","Fat")]; const ref=[47,16,37];
+    const bar=(arr)=>`<div class="stack">${arr.map((v,i)=>`<i style="width:${v}%;background:var(${col[i]})"></i>`).join("")}</div>`;
+    return `<div style="display:grid;gap:6px"><b>${L("Enerjinin kaynağı","Source of energy")}</b>${bar(p)}<div class="legendkey">${p.map((v,i)=>`<span><i class="sw" style="background:var(${col[i]})"></i>${lab[i]} ${pct(v/100)}</span>`).join("")}</div><small style="color:var(--muted)">${L("Karşılaştırma: ABD'de ortalama diyet (Guyton)","Comparison: average US diet (Guyton)")}</small>${bar(ref)}<small style="color:var(--muted)">${ref.map((v,i)=>lab[i]+" "+pct(v/100)).join(" · ")}</small></div>`;
+  },
+  daily:{tr:"Besin etiketindeki 10 g yağ yaklaşık 90 kcal, 10 g şeker yaklaşık 40 kcal demektir.",en:"On a food label, 10 g of fat means about 90 kcal and 10 g of sugar about 40 kcal."},
+  tasks:{tr:["Yağı 70 g'dan 100 g'a çıkarın. Toplam enerji ne kadar arttı? Aynı artış için kaç g karbonhidrat gerekirdi?","Kendi boyunuzu ve kilonuzu girin. VKİ'nizi elle hesaplayıp ekranla karşılaştırın.","Boyu 170 cm'de tutun. VKİ 25 ve 30 sınırları kaç kg'a denk geliyor?"],
+         en:["Raise fat from 70 g to 100 g. How much did total energy rise? How many grams of carbohydrate would give the same rise?","Enter your own height and weight. Calculate your BMI by hand and compare it with the screen.","Keep height at 170 cm. Which weights correspond to the BMI limits of 25 and 30?"]},
+  note:()=>L(`<p>Fizyolojik olarak kullanılabilen enerji: karbonhidrat <strong>4</strong>, protein <strong>4</strong>, yağ <strong>9 kcal/g</strong>. Yağ yandığında 9.3 kcal/g enerji açığa çıkar; emilen oran (~%95) hesaba katılınca 9 kcal/g kullanılır.</p>
+  <p><strong>VKİ</strong> = vücut ağırlığı (kg) / boy² (m²). VKİ 25–29.9 kg/m² normalden fazla kilolu, 30 kg/m² ve üstü obez kabul edilir.</p>
+  <p>Örnek: ABD'de ortalama diyette enerjinin %16'sı proteinden, %37'si yağdan, %47'si karbonhidrattan gelir.</p>`+SRC("Kaynak: Guyton ve Hall (15. baskı), s. 894, 904; Ganong (27. baskı), Bölüm 26.",""),
+  `<p>Physiologically available energy: carbohydrate <strong>4</strong>, protein <strong>4</strong>, fat <strong>9 kcal/g</strong>. Burning fat releases 9.3 kcal/g; allowing for the fraction absorbed (~95%), 9 kcal/g is used.</p>
+  <p><strong>BMI</strong> = body weight (kg) / height² (m²). A BMI of 25–29.9 kg/m² is classed as overweight and 30 kg/m² or above as obesity.</p>
+  <p>Example: in the average US diet, 16% of energy comes from protein, 37% from fat, and 47% from carbohydrate.</p>`+SRC("","Source: Guyton and Hall (15th ed.), pp. 894, 904; Ganong (27th ed.), Chapter 26."))
+};
+
+/* ---------------- TEST ---------------- */
+// 5 farklı soru türü, her biri 20 puan (toplam 100) / 5 question types, 20 points each
+const QUIZ=[
+  {type:"mcq",tag:{tr:"Çoktan seçmeli",en:"Multiple choice"},
+   q:{tr:"Mideden duodenuma asitli kimus geçti. Pankreas kanallarından bikarbonattan zengin sıvı salgılatan hormon hangisidir ve nereden salgılanır?",en:"Acidic chyme has passed from the stomach into the duodenum. Which hormone drives the pancreatic ducts to secrete bicarbonate-rich fluid, and where is it released from?"},
+   o:{tr:["Gastrin, midenin G hücrelerinden","Sekretin, duodenumun S hücrelerinden","Kolesistokinin (CCK), duodenumun I hücrelerinden","Histamin, midenin ECL hücrelerinden","İnsülin, pankreasın beta hücrelerinden"],
+      en:["Gastrin, from G cells of the stomach","Secretin, from S cells of the duodenum","Cholecystokinin (CCK), from I cells of the duodenum","Histamine, from ECL cells of the stomach","Insulin, from beta cells of the pancreas"]},a:1,
+   why:{tr:"Sekretin, duodenum pH'ı 4.5–5.0'ın altına inince S hücrelerinden salgılanır ve pankreas kanallarından bikarbonattan zengin sıvı salgılatır. CCK esas olarak yağ ürünleriyle salgılanır.",en:"Secretin is released from S cells when duodenal pH falls below 4.5–5.0 and drives the pancreatic ducts to secrete bicarbonate-rich fluid. CCK is released mainly by fat products."},mod:"duoden"},
+  {type:"order",tag:{tr:"Sıralama",en:"Ordering"},
+   q:{tr:"Asitli kimus duodenuma geçtikten sonraki olayları doğru sıraya koyun. Okları kullanarak satırları taşıyın.",en:"Put the events after acidic chyme enters the duodenum in the correct order. Use the arrows to move the rows."},
+   o:{tr:["Pankreas kanalları bikarbonattan zengin sıvı salgılar","Asitli kimus duodenuma geçer","Asit nötrleşir, pH yükselir ve sekretin salgısı azalır","S hücrelerinden sekretin salgılanır","Duodenum pH'ı 4.5–5.0'ın altına iner"],
+      en:["The pancreatic ducts secrete bicarbonate-rich fluid","Acidic chyme enters the duodenum","The acid is neutralized, pH rises, and secretin release falls","Secretin is released from S cells","Duodenal pH falls below 4.5–5.0"]},a:[1,4,3,0,2],
+   why:{tr:"Kimus → pH düşer → sekretin → bikarbonat → nötrleşme ve sekretinin azalması (negatif geri bildirim). Doğru yerdeki her satır 4 puan.",en:"Chyme → pH falls → secretin → bicarbonate → neutralization and fall in secretin (negative feedback). Each row in the correct place earns 4 points."},mod:"duoden"},
+  {type:"match",tag:{tr:"Eşleştirme",en:"Matching"},
+   q:{tr:"Her enzimi etkisiyle eşleştirin. Bir seçenek açıkta kalacak.",en:"Match each enzyme with its action. One option will be left over."},
+   left:{tr:["Tükürük amilazı","Pepsin","Pankreas lipazı","Laktaz","Tripsin"],en:["Salivary amylase","Pepsin","Pancreatic lipase","Lactase","Trypsin"]},
+   o:{tr:["Laktoz → glukoz + galaktoz","Trigliserit → yağ asitleri + monogliserit","Nişastayı ağızda parçalamaya başlar","Proteinin %10–20'sini midede parçalar","Proteinin çoğunu ince bağırsakta parçalar","Sükroz → glukoz + fruktoz"],
+      en:["Lactose → glucose + galactose","Triglyceride → fatty acids + monoglyceride","Starts starch digestion in the mouth","Digests 10%–20% of protein in the stomach","Digests most protein in the small intestine","Sucrose → glucose + fructose"]},a:[2,3,1,0,4],
+   why:{tr:"Açıkta kalan f seçeneği sükrazın etkisidir. Doğru her eşleşme 4 puan.",en:"The leftover option f is the action of sucrase. Each correct match earns 4 points."},mod:"emilim"},
+  {type:"tf",tag:{tr:"Doğru / yanlış",en:"True / false"},
+   q:{tr:"Her ifadenin doğru mu yanlış mı olduğunu seçin. Yanlış olanları aklınızda düzeltin; düzeltmeler kontrolden sonra görünür.",en:"Mark each statement true or false. Correct the false ones in your head; the corrections appear after checking."},
+   o:{tr:["Öğünle salgılanan mide asidinin çoğu sefalik evrede salgılanır.","Kolesistokinin (CCK) safra kesesini kastırır ve mide boşalmasını yavaşlatır.","Fruktoz, Na⁺ ile sekonder aktif taşımayla emilir.","B12 vitamini intrinsik faktör ile ileumda emilir."],
+      en:["Most of the gastric acid secreted with a meal is secreted in the cephalic phase.","Cholecystokinin (CCK) contracts the gallbladder and slows gastric emptying.","Fructose is absorbed by Na⁺-coupled secondary active transport.","Vitamin B12 is absorbed in the ileum together with intrinsic factor."]},a:[false,true,false,true],
+   fix:{tr:["Yanlış: en çok gastrik evrede (~%60); sefalik evre ~%30.","Doğru.","Yanlış: fruktoz kolaylaştırılmış difüzyonla emilir; glukoz ve galaktoz Na⁺ ile.","Doğru."],
+        en:["False: most is secreted in the gastric phase (~60%); the cephalic phase gives ~30%.","True.","False: fructose is absorbed by facilitated diffusion; glucose and galactose with Na⁺.","True."]},
+   why:{tr:"Her ifade 5 puan.",en:"Each statement earns 5 points."},mod:"mide"},
+  {type:"open",tag:{tr:"Açık uçlu",en:"Open-ended"},
+   q:{tr:"Yağlı bir yemekten sonra yağların ince bağırsakta sindirimini ve emilimini adım adım açıklayın.",en:"After a fatty meal, explain step by step how fats are digested and absorbed in the small intestine."},
+   rubric:{tr:["Safra tuzları yağı küçük damlacıklara ayırır (emülsifikasyon); lipazın etki yüzeyi artar","Pankreas lipazı trigliseritleri yağ asitleri ve 2-monogliseritlere parçalar","Safra tuzu miselleri yağ asitleri ve monogliseritleri fırçamsı kenara taşır","Enterositte trigliserit yeniden yapılır ve şilomikron olarak lenfe geçer"],
+           en:["Bile salts break fat into small droplets (emulsification), increasing the surface for lipase","Pancreatic lipase splits triglycerides into fatty acids and 2-monoglycerides","Bile salt micelles carry the fatty acids and monoglycerides to the brush border","In the enterocyte, triglycerides are re-formed and leave in chylomicrons into the lymph"]},
+   why:{tr:"Cevabınızı ölçütle karşılaştırın ve yazdığınız basamakları işaretleyin. Her basamak 5 puan.",en:"Compare your answer with the guide and tick the steps you wrote. Each step earns 5 points."},mod:"emilim"}
+];
+/* ---------------- TEST (2026-11b): one try per test; pre-test shows score only; key after post-test ---------------- */
+
+
+const SHEET_URL="https://script.google.com/macros/s/AKfycbzfIUIU-sczvJPGUjR4El7rH4OUNUcMupt07RNCQ1Vok-51ib1nOfsyjZ3tXLDe3RQp/exec"; // Apps Script web app URL (…/exec); empty = results are not sent
+const COURSE="digestion", PFX="sind", SURUM="2026-11c", MINW=10, KST=PFX+"-t3";
+const tx=v=>(v&&typeof v==="object"&&!Array.isArray(v)&&("tr" in v))?v[LANG]:v;
+const QT={
+  up:{tr:"Yukarı taşı",en:"Move up"}, down:{tr:"Aşağı taşı",en:"Move down"}, choose:{tr:"Seçin…",en:"Choose…"},
+  T:{tr:"D",en:"T"}, F:{tr:"Y",en:"F"}, pts:{tr:"puan",en:"points"},
+  check:{tr:"Cevapları kontrol et",en:"Check answers"}, clear:{tr:"Temizle",en:"Clear"},
+  right:{tr:"Doğru.",en:"Correct."}, rightAns:{tr:"Doğru cevap:",en:"Correct answer:"}, rightOrder:{tr:"Doğru sıra:",en:"Correct order:"}, rightMatch:{tr:"Doğru eşleşme:",en:"Correct matches:"},
+  tryIt:{tr:"Simülasyonda deneyin →",en:"Try it in the simulation →"},
+  rubricT:{tr:"Puanlama ölçütü: yazdığınız basamakları işaretleyin",en:"Scoring guide: tick the steps you wrote"},
+  answer:{tr:"Cevabınız",en:"Your answer"},
+  q14:{tr:"1–4. sorular",en:"Questions 1–4"}, q5:{tr:"5. soru",en:"Question 5"},
+  send:{tr:"Sonucumu eğitimciye gönder",en:"Send my result to the lecturer"},
+  sent:{tr:"Gönderildi. Teşekkürler! Kodunuz: {a}",en:"Sent. Thank you! Your code: {a}"}, sending:{tr:"Gönderiliyor…",en:"Sending…"},
+  sentBefore:{tr:"Bu test için sonucunuz gönderildi.",en:"Your result for this test has been sent."},
+  sendFail:{tr:"Gönderilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.",en:"Could not send. Check your internet connection and try again."},
+  myCode:{tr:"Kodunuz",en:"Your code"},
+  codeHelp:{tr:"Bu kod size rastgele verildi; adınız kaydedilmez. Kodunuzu not edin. Ön ve son testi aynı cihazda çözün; böylece iki sonucunuz eşleşir.",en:"This code was given to you at random; your name is not stored. Write your code down. Take the pre-test and the post-test on the same device so that your two results match."},
+  otherDev:{tr:"Ön testi başka bir cihazda mı çözdünüz?",en:"Did you take the pre-test on another device?"},
+  enterCode:{tr:"O cihazdaki kodunuzu yazın",en:"Type the code from that device"},
+  codeSet:{tr:"Kod değiştirildi.",en:"Code changed."},
+  codeBad:{tr:"Kod NF- ile başlar ve 4 karakter içerir (ör. NF-7KQ2).",en:"The code starts with NF- and has 4 characters (e.g., NF-7KQ2)."},
+  oneTry:{tr:"Her test bir kez çözülür. Kontrolden sonra cevaplar değiştirilemez.",en:"Each test can be taken once. Answers cannot be changed after checking."},
+  lockPre:{tr:"Doğru cevaplar son testten sonra açılacak.",en:"The correct answers will open after the post-test."},
+  preKey:{tr:"Ön test: {x}/80 (1–4. sorular). Doğru cevaplar son test sayfasında.",en:"Pre-test: {x}/80 (questions 1–4). The correct answers are on the post-test page."},
+  preClosed:{tr:"Son testi çözdüğünüz için ön test kapandı.",en:"The pre-test is closed because you have already taken the post-test."},
+  noPre:{tr:"Ön testi çözmediniz. Son testi yine de çözebilirsiniz; karşılaştırma yapılamaz.",en:"You did not take the pre-test. You can still take the post-test, but no comparison is possible."},
+  toPost:{tr:"Ön testi tamamladınız (1–4. sorular: {x}/80). Son testi dersin son 10 dakikasında çözün.",en:"You have completed the pre-test (questions 1–4: {x}/80). Take the post-test in the last 10 minutes of the lecture."},
+  goPost:{tr:"Son teste geç",en:"Go to the post-test"},
+  postDone:{tr:"Son test tamamlandı: {z}/100. 1–4. sorular: ön test {x}/80 → son test {y}/80.",en:"Post-test completed: {z}/100. Questions 1–4: pre-test {x}/80 → post-test {y}/80."},
+  postDoneNoPre:{tr:"Son test tamamlandı: {z}/100.",en:"Post-test completed: {z}/100."},
+  q5pre:{tr:"5. soru ön testte puanlanmaz; cevabınız kaydedildi.",en:"Question 5 is not scored in the pre-test; your answer has been saved."},
+  q5short:{tr:"Cevabınız 10 kelimeden kısa olduğu için 5. soru 0 puan. Ölçüt yalnızca bilgi içindir.",en:"Your answer is under 10 words, so question 5 earns 0 points. The guide is for information only."},
+  wcount:{tr:"Kelime sayısı: {n} (puanlama için en az 10)",en:"Word count: {n} (at least 10 for scoring)"},
+  noneAns:{tr:"Hiç cevap yok. Önce soruları cevaplayın.",en:"No answers yet. Answer the questions first."},
+  blankWarn:{tr:"Boş ya da eksik soru var: {list}. Yine de kontrol edilsin mi? Kontrolden sonra cevaplar değiştirilemez.",en:"Unanswered or incomplete: {list}. Check anyway? Answers cannot be changed after checking."},
+  b2:{tr:"2 (sıra değiştirilmedi)",en:"2 (order not changed)"},
+  b5short:{tr:"5 (10 kelimeden kısa: 0 puan)",en:"5 (under 10 words: 0 points)"},
+  force:{tr:"Yine de kontrol et",en:"Check anyway"}, back:{tr:"Geri dön",en:"Go back"},
+  sendHint:{tr:"Önce 5. sorudaki basamakları işaretleyin, sonra gönderin. Gönderdikten sonra değiştirilemez.",en:"Tick the steps for question 5 first, then send. You cannot change them after sending."},
+  preA:{tr:"Ön test (1–4)",en:"Pre-test (1–4)"}, postA:{tr:"Son test (1–4)",en:"Post-test (1–4)"}, postT:{tr:"Son test",en:"Post-test"},
+  resetQ:{tr:"Bu tarayıcıdaki ön test ve son test kayıtları silinsin mi? (Ortak bilgisayar için)",en:"Delete the pre-test and post-test records in this browser? (For a shared computer)"}
+};
+const qt=(k,o)=>{let s=(QT[k][LANG]||QT[k].tr); if(o) for(const p in o) s=s.split("{"+p+"}").join(o[p]); return s;};
+let ST=store.get(KST); if(!ST||typeof ST!=="object") ST={pre:null,post:null};
+const saveST=()=>store.set(KST,ST);
+let qmode="pre", orderState=[0,1,2,3,4], orderTouched=false, warned=false, devMem=null;
+const LU="ABCDEFGH", ll="abcdefgh";
+function countWords(s){return (s||"").split(/[\s,;:.!?()\/\-–—>→←↑↓=+]+/).filter(w=>/\p{L}{2,}|\d/u.test(w)).length;}
+const CODE_RE=/^NF-[A-Z2-9]{4}$/;
+function myCode(){ let c=store.get("sim-code")||devMem; if(!c||!CODE_RE.test(c)){ const A="ABCDEFGHJKLMNPRSTUVYZ23456789"; c="NF-"+Array.from({length:4},()=>A[Math.floor(Math.random()*A.length)]).join(""); store.set("sim-code",c); } devMem=c; return c; }
+function renderCodeBox(){
+  const box=$("#rumuzbox"); if(!box||!SHEET_URL) return; box.hidden=false;
+  box.innerHTML=`<div class="codeline">${qt("myCode")}: <span class="code" id="mycode">${myCode()}</span></div><small>${qt("codeHelp")}</small>`+
+    (ST.pre||ST.post?"":`<details class="othercode"><summary>${qt("otherDev")}</summary><label for="rumuz">${qt("enterCode")}</label> <input id="rumuz" maxlength="7" autocomplete="off" autocapitalize="characters" placeholder="NF-7KQ2"> <button class="btn ghost" type="button" id="codeok">OK</button> <span id="codemsg" role="status"></span></details>`);
+  const ok=$("#codeok"); if(ok) ok.onclick=()=>{ const v=($("#rumuz").value||"").trim().toLocaleUpperCase("tr-TR").replace(/^NF(?!-)/,"NF-");
+    if(!CODE_RE.test(v)){ $("#codemsg").textContent=qt("codeBad"); return; } store.set("sim-code",v); devMem=v; $("#mycode").textContent=v; $("#codemsg").textContent=qt("codeSet"); };
+}
+function rubricPtsOf(rec){ return rec&&rec.words>=MINW ? rec.rb.filter(Boolean).length*5 : 0; }
+function renderOrder(locked){
+  const q=QUIZ[1], o=tx(q.o), ul=document.getElementById("ord"); if(!ul) return;
+  ul.innerHTML=orderState.map((idx,pos)=>`<li class="ordrow" id="ordrow${pos}"><span class="pos">${pos+1}</span><span class="otext"><b>${LU[idx]})</b> ${o[idx]}</span><span class="obtns"><button type="button" class="mini" data-mv="${pos}" data-d="-1" aria-label="${qt("up")}" ${pos===0||locked?"disabled":""}>↑</button><button type="button" class="mini" data-mv="${pos}" data-d="1" aria-label="${qt("down")}" ${pos===4||locked?"disabled":""}>↓</button></span></li>`).join("");
+}
+function noteHtml(){
+  const rec=ST[qmode];
+  if(qmode==="pre"){
+    if(rec) return ST.post?qt("preKey",{x:rec.auto}):`${qt("toPost",{x:rec.auto})} ${qt("lockPre")} <button class="btn ghost" type="button" data-go="test" data-mode="post">${qt("goPost")}</button>`;
+    if(ST.post) return qt("preClosed");
+    return qt("oneTry");
+  }
+  if(rec){ const z=rec.auto+rubricPtsOf(rec); return ST.pre?qt("postDone",{z,x:ST.pre.auto,y:rec.auto}):qt("postDoneNoPre",{z}); }
+  return (ST.pre?"":qt("noPre")+" ")+qt("oneTry");
+}
+function renderQuiz(){
+  const rec=ST[qmode], done=!!rec, f=$("#quiz"); warned=false;
+  if(qmode==="pre"&&!rec&&ST.post){ f.innerHTML=`<div class="q qnote">${noteHtml()}</div>`; testNote(); return; }
+  orderState=done?rec.raw.order.slice():[0,1,2,3,4]; orderTouched=done;
+  const blocks=QUIZ.map((q,i)=>{
+    let body=""; const o=tx(q.o);
+    if(q.type==="mcq") body=`<div class="opts">${o.map((x,j)=>`<label class="opt" id="o0_${j}"><input type="radio" name="q0" value="${j}" id="r-${qmode}-0-${j}"><span><b>${LU[j]})</b> ${x}</span></label>`).join("")}</div>`;
+    if(q.type==="order") body=`<ol class="ord" id="ord"></ol>`;
+    if(q.type==="match") body=`<div class="match">${tx(q.left).map((h,j)=>`<div class="mrow" id="m${j}"><label for="sel-${qmode}-${j}"><b>${j+1}.</b> ${h}</label><select id="sel-${qmode}-${j}" data-m="${j}"><option value="">${qt("choose")}</option>${o.map((x,k)=>`<option value="${k}">${ll[k]}) ${x}</option>`).join("")}</select></div>`).join("")}</div>`;
+    if(q.type==="tf") body=`<div class="tfl">${o.map((x,j)=>`<div class="tfrow" id="tf${j}"><span><b>${ll[j]})</b> ${x}</span><span class="tfbtns"><label><input type="radio" name="tf${j}" value="1" id="tf-${qmode}-${j}-d"> ${qt("T")}</label><label><input type="radio" name="tf${j}" value="0" id="tf-${qmode}-${j}-y"> ${qt("F")}</label></span><div class="fix" id="fix${j}" hidden></div></div>`).join("")}</div>`;
+    if(q.type==="open") body=`<label for="open-${qmode}" class="sr">${qt("answer")}</label><textarea id="open-${qmode}" rows="5" placeholder="${t(UI.ph)}"></textarea><small class="wc" id="wc">${qt("wcount",{n:done?rec.words:0})}</small><div class="rubric" id="rubric" hidden><b>${qt("rubricT")}</b>${tx(q.rubric).map((r,j)=>`<label class="rb"><input type="checkbox" id="rb-${qmode}-${j}" data-rb="${j}"> ${r} <em>5 ${qt("pts")}</em></label>`).join("")}</div>`;
+    return `<div class="q"><fieldset><legend><span class="qtag">${i+1} · ${tx(q.tag)} · 20 ${qt("pts")}</span>${tx(q.q)}</legend>${body}<div class="why" id="w${i}" hidden></div></fieldset></div>`;
+  }).join("");
+  f.innerHTML=`<div class="q qnote" id="qnote">${noteHtml()}</div>`+blocks+`<div class="q"><div class="blankwarn" id="qwarn" role="alert" hidden></div><div class="score">${done?"":`<button class="btn" type="submit" id="qsubmit">${qt("check")}</button><button class="btn ghost" type="button" id="qclear">${qt("clear")}</button>`}<span id="qres"></span></div><div class="compare" id="qcmp" style="margin-top:12px"></div><div class="sendbox" id="sendbox" hidden><button class="btn" type="button" id="qsend">${qt("send")}</button><span id="sendmsg" role="status"></span></div></div>`;
+  renderOrder(done);
+  if(done) showResult(rec); else $("#qclear").onclick=()=>renderQuiz();
+  $("#qsend").onclick=sendResult;
+  showCompare(); testNote(); renderCodeBox();
+}
+function fillAnswers(rec){
+  const r=rec.raw;
+  if(r.q1>=0){const el=document.getElementById(`r-${qmode}-0-${r.q1}`); if(el) el.checked=true;}
+  r.match.forEach((v,j)=>{const s=document.getElementById(`sel-${qmode}-${j}`); if(s) s.value=v===null?"":String(v);});
+  r.tf.forEach((v,j)=>{ if(v!==null){const el=document.getElementById(`tf-${qmode}-${j}-${v?"d":"y"}`); if(el) el.checked=true;}});
+  const ta=document.getElementById("open-"+qmode); if(ta){ ta.value=r.open; ta.readOnly=true; }
+  $("#quiz").querySelectorAll("input:not([data-rb]),select").forEach(x=>x.disabled=true);
+}
+function wh(i,p,txt,link){const w=document.getElementById("w"+i); w.hidden=false; w.innerHTML=(p==null?"":`<b>${p}/20 ${qt("pts")}.</b> `)+txt+(link?` <a href="#${QUIZ[i].mod}" data-go="${QUIZ[i].mod}">${qt("tryIt")}</a>`:"");}
+function markKey(rec){
+  const r=rec.raw, qs=rec.qs;
+  {const q=QUIZ[0], o=tx(q.o); o.forEach((_,j)=>{const el=document.getElementById("o0_"+j); el.classList.toggle("right",j===q.a); el.classList.toggle("wrong",j===r.q1&&j!==q.a);});
+   wh(0,qs[0],(r.q1===q.a?qt("right")+" ":qt("rightAns")+" "+LU[q.a]+") "+o[q.a]+". ")+tx(q.why),true);}
+  {const q=QUIZ[1]; r.order.forEach((idx,pos)=>document.getElementById("ordrow"+pos).classList.add(idx===q.a[pos]?"right":"wrong"));
+   wh(1,qs[1],qt("rightOrder")+" "+q.a.map(k=>LU[k]).join(" → ")+". "+tx(q.why),true);}
+  {const q=QUIZ[2]; q.a.forEach((k,j)=>document.getElementById("m"+j).classList.add(r.match[j]===k?"right":"wrong"));
+   wh(2,qs[2],qt("rightMatch")+" "+q.a.map((k,j)=>(j+1)+"-"+ll[k]).join(", ")+". "+tx(q.why),true);}
+  {const q=QUIZ[3], fx=tx(q.fix); q.a.forEach((a,j)=>{document.getElementById("tf"+j).classList.add(r.tf[j]===a?"right":"wrong"); const el=document.getElementById("fix"+j); el.hidden=false; el.textContent=fx[j];});
+   wh(3,qs[3],tx(q.why),true);}
+  wh(4,null,tx(QUIZ[4].why),true);
+}
+function showResult(rec){
+  fillAnswers(rec);
+  if(qmode==="post"){
+    markKey(rec);
+    const rb=document.getElementById("rubric"), ok=rec.words>=MINW; rb.hidden=false;
+    rb.querySelectorAll("[data-rb]").forEach((x,j)=>{x.checked=!!rec.rb[j]; x.disabled=!ok||rec.sent;});
+    if(!ok) rb.insertAdjacentHTML("afterbegin",`<p class="rbnote">${qt("q5short")}</p>`);
+  } else wh(4,null,qt("q5pre"),false); // pre-test: total only, no per-question scores (they would hint at the key)
+  updateTotal();
+  if(SHEET_URL){ $("#sendbox").hidden=false;
+    if(rec.sent){ $("#qsend").disabled=true; $("#sendmsg").textContent=qt("sentBefore")+(rec.alias?" ("+rec.alias+")":""); }
+    else if(qmode==="post") $("#sendmsg").textContent=qt("sendHint"); }
+}
+function updateTotal(){
+  const rec=ST[qmode], el=$("#qres"); if(!rec||!el) return;
+  if(qmode==="pre") el.innerHTML=`<span class="big">${rec.auto}/80</span> <span style="color:var(--muted)">(${qt("q14")})</span>`;
+  else { const r5=rubricPtsOf(rec); el.innerHTML=`<span class="big">${rec.auto+r5}/100</span> <span style="color:var(--muted)">(${qt("q14")}: ${rec.auto}/80, ${qt("q5")}: ${r5}/20)</span>`; }
+  const n=$("#qnote"); if(n) n.innerHTML=noteHtml();
+  showCompare(); testNote();
+}
+function showCompare(){
+  const el=$("#qcmp"); if(!el) return; let h="";
+  if(ST.pre) h+=`<span class="pill">${qt("preA")}: ${ST.pre.auto}/80</span>`;
+  if(ST.post) h+=`<span class="pill">${qt("postA")}: ${ST.post.auto}/80</span><span class="pill">${qt("postT")}: ${ST.post.auto+rubricPtsOf(ST.post)}/100</span>`;
+  if(ST.pre&&ST.post){const d=ST.post.auto-ST.pre.auto; h+=`<span class="pill" style="color:var(--ok)">${d>=0?"+":""}${d} ${qt("pts")} (1–4)</span>`;}
+  el.innerHTML=h;
+}
+function testNote(){
+  const el=document.getElementById("testnote"); if(!el) return; let h="";
+  if(ST.post){ const z=ST.post.auto+rubricPtsOf(ST.post); h=ST.pre?qt("postDone",{z,x:ST.pre.auto,y:ST.post.auto}):qt("postDoneNoPre",{z}); }
+  else if(ST.pre) h=`<span>${qt("toPost",{x:ST.pre.auto})}</span> <button class="btn" type="button" data-go="test" data-mode="post">${qt("goPost")}</button>`;
+  el.hidden=!h; el.innerHTML=h;
+}
+function readRaw(){
+  const s=document.querySelector("input[name=q0]:checked");
+  return {q1:s?+s.value:-1, order:orderState.slice(),
+    match:[0,1,2,3,4].map(j=>{const e=document.getElementById(`sel-${qmode}-${j}`); return e&&e.value!==""?+e.value:null;}),
+    tf:[0,1,2,3].map(j=>{const e=document.querySelector(`input[name=tf${j}]:checked`); return e?e.value==="1":null;}),
+    open:(document.getElementById("open-"+qmode)||{}).value||""};
+}
+function grade(r){
+  const qs=[0,0,0,0];
+  qs[0]=r.q1===QUIZ[0].a?20:0;
+  QUIZ[1].a.forEach((k,pos)=>{if(r.order[pos]===k) qs[1]+=4;});
+  QUIZ[2].a.forEach((k,j)=>{if(r.match[j]===k) qs[2]+=4;});
+  QUIZ[3].a.forEach((a,j)=>{if(r.tf[j]===a) qs[3]+=5;});
+  return qs;
+}
+function blanks(r){
+  const b=[], w=countWords(r.open);
+  if(r.q1<0) b.push("1"); if(!orderTouched) b.push(qt("b2"));
+  if(r.match.some(v=>v===null)) b.push("3"); if(r.tf.some(v=>v===null)) b.push("4");
+  if(w===0) b.push("5"); else if(qmode==="post"&&w<MINW) b.push(qt("b5short"));
+  return b;
+}
+function finish(r){
+  const qs=grade(r);
+  ST[qmode]={raw:r, qs, auto:qs.reduce((a,b)=>a+b,0), words:countWords(r.open), rb:[false,false,false,false], sent:false, t:Date.now()};
+  saveST(); renderQuiz();
+  const el=$("#qres"); if(el) el.scrollIntoView({block:"center",behavior:"smooth"});
+}
+$("#quiz").addEventListener("submit",e=>{
+  e.preventDefault(); if(ST[qmode]) return;
+  const r=readRaw(), wbox=$("#qwarn");
+  if(r.q1<0&&!orderTouched&&r.match.every(v=>v===null)&&r.tf.every(v=>v===null)&&!countWords(r.open)){ wbox.hidden=false; wbox.textContent=qt("noneAns"); return; }
+  const b=blanks(r);
+  if(b.length&&!warned){
+    warned=true; wbox.hidden=false;
+    wbox.innerHTML=`<p>${qt("blankWarn",{list:b.join(", ")})}</p><div class="score"><button class="btn" type="button" id="qforce">${qt("force")}</button><button class="btn ghost" type="button" id="qback">${qt("back")}</button></div>`;
+    $("#qforce").onclick=()=>finish(readRaw());
+    $("#qback").onclick=()=>{wbox.hidden=true; warned=false;};
+    wbox.scrollIntoView({block:"nearest",behavior:"smooth"}); return;
+  }
+  finish(r);
+});
+$("#quiz").addEventListener("click",e=>{const b=e.target.closest("[data-mv]"); if(!b||ST[qmode]) return; const p=+b.dataset.mv, d=+b.dataset.d, tt=p+d; if(tt<0||tt>4) return; [orderState[p],orderState[tt]]=[orderState[tt],orderState[p]]; orderTouched=true; renderOrder(false); const nb=document.querySelector(`[data-mv="${tt}"][data-d="${d}"]`); if(nb&&!nb.disabled) nb.focus();});
+$("#quiz").addEventListener("change",e=>{ if(e.target.dataset.rb===undefined) return; const rec=ST[qmode]; if(!rec||rec.sent||qmode!=="post"||rec.words<MINW) return; rec.rb[+e.target.dataset.rb]=e.target.checked; saveST(); updateTotal(); });
+$("#quiz").addEventListener("input",e=>{ if(e.target.tagName!=="TEXTAREA") return; const w=document.getElementById("wc"); if(w) w.textContent=qt("wcount",{n:countWords(e.target.value)}); warned=false; });
+async function sendResult(){
+  const rec=ST[qmode]; if(!rec||rec.sent||!SHEET_URL) return;
+  const raw=rec.raw, post=qmode==="post", r5=rubricPtsOf(rec), alias=myCode();
+  const payload={course:COURSE, alias, test:post?"post":"pre", s1:rec.qs[0], s2:rec.qs[1], s3:rec.qs[2], s4:rec.qs[3],
+    s5_self:post?r5:undefined, auto_total:rec.auto, total:post?rec.auto+r5:undefined,
+    a1:raw.q1>=0?LU[raw.q1]:"-", a2:raw.order.map(k=>LU[k]).join(""), a3:raw.match.map((v,j)=>(j+1)+"-"+(v===null?"?":ll[v])).join(" "),
+    a4:raw.tf.map(v=>v===null?"-":(v?"D":"Y")).join(""), a5:raw.open, version:SURUM, lang:LANG};
+  const btn=$("#qsend"); btn.disabled=true; $("#sendmsg").textContent=qt("sending");
+  try{
+    await fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});
+    rec.sent=true; rec.alias=alias; saveST(); $("#sendmsg").textContent=qt("sent",{a:alias});
+    document.querySelectorAll("[data-rb]").forEach(x=>x.disabled=true);
+  }catch(err){ btn.disabled=false; $("#sendmsg").textContent=qt("sendFail"); }
+}
+function resetCheck(){ if(location.hash!=="#test-sifirla") return; if(confirm(qt("resetQ"))){ ST={pre:null,post:null}; saveST(); } try{history.replaceState(null,"","#test");}catch(e){} }
+resetCheck(); window.addEventListener("hashchange",resetCheck);
+renderCodeBox();
+document.querySelectorAll("#qmode button").forEach(b=>b.onclick=()=>{qmode=b.dataset.m;document.querySelectorAll("#qmode button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderQuiz();});
+testNote();
+
+/* ---------------- ÇERÇEVE / FRAME ---------------- */
+const ORDER=["mide","duoden","emilim","sivi","defek","enerji"];
+let cur=null, S=null, C=null, hist=[], simT=0, speed=1, paused=false, last=0, uiAcc=0, view="giris";
+function staticText(){
+  document.documentElement.lang=LANG; document.title=t(UI.title);
+  document.querySelectorAll("[data-i]").forEach(el=>{el.textContent=t(UI[el.dataset.i]);});
+  document.querySelectorAll("[data-ih]").forEach(el=>{el.innerHTML=t(UI[el.dataset.ih]);});
+  document.querySelectorAll("[data-ia]").forEach(el=>{el.setAttribute("aria-label",t(UI[el.dataset.ia]));});
+  $("#b-pause").textContent=paused?t(UI.resume):t(UI.pause);
+  if($("#rumuz")) $("#rumuz").placeholder="NF-7KQ2";
+  document.querySelectorAll("#lang button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.l===LANG));
+  const TABS=[["giris",t(UI.tabStart)],...ORDER.map(k=>[k,t(M[k].tab)]),["test",t(UI.tabTest)]];
+  $("#tabs").innerHTML=TABS.map(([k,n])=>`<button type="button" role="tab" id="t-${k}" data-go="${k}" aria-selected="${k===view}">${n}</button>`).join("");
+  $("#modgrid").innerHTML=ORDER.map(k=>`<button type="button" class="modcard" data-go="${k}"><em>${t(M[k].eyebrow)}</em><strong>${t(M[k].title)}</strong><span>${t(M[k].card)}</span></button>`).join("");
+}
+function ctlDefaults(m){const c={};m.controls.forEach(k=>{if(k.type!=="button") c[k.id]=k.value;}); return c;}
+function buildControls(m){
+  const box=$("#m-controls");
+  box.innerHTML=m.controls.map(k=>{
+    const help=t(k.help)?`<small>${t(k.help)}</small>`:"";
+    if(k.type==="range") return `<div class="ctl"><label for="c-${k.id}">${t(k.label)}${k.show?`: <output id="o-${k.id}">${k.show(C[k.id])}</output>`:""}</label><input type="range" id="c-${k.id}" min="${k.min}" max="${k.max}" step="${k.step}" value="${C[k.id]}"><div class="ends"><span>${t(k.ends[0])}</span><span>${t(k.ends[1])}</span></div>${help}</div>`;
+    if(k.type==="toggle") return `<div class="ctl"><label class="switch" for="c-${k.id}"><input type="checkbox" role="switch" id="c-${k.id}" ${C[k.id]?"checked":""}><span>${t(k.label)}</span></label>${help}</div>`;
+    return `<div class="ctl"><button class="btn" type="button" id="c-${k.id}">${t(k.label)}</button>${help}</div>`;
+  }).join("");
+  m.controls.forEach(k=>{
+    const el=document.getElementById("c-"+k.id);
+    if(k.type==="range") el.addEventListener("input",()=>{C[k.id]=+el.value; const o=document.getElementById("o-"+k.id); if(o) o.textContent=k.show(C[k.id]); uiTick(true);});
+    else if(k.type==="toggle") el.addEventListener("change",()=>{C[k.id]=el.checked; uiTick(true);});
+    else el.addEventListener("click",()=>{k.act(S,C); uiTick(true);});
+  });
+}
+function modText(){
+  const m=M[cur];
+  $("#m-eyebrow").textContent=t(m.eyebrow); $("#m-title").textContent=t(m.title); $("#m-sub").textContent=t(m.sub);
+  $("#m-daily").innerHTML=`<b>${t(UI.daily)}</b> `+t(m.daily);
+  $("#m-tasks").innerHTML=t(m.tasks).map(x=>`<li><span>${x}</span></li>`).join("");
+  $("#m-note").innerHTML=m.note();
+  $("#m-legend").innerHTML=m.series.map(s=>`<span><i style="background:var(${s.c})"></i>${t(s.n)}: <span class="v" id="lv-${s.k}">–</span></span>`).join("");
+  lastNowHTML="";
+}
+function open(key){
+  if(!M[key]&&key!=="giris"&&key!=="test") key="giris";
+  view=key;
+  document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.go===key));
+  const tb=document.getElementById("t-"+key); if(tb) tb.scrollIntoView({block:"nearest",inline:"nearest"});
+  $("#v-giris").hidden=key!=="giris"; $("#v-test").hidden=key!=="test"; $("#v-mod").hidden=!M[key];
+  try{ if(location.hash.slice(1)!==key) history.replaceState(null,"","#"+key); }catch(e){}
+  if(key==="test"){ renderQuiz(); } else testNote();
+  if(!M[key]){ cur=null; return; }
+  cur=key; modText(); reset();
+}
+function reset(){ const m=M[cur]; S=m.init(); C=ctlDefaults(m); hist=[]; simT=0; buildControls(m); for(let i=0;i<3;i++) m.step(S,0.05,C); uiTick(true); }
+function setLang(l){
+  LANG=l; store.set("sind-lang",l); staticText(); testNote();
+  if(cur){ modText(); buildControls(M[cur]); uiTick(true); }
+  if(view==="test") renderQuiz();
+}
+
+function nodeHTML(n){
+  const w=cl(n.v,0,1)*100; const val=n.fmt?n.fmt(n.v):pct(n.v);
+  return `<div class="node"><div class="nl">${n.l}</div><div class="ns">${n.s}</div><div class="nv${n.small?" sm":""}" style="color:var(${n.c})">${val}</div><div class="meter"><i style="width:${w}%;background:var(${n.c})"></i></div></div>`;
+}
+let lastNowHTML="";
+function uiTick(force){
+  if(!cur) return; const m=M[cur];
+  $("#m-path").innerHTML=m.rows(S,C).map(r=>`<div class="prow">${r.map(nodeHTML).join('<div class="arrow" aria-hidden="true">→</div>')}</div>`).join("");
+  const fb=m.fb(S,C); const fbEl=$("#m-fb");
+  if(fb){ fbEl.innerHTML=`<div class="fb ${fb.on?"on":"off"} ${fb.kind}"><span class="dot" style="opacity:${fb.on?0.35+0.65*cl(fb.strength,0,1):1}"></span><span>${fb.text}</span></div>`; } else fbEl.innerHTML="";
+  const nh=m.now(S,C).map(p=>`<p>${p}</p>`).join(""); if(nh!==lastNowHTML){$("#m-now").innerHTML=nh; lastNowHTML=nh;}
+  $("#m-visual").innerHTML=m.visual?m.visual(S,C):"";
+  m.series.forEach(s=>{const el=document.getElementById("lv-"+s.k); if(!el) return; const v=S[s.k]; if(v==null) return; el.textContent=s.fmt?s.fmt(v):pct(v);});
+}
+
+/* ---------------- GRAFİK / CHART ---------------- */
+const cv=$("#chart"), ctx=cv.getContext("2d"); const WIN=60;
+function drawChart(){
+  if(!cur) return; const m=M[cur];
+  const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=cv.clientHeight;
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+  const padL=46,padR=10,padT=10,padB=26, pw=W-padL-padR, ph=H-padT-padB;
+  const ink=css("--muted"), grid=css("--grid"), band=css("--band");
+  ctx.font=`12px ${css("--f-mono")}`; ctx.fillStyle=ink; ctx.strokeStyle=grid; ctx.lineWidth=1;
+  const P=m.series.find(s=>s.primary)||m.series[0];
+  const y=(s,v)=>padT+ph-(cl((v-s.min)/(s.max-s.min),0,1))*ph;
+  if(P.band){ ctx.fillStyle=band; const y1=y(P,P.band[1]), y0=y(P,P.band[0]); ctx.fillRect(padL,y1,pw,y0-y1); ctx.fillStyle=ink; ctx.textAlign="right"; ctx.fillText(t(P.bandLabel)||t(UI.normal),padL+pw-4,y1+13); }
+  ctx.textAlign="right"; ctx.textBaseline="middle";
+  for(let i=0;i<=4;i++){ const v=P.min+(P.max-P.min)*i/4, yy=y(P,v); ctx.strokeStyle=grid; ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(padL+pw,yy); ctx.stroke(); const lab=P.axis?P.axis(v):""; if(lab!==""){ctx.fillStyle=ink; ctx.fillText(lab,padL-6,yy);} }
+  ctx.textBaseline="alphabetic";
+  if(P.refs){ P.refs.forEach(r=>{ const yy=y(P,r.v); ctx.strokeStyle=css("--ink"); ctx.globalAlpha=.55; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(padL+pw,yy); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1; ctx.fillStyle=ink; ctx.textAlign="left"; ctx.fillText(t(r.l),padL+6,yy-5); }); }
+  ctx.textAlign="center"; ctx.fillStyle=ink;
+  const t1=Math.max(simT,WIN), t0=t1-WIN, x=tt=>padL+((tt-t0)/WIN)*pw;
+  for(let s=0;s<=WIN;s+=15){ ctx.textAlign=s===WIN?"right":(s===0?"left":"center"); ctx.fillText((s===WIN?t(UI.nowLbl):"−"+(WIN-s)+" "+t(UI.sec)),padL+(s/WIN)*pw,H-8); } ctx.textAlign="center";
+  m.series.forEach(s=>{
+    ctx.strokeStyle=css(s.c); ctx.lineWidth=s.primary?3:2; ctx.beginPath(); let st=false;
+    for(const p of hist){ if(p.t<t0) continue; const xx=x(p.t), yy=y(s,p[s.k]); st?ctx.lineTo(xx,yy):(ctx.moveTo(xx,yy),st=true); }
+    ctx.stroke();
+    const lp=hist[hist.length-1]; if(lp){ ctx.fillStyle=css(s.c); ctx.beginPath(); ctx.arc(x(lp.t),y(s,lp[s.k]),s.primary?4.5:3.5,0,7); ctx.fill(); }
+  });
+}
+
+/* ---------------- DÖNGÜ / LOOP ---------------- */
+function loop(ts){
+  const dtReal=last?Math.min(0.1,(ts-last)/1000):0; last=ts;
+  if(cur&&!paused){
+    const m=M[cur]; let dt=dtReal*speed; const n=Math.max(1,Math.ceil(dt/0.05));
+    for(let i=0;i<n;i++){ m.step(S,dt/n,C); simT+=dt/n; }
+    const p={t:simT}; m.series.forEach(s=>p[s.k]=S[s.k]); hist.push(p); while(hist.length&&hist[0].t<simT-WIN-2) hist.shift();
+    uiAcc+=dtReal; if(uiAcc>0.15){uiAcc=0; uiTick();}
+  }
+  drawChart();
+  requestAnimationFrame(loop);
+}
+$("#b-pause").onclick=()=>{paused=!paused; $("#b-pause").textContent=paused?t(UI.resume):t(UI.pause);};
+$("#b-reset").onclick=()=>reset();
+document.querySelectorAll("#speed button").forEach(b=>b.onclick=()=>{speed=+b.dataset.s; document.querySelectorAll("#speed button").forEach(x=>x.setAttribute("aria-pressed",x===b));});
+document.querySelectorAll("#lang button").forEach(b=>b.onclick=()=>setLang(b.dataset.l));
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]"); if(!g) return; e.preventDefault(); if(g.dataset.mode){qmode=g.dataset.mode; document.querySelectorAll("#qmode button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.m===qmode));} open(g.dataset.go); window.scrollTo({top:0});});
+window.addEventListener("hashchange",()=>open(location.hash.slice(1)));
+staticText();
+open(location.hash.slice(1)||"giris");
+requestAnimationFrame(loop);
+})();
+
+</script>
+</body></html>
