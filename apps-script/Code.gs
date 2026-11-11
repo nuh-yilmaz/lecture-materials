@@ -1,5 +1,5 @@
 /**
- * Course simulations – writes test results to this Google Sheet.            Script version 2026-11d
+ * Course simulations – writes test results to this Google Sheet.            Script version 2026-11e
  * One deployment serves every course: each course writes to its own tab (e.g. "endocrine").
  * Setup: Sheet > Extensions > Apps Script > paste this code > Deploy > New deployment >
  * Type: Web app > Execute as: Me > Who has access: Anyone.
@@ -13,6 +13,10 @@
  *    the header row. A value of null only creates the column (e.g. the teacher columns) and never
  *    overwrites what is already there, so teacher scores and notes are kept.
  *    New simulators should use a new course name (tab), so old and new columns are not mixed.
+ * Mini-quiz leaderboard (2026-11e): <web app URL>?board=<course>-quiz&since=<ms>&n=5 returns the best
+ *    points of the rows sent after <since> (anonymous codes only; only tabs ending in "-quiz").
+ *    Points come from the round's own answers: right = 500 + 500 * (2 - P) * S, wrong = 0
+ *    (P = share of the round right on that question, S = speed 0-1 sent by the phone).
  */
 const HEADERS = ['Timestamp', 'Alias', 'Test', 'Q1 (20)', 'Q2 (20)', 'Q3 (20)', 'Q4 (20)',
   'Q5 self-score (20)', 'Auto total (80)', 'Total (incl. self-score)',
@@ -109,8 +113,63 @@ function findRow(sheet, aliasCol, testCol, alias, test) {
 }
 
 // Opening the web app URL in a browser shows this message (connection check).
-function doGet() {
-  return ContentService.createTextOutput('Course simulations data endpoint is running (script 2026-11d).');
+// With ?board=... it returns the mini-quiz leaderboard as JSON.
+function doGet(e) {
+  const p = (e && e.parameter) || {};
+  if (p.board) {
+    try { return out(board(p)); } catch (err) { return out({ ok: false, error: String(err && err.message || err).slice(0, 200) }); }
+  }
+  return ContentService.createTextOutput('Course simulations data endpoint is running (script 2026-11e).');
+}
+
+// Mini-quiz points of one round (rows sent after "since"), calculated from the round's own answers:
+//   P = share of the round right on item k, S = speed (1 - time/limit) sent by the phone
+//   right: 500 + 500 * (2 - P) * S, wrong: 0. Equal points share a place, so more than n rows can come back.
+function board(p) {
+  const tab = String(p.board).replace(/[^\w -]/g, '').slice(0, 40);
+  if (!/-quiz$/.test(tab)) return { ok: false, error: 'not a quiz tab' };
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(tab);
+  if (!sheet || sheet.getLastRow() < 2) return { ok: true, n: 0, items: [], top: [] };
+  const v = sheet.getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn()).getValues();
+  const h = v[0].map(String), ia = h.indexOf('Alias'), it = h.indexOf('Timestamp');
+  const rc = [], sc = [];
+  h.forEach(function (name, j) {
+    let m = /^R(\d+)$/.exec(name); if (m) rc[+m[1]] = j;
+    m = /^S(\d+)$/.exec(name); if (m) sc[+m[1]] = j;
+  });
+  const ks = [];
+  for (let k = 1; k < rc.length; k++) if (rc[k] !== undefined && sc[k] !== undefined) ks.push(k);
+  if (ia < 0 || it < 0 || !ks.length) return { ok: true, n: 0, items: [], top: [] };
+  const since = Number(p.since) || 0, n = Math.min(Math.max(parseInt(p.n, 10) || 5, 1), 20);
+  const rows = v.slice(1).filter(function (r) {
+    const t = r[it] instanceof Date ? r[it].getTime() : Date.parse(r[it]);
+    return t >= since && r[rc[ks[0]]] !== '';
+  });
+  if (!rows.length) return { ok: true, n: 0, items: [], top: [] };
+  const share = {}, items = [];
+  ks.forEach(function (k) {
+    let right = 0;
+    rows.forEach(function (r) { if (Number(r[rc[k]]) === 1) right++; });
+    share[k] = right / rows.length;
+    items.push({ k: k, right: right, n: rows.length });
+  });
+  const scored = rows.map(function (r) {
+    let pts = 0;
+    ks.forEach(function (k) {
+      if (Number(r[rc[k]]) !== 1) return;
+      const s = Math.min(Math.max(Number(r[sc[k]]) || 0, 0), 1);
+      pts += 500 + 500 * (2 - share[k]) * s;
+    });
+    return { alias: String(r[ia]), points: Math.round(pts) };
+  });
+  scored.sort(function (a, b) { return b.points - a.points; });
+  const top = [];
+  let rank = 0, prev = null;
+  scored.forEach(function (r, i) {
+    if (r.points !== prev) { rank = i + 1; prev = r.points; }
+    if (rank <= n) top.push({ rank: rank, alias: r.alias, points: r.points });
+  });
+  return { ok: true, n: rows.length, items: items, top: top };
 }
 
 function out(o) {
