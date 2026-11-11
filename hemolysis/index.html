@@ -1,0 +1,1816 @@
+<!DOCTYPE html>
+<!-- Hemoliz ve Tamponlama Simülatörü / Hemolysis and Buffering Simulator · built from Simulator Template 2026-11g (2026-11-11) · review: claude/review_hemolysis_osmotic_fragility_buffering.md -->
+<html lang="tr"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hemoliz ve Tamponlama Simülatörü</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+
+/* Düzen: üstte başlık bandı, yapışkan modül sekmeleri; her modül = solda kontrol + yol + grafik, sağda "Ne oluyor?" + ders notu */
+:root{
+  --bg:#F3F6FB; --surface:#FFFFFF; --surface-2:#E8EEF8; --ink:#0E1A33; --muted:#566381; --line:#D3DCEB;
+  --navy:#0B2A6B; --signal:#B3122E; --ok:#0F7A5F; --warn:#B45309;
+  --h1:#2457C5; --h2:#C2410C; --h3:#0F7A5F; --h4:#8E2E6B; --h5:#6B4FD3;
+  --band:rgba(15,122,95,.12); --grid:rgba(14,26,51,.08);
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1222; --surface:#121C31; --surface-2:#1A2742; --ink:#E5ECF8; --muted:#9BA9C4; --line:#28385A;
+  --navy:#9DB8FF; --signal:#FF6F86; --ok:#4CD3A7; --warn:#F5A453;
+  --h1:#7FA6FF; --h2:#FF9A63; --h3:#4CD3A7; --h4:#E28AC2; --h5:#B4A2FF;
+  --band:rgba(76,211,167,.14); --grid:rgba(229,236,248,.08); color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0B1222; --surface:#121C31; --surface-2:#1A2742; --ink:#E5ECF8; --muted:#9BA9C4; --line:#28385A;
+  --navy:#9DB8FF; --signal:#FF6F86; --ok:#4CD3A7; --warn:#F5A453;
+  --h1:#7FA6FF; --h2:#FF9A63; --h3:#4CD3A7; --h4:#E28AC2; --h5:#B4A2FF;
+  --band:rgba(76,211,167,.14); --grid:rgba(229,236,248,.08); color-scheme:dark;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .wrap{padding-block:22px 18px;display:flex;flex-wrap:wrap;gap:8px 24px;align-items:flex-end;justify-content:space-between}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(28px,4.4vw,42px);font-weight:800;color:var(--navy);letter-spacing:-.01em}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.top p{margin:6px 0 0;color:var(--muted);max-width:60ch}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+nav.tabs .wrap{display:flex;gap:6px;overflow-x:auto;padding-block:10px;scrollbar-width:thin}
+nav.tabs button{flex:0 0 auto;font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{background:var(--navy);color:var(--surface);border-color:var(--navy)}
+button:focus-visible,input:focus-visible,label:focus-within{outline:3px solid var(--h1);outline-offset:2px}
+main .wrap{padding-block:22px 48px}
+.view[hidden]{display:none!important}
+
+/* Giriş */
+.intro{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:22px;align-items:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.intro h2{font-size:26px;color:var(--navy);margin-bottom:8px}
+.steps{display:grid;gap:10px;margin:14px 0 0;padding:0;list-style:none;counter-reset:s}
+.steps li{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:start}
+.steps li::before{counter-increment:s;content:counter(s);display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--surface-2);color:var(--navy);font-weight:700;font-family:var(--f-mono)}
+.modgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:22px}
+.modcard{all:unset;cursor:pointer;display:grid;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.modcard:hover{border-color:var(--navy)}
+.modcard:focus-visible{outline:3px solid var(--h1);outline-offset:2px}
+.modcard strong{font-family:var(--f-display);font-size:19px;color:var(--navy)}
+.modcard span{color:var(--muted);font-size:14px}
+.modcard em{font-style:normal;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--signal)}
+.btn{font:inherit;font-weight:700;font-size:15px;border:1px solid var(--navy);background:var(--navy);color:var(--surface);padding:9px 14px;border-radius:10px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--navy)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.legendkey{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:14px;color:var(--muted)}
+
+/* Modül */
+.mod-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 20px;align-items:flex-end;margin-bottom:14px}
+.mod-head h2{font-size:clamp(24px,3.4vw,32px);color:var(--navy)}
+.mod-head p{margin:4px 0 0;color:var(--muted);max-width:62ch}
+.simbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.simbar .btn{padding:7px 11px;font-size:14px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{font:inherit;font-size:13px;font-weight:700;border:0;background:var(--surface);color:var(--muted);padding:7px 10px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface-2);color:var(--ink)}
+.mod-grid{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:18px;align-items:start}
+.col{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-width:0}
+.col>*{min-width:0}
+.controls{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.ctl{display:grid;gap:6px;background:var(--surface-2);border-radius:12px;padding:12px}
+.ctl label,.ctl .lab{font-weight:700;font-size:14px}
+.ctl small{color:var(--muted);font-size:12.5px;line-height:1.35}
+.ctl input[type=range]{width:100%;accent-color:var(--navy)}
+.ctl .ends{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.ctl .btn{width:100%}
+.switch{display:flex;align-items:center;gap:10px;cursor:pointer}
+.switch input{appearance:none;width:44px;height:26px;border-radius:999px;background:var(--line);position:relative;flex:0 0 auto;cursor:pointer;transition:background .2s}
+.switch input::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--surface);transition:left .2s}
+.switch input:checked{background:var(--navy)}
+.switch input:checked::after{left:21px}
+
+.path{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.path h3,.panel h3{font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-family:var(--f-body);font-weight:700;margin-bottom:10px}
+.prow{display:flex;align-items:stretch;gap:0;flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px}
+.prow + .prow{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.node{flex:1 1 0;min-width:118px;background:var(--surface-2);border-radius:12px;padding:10px;display:grid;gap:4px;align-content:start}
+.node .nl{font-weight:700;font-size:14px;line-height:1.25}
+.node .ns{font-size:12px;color:var(--muted);line-height:1.25}
+.node .nv{font-family:var(--f-mono);font-size:18px;font-weight:700}
+.meter{position:relative;height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.meter i{position:absolute;inset:0 auto 0 0;border-radius:99px}
+.meter b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.55}
+.state{font-size:12px;font-weight:700}
+.state.hi{color:var(--signal)} .state.lo{color:var(--h1)} .state.ok{color:var(--ok)}
+.arrow{flex:0 0 26px;display:grid;place-items:center;color:var(--muted);font-weight:700;font-size:18px}
+.fb{margin-top:10px;display:flex;gap:10px;align-items:center;font-size:14px;padding:8px 10px;border-radius:10px;border:1px dashed var(--line);color:var(--muted)}
+.fb .dot{width:12px;height:12px;border-radius:50%;flex:0 0 auto;background:var(--line)}
+.fb.on.neg{border-color:var(--h1);color:var(--ink)} .fb.on.neg .dot{background:var(--h1)}
+.fb.on.pos{border-color:var(--signal);color:var(--ink)} .fb.on.pos .dot{background:var(--signal)}
+.fb.off{opacity:.7}
+
+.chartbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.chartbox canvas{width:100%;height:240px;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:13px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
+.legend .v{font-family:var(--f-mono);font-weight:700}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.now{font-size:16px}
+.now p{margin:0 0 8px}
+.now p:last-child{margin-bottom:0}
+.now .tag{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:99px;background:var(--surface-2);color:var(--navy);margin-right:6px}
+.note p{margin:0 0 10px;max-width:65ch}
+.note ul{margin:0 0 10px;padding-left:20px}
+.note strong{color:var(--navy)}
+.tasks{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.tasks li{display:grid;grid-template-columns:22px 1fr;gap:8px;font-size:15px}
+.tasks li::before{content:"→";color:var(--signal);font-weight:700}
+.daily{background:color-mix(in srgb,var(--h2) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--h2) 30%,var(--line));border-radius:var(--r);padding:14px 16px;font-size:15px}
+.daily b{color:var(--h2)}
+.visual{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.progress{height:14px;border-radius:99px;background:var(--line);overflow:hidden}
+.progress i{display:block;height:100%;background:var(--signal)}
+.clock{font-family:var(--f-mono);font-size:34px;font-weight:700;color:var(--navy)}
+
+/* Test */
+.quiz{display:grid;gap:14px;max-width:860px}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.q legend{font-weight:700;font-size:17px;padding:0;margin-bottom:10px}
+.q fieldset{border:0;margin:0;padding:0;min-width:0}
+.opts{display:grid;gap:8px}
+.opt{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:var(--surface)}
+.opt input{accent-color:var(--navy);width:18px;height:18px;flex:0 0 auto}
+.opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,var(--surface))}
+.opt.wrong{border-color:var(--signal);background:color-mix(in srgb,var(--signal) 10%,var(--surface))}
+.why{margin-top:10px;font-size:15px;color:var(--muted)}
+.why b{color:var(--ink)}
+.why a{color:var(--navy);font-weight:700}
+.score{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.score .big{font-family:var(--f-mono);font-size:30px;font-weight:700;color:var(--navy)}
+.compare{display:flex;gap:10px;flex-wrap:wrap}
+.pill{font-size:14px;font-weight:700;border-radius:99px;padding:4px 12px;background:var(--surface-2)}
+
+.qtag{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--signal);margin-bottom:4px}
+.ord{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.ordrow{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.ordrow .pos{font-family:var(--f-mono);font-weight:700;color:var(--navy);text-align:center}
+.obtns{display:flex;gap:4px}
+.mini{font:inherit;font-weight:700;width:36px;height:36px;border-radius:8px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);cursor:pointer}
+.mini:disabled{opacity:.35;cursor:default}
+.match{display:grid;gap:8px}
+.mrow{display:grid;grid-template-columns:minmax(110px,160px) minmax(0,1fr);gap:10px;align-items:center;padding:6px 10px;border:1px solid var(--line);border-radius:10px}
+.mrow select{font:inherit;font-size:15px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);width:100%;min-width:0}
+.tfl{display:grid;gap:8px}
+.tfrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+.tfbtns{display:flex;gap:12px;font-weight:700}
+.tfbtns label{display:flex;gap:4px;align-items:center;cursor:pointer}
+.tfbtns input{accent-color:var(--navy);width:18px;height:18px}
+.fix{grid-column:1/-1;font-size:14px;color:var(--muted)}
+textarea{font:inherit;width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface);color:var(--ink);resize:vertical}
+.rubric{display:grid;gap:8px;margin-top:12px;padding:12px;border-radius:10px;background:var(--surface-2)}
+.rb{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.rb input{accent-color:var(--ok);width:18px;height:18px;margin-top:3px;flex:0 0 auto}
+.rb em{font-style:normal;font-size:12px;font-weight:700;color:var(--muted);margin-left:auto;white-space:nowrap}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.ordrow.right,.mrow.right,.tfrow.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,var(--surface))}
+.ordrow.wrong,.mrow.wrong,.tfrow.wrong{border-color:var(--signal);background:color-mix(in srgb,var(--signal) 8%,var(--surface))}
+@media (max-width:600px){.mrow{grid-template-columns:minmax(0,1fr)}}
+.rumuz{display:grid;gap:6px;max-width:860px;margin-bottom:14px}
+.rumuz input{font:inherit;font-family:var(--f-mono);font-size:20px;letter-spacing:.12em;text-transform:uppercase;width:9ch;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}
+.rumuz small{color:var(--muted)}
+.sendbox{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+footer{color:var(--muted);font-size:13px;padding-block:0 30px}
+@media (max-width:600px){.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.ctl{padding:10px}.prow{flex-wrap:wrap;gap:8px}.prow .arrow{display:none}.node{flex:1 1 calc(50% - 8px);min-width:0}}
+@media (max-width:860px){.mod-grid,.intro{grid-template-columns:minmax(0,1fr)}.chartbox canvas{height:210px}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+
+/* Ekler / additions */
+header.top .wrap{align-items:flex-start}
+#lang button{font-family:var(--f-mono);min-width:44px}
+.stack{display:flex;height:14px;border-radius:99px;overflow:hidden;background:var(--line)}
+.stack i{display:block;height:100%}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.bars{display:grid;gap:6px}
+.bar{display:grid;grid-template-columns:110px minmax(0,1fr) 70px;gap:8px;align-items:center;font-size:14px}
+.bar i{display:block;height:10px;border-radius:99px;background:var(--h5)}
+.bar em{font-style:normal;font-family:var(--f-mono);font-size:13px;text-align:right}
+.note .src{font-size:13px;color:var(--muted);margin-top:6px}
+.srclist{margin:0;padding-left:18px;font-size:13.5px;color:var(--muted);display:grid;gap:4px}
+.node .nv.sm{font-size:14px;font-family:var(--f-body)}
+.ctl output{font-family:var(--f-mono);font-weight:700;color:var(--navy)}
+[hidden]{display:none!important}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;padding:0}
+img{max-width:100%}
+
+
+/* 2026-11b test flow */
+.qnote{border-left:4px solid var(--navy);font-size:15px}
+.qnote .btn{margin-left:6px;padding:6px 12px;font-size:14px}
+.blankwarn{margin-bottom:12px;padding:12px;border-radius:10px;border:1px solid var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--surface))}
+.blankwarn p{margin:0 0 10px}
+.testnote{margin-bottom:16px;border-left:4px solid var(--warn);display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-weight:700}
+.rbnote{margin:0;color:var(--warn);font-weight:700}
+.wc{display:block;margin-top:4px;color:var(--muted);font-size:13px}
+textarea[readonly]{background:var(--surface-2)}
+.codeline{font-size:18px;font-weight:700}
+.code{font-family:var(--f-mono,monospace);font-size:24px;letter-spacing:.08em;color:var(--navy);margin-left:6px}
+.othercode{margin-top:4px;font-size:14px}
+.rumuz .othercode input{font:inherit;font-family:var(--f-mono,monospace);width:12ch;letter-spacing:.04em;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);text-transform:uppercase}
+.othercode .btn{padding:6px 12px;font-size:14px}
+
+/* Bloklar / blocks (template 2026-11) */
+.ctl.wide{grid-column:1/-1}
+.ctl .seg{width:max-content;max-width:100%;flex-wrap:wrap}
+.drawbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.drawbox canvas{width:100%;height:260px;display:block}
+.blocks{display:grid;gap:16px}
+.gauge{display:grid;justify-items:center;gap:2px}
+.gauge svg{width:180px;max-width:100%;height:auto;display:block}
+.gauge .gv{font-family:var(--f-mono);font-size:22px;font-weight:700;color:var(--navy);margin-top:-6px}
+.gauge small{color:var(--muted);font-size:13px}
+.eqbox{display:grid;gap:4px;padding:12px 14px;border-radius:12px;background:var(--surface-2)}
+.eqbox .eqf{font-family:var(--f-mono);font-size:20px;font-weight:700;color:var(--navy)}
+.eqbox .eqn{font-family:var(--f-mono);font-size:15px}
+.eqbox small{color:var(--muted);font-size:13px}
+
+/* Test 2026-11d */
+.filltext{line-height:2.2;margin:4px 0 0}
+.fblank{display:inline-block;margin:0 4px;border-radius:8px;padding:0 2px}
+.fblank select{font:inherit;padding:4px 6px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);max-width:100%}
+.fblank.right{outline:2px solid var(--ok)} .fblank.wrong{outline:2px solid var(--signal)}
+.conf{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:10px;font-size:14px;color:var(--muted)}
+.conf label{display:inline-flex;gap:4px;align-items:center;color:var(--ink)}
+.topics{margin-top:12px;padding:12px;border-radius:10px;background:var(--surface-2)}
+.topics ul{list-style:none;margin:8px 0;padding:0;display:grid;gap:4px}
+.topics small{color:var(--muted)}
+.tm{display:inline-block;width:1.6em;text-align:center;font-weight:700}
+.tm.ok{color:var(--ok)} .tm.mid{color:var(--warn)} .tm.bad{color:var(--signal)}
+.surewrong{margin-top:10px;font-weight:700;color:var(--signal)}
+.selfpts{margin:8px 0 0;font-weight:700;color:var(--muted)}
+.fbform{margin-top:14px;padding:12px;border-radius:10px;border:1px solid var(--line);display:grid;gap:10px}
+.fbform small{color:var(--muted)}
+.likert{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.likert .lk{display:flex;gap:10px}
+.likert .lk label{display:inline-flex;gap:3px;align-items:center}
+.fbform textarea{width:100%;font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.mp{font-weight:700;font-size:15px}
+.testmode{color:var(--signal);font-weight:700;margin:0 0 6px}
+.progline{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-weight:700}
+.progline select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.progline.need select{outline:2px solid var(--signal)}
+.kq .kh{margin:0 0 6px}
+.khead{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-weight:700;color:var(--muted);font-size:14px}
+.ktime{font-family:var(--f-mono);font-size:26px;color:var(--navy);min-width:2ch;text-align:right}
+.kbar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin:6px 0 12px}
+.kbar i{display:block;height:100%;width:100%;background:var(--navy);transition:width .1s linear}
+.kstem{font-size:19px;font-weight:700;margin:0 0 12px}
+.kstmt{font-size:18px;margin:0 0 12px}
+.kblank{display:inline-block;min-width:3ch;border-bottom:3px solid var(--navy);text-align:center}
+.kopts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kopts .kopt{font:inherit;font-size:17px;text-align:left;padding:16px 14px;min-height:64px;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.kopts .kopt:hover,.kopts .kopt:focus-visible{border-color:var(--navy)}
+.kopts .kopt b{display:inline-block;min-width:1.6em;color:var(--navy)}
+.kres{font-size:20px;font-weight:700}
+.kres.ok{color:var(--ok)} .kres.bad{color:var(--signal)}
+.kbig{font-size:28px;font-weight:700;color:var(--navy);margin:6px 0}
+.klist{list-style:none;padding:0;margin:8px 0;display:grid;gap:4px}
+.kboard{font-weight:700}
+.kboard .code{white-space:nowrap}
+#board{position:fixed;inset:0;z-index:50;background:var(--bg);overflow:auto;padding:24px 16px}
+body.boardon{overflow:hidden}
+#board .bwrap{max-width:900px;margin:0 auto}
+#board .bhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+#board h2{margin:0;font-size:clamp(24px,4vw,40px);color:var(--navy)}
+#board .bbtn{display:flex;gap:8px}
+#board .bcount{font-size:20px;color:var(--muted);margin:10px 0 18px}
+#board .blist{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+#board .blist li{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;padding:14px 20px;border-radius:14px;background:var(--surface);border:2px solid var(--line);font-size:clamp(22px,3.4vw,36px)}
+#board .blist li.r1{border-color:var(--navy);border-width:3px}
+#board .brank{font-weight:800;color:var(--navy);min-width:1.4em}
+#board .balias{font-family:var(--f-mono);font-weight:700;letter-spacing:.04em}
+#board .bpts{font-weight:700}
+#board .bempty{display:block;font-size:20px;color:var(--muted)}
+#board .bnote{color:var(--muted);margin-top:16px}
+#board .bitems{font-size:18px;font-weight:700;margin-top:18px}
+/* M2 predict first (2026-11f) */
+.predict{background:var(--surface);border:2px solid var(--navy);border-radius:var(--r);padding:14px;display:grid;gap:8px;margin-bottom:12px}
+.predict .phead small{color:var(--muted)}
+.predict .pq{margin:0;font-weight:700}
+.popts{display:flex;flex-wrap:wrap;gap:8px}
+.popts label{display:inline-flex;gap:6px;align-items:center;min-height:44px;padding:8px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);cursor:pointer;font-weight:600}
+.popts label:has(input:checked){border-color:var(--navy);outline:2px solid var(--navy)}
+.pbtns{display:flex;flex-wrap:wrap;gap:8px}
+.predict .pnote{color:var(--muted)}
+.predict .pres{margin:0} .predict .pwhy{margin:0;color:var(--ink)}
+/* Test 2026-11f: scoring box, total line */
+.scorebox{border:2px solid var(--navy);background:color-mix(in srgb,var(--navy) 9%,var(--surface));font-weight:600;font-size:15px;line-height:1.5}
+.score .tparts{color:var(--muted);font-size:15px;font-weight:600;white-space:nowrap}
+.score .tnote{color:var(--muted);font-size:14px}
+/* Test 2026-11f: tap ordering */
+.ordhint{margin:2px 0 8px;font-size:14px;color:var(--muted)}
+.tapord{display:grid;gap:8px}
+.tstep{display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;align-items:center;width:100%;min-height:48px;padding:8px 10px;font:inherit;text-align:left;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;cursor:pointer;touch-action:manipulation}
+.tstep:hover{border-color:var(--navy)}
+.tstep:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.tstep[aria-pressed="true"]{border-color:var(--navy);background:var(--surface-2)}
+.tnum{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:2px dashed var(--line);font-family:var(--f-mono);font-weight:700;color:var(--navy)}
+.tstep[aria-pressed="true"] .tnum,.tnum.on{border:2px solid var(--navy);background:var(--navy);color:var(--surface)}
+.ordrow .tnum{width:28px;height:28px}
+.ordbar{margin-top:8px}
+@media (max-width:520px){.kopts{grid-template-columns:1fr}}
+@media (max-width:640px){.likert{grid-template-columns:1fr}}
+</style></head><body>
+<header class="top"><div class="wrap">
+  <div>
+    <div class="eyebrow" data-i="eyebrow"></div>
+    <h1 data-i="title"></h1>
+    <p data-i="lead"></p>
+  </div>
+  <div class="seg" role="group" id="lang" data-ia="langAria">
+    <button type="button" data-l="tr" aria-pressed="true">TR</button><button type="button" data-l="en" aria-pressed="false">EN</button>
+  </div>
+</div></header>
+
+<nav class="tabs" data-ia="tabsAria"><div class="wrap" id="tabs" role="tablist"></div></nav>
+
+<main><div class="wrap">
+  <section class="view" id="v-giris">
+    <div class="card testnote" id="testnote" role="status" hidden></div>
+    <div class="intro">
+      <div class="card">
+        <h2 data-i="howTitle"></h2>
+        <p data-i="howP"></p>
+        <ol class="steps">
+          <li><span data-ih="st1"></span></li>
+          <li><span data-ih="st2"></span></li>
+          <li><span data-ih="st3"></span></li>
+          <li><span data-ih="st4"></span></li>
+        </ol>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+          <button class="btn" type="button" data-go="test" data-mode="pre" data-i="goPre"></button>
+          <button class="btn ghost" type="button" id="gofirst" data-go="" data-i="goFirst"></button>
+        </div>
+      </div>
+      <div class="card">
+        <h2 style="font-size:20px" data-i="seeTitle"></h2>
+        <p style="margin:6px 0 10px" data-i="seeP"></p>
+        <div class="node" style="max-width:240px">
+          <div class="nl" data-i="sampleL"></div><div class="ns" data-i="sampleS"></div>
+          <div class="nv" style="color:var(--signal)" data-i="sampleV"></div>
+          <div class="meter"><i style="width:80%;background:var(--signal)"></i></div>
+        </div>
+        <p style="margin:12px 0 0;font-size:14px;color:var(--muted)" data-i="seeNote"></p>
+        <h2 style="font-size:20px;margin-top:18px" data-i="srcTitle"></h2>
+        <p style="margin:6px 0 6px;font-size:14px;color:var(--muted)" data-i="srcP"></p>
+        <ul class="srclist">
+          <li>Hall, J. E., &amp; Hall, M. E. (2026). <i>Guyton and Hall textbook of medical physiology</i> (15th ed.). Elsevier.</li>
+          <li>Barrett, K. E., Barman, S. M., Brooks, H. L., &amp; Yuan, J. X.-J. (2025). <i>Ganong's review of medical physiology</i> (27th ed.). McGraw Hill.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="modgrid" id="modgrid"></div>
+  </section>
+
+  <section class="view" id="v-mod" hidden>
+    <div class="mod-head">
+      <div><div class="eyebrow" id="m-eyebrow"></div><h2 id="m-title"></h2><p id="m-sub"></p></div>
+      <div class="simbar">
+        <button class="btn ghost" type="button" id="b-pause"></button>
+        <button class="btn ghost" type="button" id="b-reset" data-i="reset"></button>
+        <div class="seg" role="group" data-ia="speedAria" id="speed">
+          <button type="button" data-s="1" aria-pressed="true">1×</button><button type="button" data-s="2" aria-pressed="false">2×</button><button type="button" data-s="4" aria-pressed="false">4×</button>
+        </div>
+      </div>
+    </div>
+    <div class="mod-grid">
+      <div class="col">
+        <div class="predict" id="m-predict" hidden></div>
+        <div class="controls" id="m-controls"></div>
+        <div class="path"><h3 data-i="path"></h3><div id="m-path"></div><div id="m-fb"></div></div>
+        <div class="drawbox" id="m-drawbox" hidden><canvas id="draw" data-ia="drawAria" role="img"></canvas></div>
+        <div class="chartbox" id="m-chartbox"><canvas id="chart" data-ia="chartAria" role="img"></canvas><div class="legend" id="m-legend"></div></div>
+      </div>
+      <div class="col">
+        <div class="panel"><h3 data-i="now"></h3><div class="now" id="m-now" aria-live="polite"></div><div id="m-visual" style="margin-top:12px"></div></div>
+        <div class="daily" id="m-daily"></div>
+        <div class="panel"><h3 data-i="tasks"></h3><ul class="tasks" id="m-tasks"></ul></div>
+        <div class="panel note"><h3 data-i="note"></h3><div id="m-note"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-test" hidden>
+    <div class="mod-head">
+      <div><div class="eyebrow" data-i="testEyebrow"></div><h2 data-i="testTitle"></h2>
+      <p data-i="testP"></p></div>
+      <div class="seg" role="group" data-ia="testAria" id="qmode"></div>
+    </div>
+    <div class="q rumuz" id="rumuzbox" hidden></div>
+    <form class="quiz" id="quiz"></form>
+  </section>
+</div></main>
+<footer><div class="wrap" data-i="footer"></div></footer>
+
+<script>
+(function(){
+"use strict";
+/* =====================================================================
+   SİMÜLATÖR ŞABLONU / SIMULATOR TEMPLATE
+   Template 2026-11 · test engine 2026-11g · guide: claude/simulator_template.md
+   ---------------------------------------------------------------------
+   HOW TO MAKE A NEW SIMULATOR
+   1. Copy this file. Name it "<Konu> Simülatörü.html" (one file per lecture).
+   2. CONFIG (below): COURSE, PFX, SURUM, SHEET_URL, ORDER.
+   3. UI (below): change title, eyebrow, lead, path, seeP, seeNote, sample*,
+      ph. Every text is a pair {tr:"…", en:"…"}. Keep all other UI texts.
+   4. MODULES: delete the example modules M.ornek1–M.ornek4 and write one
+      module per part of the lecture (format below). Put their keys in ORDER.
+   5. QUIZ: replace the 6 example questions (format under TEST below). Default
+      test: 6 automatic items, 84 points: mcq 4 · tf 10 (5 statements) ·
+      order 16 (5 steps) · match 15 · fill 15 (5 blanks) · order 24 (mechanism
+      chain, 7 steps, on another module than the 16-point order item).
+      Total = items + confidence points (−24 to +12) + 4-point gift = 100.
+      Points rule (checked in the console): all item points + 2 per automatic
+      item + 4 = 100. Give every item a topic (mod = module key).
+      QUIZ_MID: mini-quiz rounds, exactly 3 items each, one round per 18–20
+      minutes of lecture time (rule 2.12); format at QUIZ_MID in the quiz part.
+   6. Facts: check every value in Guyton 15th and Ganong 27th (rule 2.9) and
+      give the pages in each module note. Physiology only (rule 2.10).
+   7. Test with SHEET_URL "" first: open every tab, take the pre- and the
+      post-test, switch TR/EN. Then set SHEET_URL and send one test row.
+   Reset the tests in a browser: open the page with #test-sifirla.
+   ---------------------------------------------------------------------
+   MODULE FORMAT                                     (* = optional)
+   M.key={
+     tab, eyebrow, title, sub, card   {tr,en}: tab name, small line above the
+                                      title, title, subtitle, start-page card
+     init:()=>({…})                   starting state S (numbers)
+     controls:[…]                     see CONTROLS
+     step(s,dt,c){…}                  the model: update s for dt seconds;
+                                      c = control values. ap(x,target,tau,dt)
+                                      moves x toward target (time constant tau)
+     rows:(s,c)=>[[node,…],[node,…]]  pathway boxes, one array per row;
+                                      node={l,s,v,c,fmt*,small*}: label, sub-
+                                      label, bar 0–1, color token, value text
+     fb:(s,c)=>({kind,on,strength,text}) | null   feedback light;
+                                      kind "neg" (blue) or "pos" (red)
+     series:[{k,n,c,min,max,primary*,axis*,fmt*,band*,bandLabel*,refs*}]
+                                      chart lines: k = key in s; [] = no chart
+     chart*:{win:15}                  time window in seconds (default 60)
+     chart*:{day:true,night:[[0,6],[20,24]]} + dayVals(h,c)=>({k:v,…})
+                                      24-hour axis; s.h = hour (0–24)
+     now:(s,c)=>[html,…]              "What is happening?" lines; tg() = tag
+     visual*:(s,c)=>html              blocks B.* (see BLOCKS)
+     draw*:{h:260,fn(g,W,H,s,c){…}}   large drawing area (canvas 2D, g)
+     daily {tr,en} · tasks {tr:[…],en:[…]} · note:()=>html + SRC(tr,en)
+     predict*:{q:{tr,en}, set:{controlId:value,…}, a:"up"|"down"|"same", why:{tr,en}}
+                                      M2 "predict first" box above the controls (PREDICT switch):
+                                      question "If Y …, what happens to X?", one try, 0 points; Lock
+                                      applies set (like a preset) and runs the module. Use the same
+                                      mechanism as one test item of the module in another situation,
+                                      with no shared stem (no cue). Book pages go in the module note.
+   }
+   CONTROLS
+     {type:"range",id,label,min,max,step,value,ends:[a,b],show*:v=>"…",help}
+     {type:"toggle",id,label,value:false,help}
+     {type:"button",id,label,act:(s,c)=>{…},help}
+     {type:"preset",id,label,value:0,options:[{label,set:{id:value,…}}],help}
+     BOOK_CTL  ready toggle: off = Guyton, on = Ganong; read with bk(c,g,n)
+   BLOCKS (return HTML; join several in visual)
+     B.gauge(v,{min,max,zones,label,fmt,sub})  half-circle gauge
+     B.bars(title,[[label,value,max,color*,text*],…])  bar list
+     B.stack(title,[[label,value,color],…])    shares of a whole
+     B.counter(n,label,sub)  B.clock(h,sub)  B.progress(f,label)
+     B.eq(formula,numbers,note)                equation panel
+   TEST (QUIZ, and QUIZ_MID for the mini-quiz rounds)       (* = optional)
+     common: {type, pts, mod, q:{tr,en}, why:{tr,en}, tag*}  mod = topic
+     mcq    o:{tr:[5 options],en:[…]}, a: index of the right option
+     tf     o: 5 statements, a:[true,false,…], fix: corrections, mods*:[topic per statement]
+     order  o: 4–7 rows in mixed order, a: row indexes in the right order. Students tap the
+            steps in order (tap again to remove a number; steps without a number go to the end)
+            (scored by consecutive pairs; pts = 4 × (rows − 1): 4 points per right pair)
+     match  left: 4–6 items, o: options (2–3 left over), a: option index per item, mods*
+     fill   segs:{tr:[text,text,…]} around the blanks (one piece more than the blanks), 5 blanks,
+            blanks:[{o:{tr:[options],en:[…]},a:index},…], mods*
+     open   (special cases only; not in the default test)
+            rubric: 4 steps, ph*: placeholder. Scored by the lecturer in the Sheet:
+            per step full / partial / none = pts/steps · 0.4×that · 0
+            (e.g. 40 points, 4 steps: 10 / 4 / 0). Students tick the steps as a
+            self-check after the post-test; it is not added to their score.
+   SCORING: Total = items + confidence points (M3) + 4-point gift; never below 0, at most 100.
+     A coloured box at the top of every test (pre, post, delayed) tells the students the rule.
+   SWITCHES (below): TESTS.pre/mid/post/late, LATE_DAYS, CONFIDENCE (M3),
+     FEEDBACK (M4, 1–5 form after the post-test), MINUTE (M5, one-minute paper), PREDICT (M2), PROGRAMS.
+   MINI-QUIZ (TESTS.mid): QUIZ_MID = list of rounds, 3 items each, Kahoot style; format at QUIZ_MID in the quiz part.
+   QR LINKS: <simulator link>#pre, #post open that test; #mid1, #mid2 … open that mini-quiz round (#mid = round 1).
+   LEADERBOARD: <simulator link>#board1, #board2 … on the projector, one per round (#board = round 1; lecturer only;
+     needs SHEET_URL and Apps Script 2026-11g).
+   ===================================================================== */
+
+/* ---------------- AYARLAR / CONFIG ---------------- */
+const COURSE="hemolysis-buffer";   // Sheet tab name (English, lower case), e.g. "respiration"
+const PFX="hmb";           // browser storage prefix, 2–5 letters, unique per simulator
+const SURUM="hmb-2026-11-11";    // version sent with each result; change it when the test changes
+const SHEET_URL="https://script.google.com/macros/s/AKfycbzfIUIU-sczvJPGUjR4El7rH4OUNUcMupt07RNCQ1Vok-51ib1nOfsyjZ3tXLDe3RQp/exec";        // Apps Script web app URL (…/exec); "" = results are not sent
+const ORDER=["tonisite","frajilite","tampon","ph"];   // module keys, in tab order
+/* assessment switches (true = on) */
+const TESTS={pre:true, mid:true, post:true, late:true};  // mid = M6 mini-quiz rounds (Kahoot style, QUIZ_MID: 3 items per round; one round every 18–20 minutes of lecture time, rule 2.12; set false to switch it off); late = M1 delayed test
+const LATE_DAYS=14;        // the delayed test opens this many days after the student's post-test
+const CONFIDENCE=true;     // M3: "Are you sure?" under each automatic item; "sure" = +2·s − 4·(1 − s) (s = item score share), "not sure" / no mark = 0 (−24 to +12)
+const FEEDBACK=true;       // M4: four 1–5 statements after the post-test
+const MINUTE=true;         // M5: one-minute paper after the post-test
+const PREDICT=true;        // M2: "predict first" box in modules that have predict:{…} (2–3 tasks per simulator, one per main module)
+/* programs (faculty / language) asked once per browser and sent as the "Program" column; [] = do not ask.
+   PLACEHOLDER list: replace it with the user's list. */
+const PROGRAMS=[{k:"tip-tr",tr:"Tıp (Türkçe)",en:"Medicine (Turkish)"},{k:"tip-en",tr:"Tıp (İngilizce)",en:"Medicine (English)"},{k:"diger",tr:"Diğer",en:"Other"}];
+const BOARD_TOP=5;           // leaderboard (#board on the projector): number of places shown; equal points share a place
+const MINW=10, KST=PFX+"-t4";
+
+const $=s=>document.querySelector(s);
+const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ap=(x,t,tau,dt)=>x+(t-x)*Math.min(1,dt/tau);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const store={get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+let LANG=(()=>{let l=null;try{l=new URLSearchParams(location.search).get("lang");}catch(e){} if(l!=="en"&&l!=="tr") l=store.get(PFX+"-lang"); return l==="en"?"en":"tr";})();
+const L=(tr,en)=>LANG==="en"?en:tr;
+const t=x=>x==null?"":(typeof x!=="object"||Array.isArray(x))?x:(x[LANG]!==undefined?x[LANG]:x.tr);
+const pct=v=>{const n=Math.round(v*100); return LANG==="en"?n+"%":"%"+n;};
+const dec=(v,d=1)=>{const s=v.toFixed(d); return LANG==="en"?s:s.replace(".",",");};
+
+/* ---------------- ARAYÜZ METİNLERİ / UI TEXT ---------------- */
+const UI={
+  /* --- change these for each simulator --- */
+  title:{tr:"Hemoliz ve Tamponlama Simülatörü",en:"Hemolysis and Buffering Simulator"},
+  eyebrow:{tr:"Hemoliz, Osmotik Frajilite ve Tamponlama (pratik) · Tıp Fakültesi 1–2. sınıf",en:"Hemolysis, Osmotic Fragility and Buffering (practical) · Medicine, years 1–2"},
+  lead:{tr:"Laboratuvardaki deneyleri ekranda tekrarlayın: eritrositleri farklı çözeltilere koyun, osmotik frajiliteyi ölçün ve plazmanın tampon gücünü damla damla test edin.",en:"Repeat the lab experiments on screen: place red cells in different solutions, measure osmotic fragility, and test the buffer power of plasma drop by drop."},
+  path:{tr:"Yol",en:"Pathway"},
+  howP:{tr:"Her modül konunun bir bölümünü canlandırır. Değerler gerçek zamanlı hesaplanır; yaptığınız her değişikliğin sonucunu birkaç saniye içinde görürsünüz.",en:"Each module animates one part of the topic. Values are calculated in real time, so you see the result of every change within a few seconds."},
+  seeP:{tr:"Her basamak bir kutuda gösterilir. Çubuk, düzeyi gösterir.",en:"Each step is shown in a box. The bar shows the level."},
+  seeNote:{tr:"Hücre hacmi normalin katı (×), hemoliz parçalanan hücrelerin yüzdesi, osmolarite mOsm/L, HCO₃⁻ mmol/L, Pco₂ mm Hg olarak gösterilir.",en:"Cell volume is shown as times normal (×), hemolysis as the percentage of cells lysed, osmolarity in mOsm/L, HCO₃⁻ in mmol/L, and Pco₂ in mm Hg."},
+  sampleL:{tr:"Hemoliz",en:"Hemolysis"}, sampleS:{tr:"Parçalanan hücre",en:"Cells lysed"}, sampleV:{tr:"%50",en:"50%"},
+  ph:{tr:"Örneğin: Üre hücreye girer → … → …",en:"For example: urea enters the cell → … → …"},
+  /* --- usually unchanged --- */
+  tabStart:{tr:"Başla",en:"Start"}, tabTest:{tr:"Ön / son test",en:"Pre / post test"},
+  howTitle:{tr:"Nasıl kullanılır?",en:"How to use it"},
+  st1:{tr:"<b>Önce ön testi çözün.</b> 6 soru, 5 farklı soru türü. Not için değil, neyi bildiğinizi görmek için.",en:"<b>Take the pre-test first.</b> 6 questions, 5 question types. It is not graded; it shows what you already know."},
+  st2:{tr:"<b>Bir modül seçin.</b> Düğmelere basın, kaydırıcıları oynatın.",en:"<b>Choose a module.</b> Press the buttons and move the sliders."},
+  st3:{tr:"<b>“Ne oluyor?” kutusunu okuyun.</b> Ekranda olanı adım adım açıklar.",en:"<b>Read the “What is happening?” box.</b> It explains the screen step by step."},
+  st4:{tr:"<b>Ders notunu okuyun ve görevleri yapın,</b> sonra son testi çözüp puanınızı karşılaştırın.",en:"<b>Read the lecture note and do the tasks,</b> then take the post-test and compare your scores."},
+  goPre:{tr:"Ön teste başla",en:"Start the pre-test"}, goFirst:{tr:"İlk modüle geç",en:"Go to the first module"},
+  seeTitle:{tr:"Ekranda ne göreceksiniz?",en:"What you will see"},
+  srcTitle:{tr:"Kaynaklar",en:"Sources"},
+  srcP:{tr:"Değerler iki ders kitabından alınmıştır. Kitaplar farklı değer verdiğinde simülatör ikisini de gösterir.",en:"Values are taken from two textbooks. Where the books differ, the simulator shows both."},
+  pause:{tr:"Duraklat",en:"Pause"}, resume:{tr:"Devam et",en:"Resume"}, reset:{tr:"Baştan başlat",en:"Restart"},
+  now:{tr:"Ne oluyor?",en:"What is happening?"}, tasks:{tr:"Bunu deneyin",en:"Try this"}, note:{tr:"Ders notu",en:"Lecture note"},
+  daily:{tr:"Günlük hayatta:",en:"In daily life:"},
+  chartAria:{tr:"Zamana göre değerler grafiği",en:"Chart of values over time"}, drawAria:{tr:"Canlı çizim",en:"Live drawing"},
+  nowLbl:{tr:"şimdi",en:"now"}, sec:{tr:"sn",en:"s"}, normal:{tr:"normal",en:"normal"}, night:{tr:"gece",en:"night"},
+  testEyebrow:{tr:"Kendinizi sınayın",en:"Test yourself"}, testTitle:{tr:"Ön test ve son test",en:"Pre-test and post-test"},
+  /* testP is built by the test engine from the switches */
+  pre:{tr:"Ön test",en:"Pre-test"}, post:{tr:"Son test",en:"Post-test"},
+  footer:{tr:"Bu simülasyon, fizyolojiyi anlamak için basitleştirilmiş bir eğitim modelidir; sayılar gerçek bir kişinin değerleri değildir. Model sayıları (kritik hacim, geçiş hızları, damla sayıları, zaman ölçeği) basitleştirilmiştir; kitap değerleri ve sayfaları ders notlarındadır.",en:"This simulation is a simplified teaching model for understanding physiology; the numbers are not the values of a real person. Model numbers (critical volume, entry rates, drop counts, time scale) are simplified; book values and pages are in the lecture notes."},
+  langAria:{tr:"Dil",en:"Language"}, speedAria:{tr:"Simülasyon hızı",en:"Simulation speed"}, testAria:{tr:"Test türü",en:"Test type"}, tabsAria:{tr:"Modüller",en:"Modules"}
+};
+
+/* ---------------- YARDIMCILAR / HELPERS ---------------- */
+const tg=(tr,en)=>`<span class='tag'>${L(tr,en)}</span>`;
+const SRC=(tr,en)=>`<p class="src">${L(tr,en)}</p>`;
+const BOOK_CTL={type:"toggle",id:"book",label:{tr:"Ganong değerlerini kullan",en:"Use Ganong values"},value:false,help:{tr:"Kapalı: Guyton ve Hall (15. baskı). Açık: Ganong (27. baskı). İki kitabın değerleri farklıdır.",en:"Off: Guyton and Hall (15th ed.). On: Ganong (27th ed.). The two books give different values."}};
+const bk=(c,g,n)=>c.book?n:g, bkName=c=>c.book?"Ganong":"Guyton";
+
+/* ---------------- BLOKLAR / BLOCKS ---------------- */
+const B={
+  gauge(v,o={}){
+    const mn=o.min??0, mx=o.max??1, f=cl((v-mn)/(mx-mn),0,1), R=70, cx=90, cy=84;
+    const pt=a=>[(cx+R*Math.cos(a)).toFixed(1),(cy-R*Math.sin(a)).toFixed(1)];
+    const arc=(f0,f1,col)=>{const [x0,y0]=pt(Math.PI*(1-f0)),[x1,y1]=pt(Math.PI*(1-f1)); return `<path d="M${x0} ${y0} A${R} ${R} 0 0 1 ${x1} ${y1}" stroke="var(${col})" stroke-width="14" fill="none"/>`;};
+    let a0=0, z=""; (o.zones||[[mx,"--line"]]).forEach(([to,col])=>{const a1=cl((to-mn)/(mx-mn),0,1); if(a1>a0) z+=arc(a0,a1,col); a0=a1;});
+    const [nx,ny]=(()=>{const a=Math.PI*(1-f); return [(cx+(R-20)*Math.cos(a)).toFixed(1),(cy-(R-20)*Math.sin(a)).toFixed(1)];})();
+    const val=o.fmt?o.fmt(v):pct(v), lab=t(o.label);
+    return `<div class="gauge" role="img" aria-label="${lab}: ${val}"><b>${lab}</b><svg viewBox="0 0 180 96" aria-hidden="true">${z}<line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="5" fill="var(--ink)"/></svg><div class="gv">${val}</div>${o.sub?`<small>${t(o.sub)}</small>`:""}</div>`;
+  },
+  bars(title,items){
+    return `<div class="bars"><b>${t(title)}</b>${items.map(([l,v,mx,c,txt])=>`<div class="bar"><span>${t(l)}</span><i style="width:${cl(v/mx,0,1)*100}%;background:var(${c||"--h5"})"></i><em>${txt??dec(v)}</em></div>`).join("")}</div>`;
+  },
+  stack(title,items){
+    const tot=items.reduce((a,x)=>a+x[1],0)||1;
+    return `<div style="display:grid;gap:6px"><b>${t(title)}</b><div class="stack">${items.map(([l,v,c])=>`<i style="width:${100*v/tot}%;background:var(${c})" title="${t(l)}"></i>`).join("")}</div><div class="legendkey">${items.map(([l,v,c])=>`<span><i class="sw" style="background:var(${c})"></i>${t(l)} ${pct(v/tot)}</span>`).join("")}</div></div>`;
+  },
+  counter(n,label,sub){ return `<div class="visual"><div class="clock">${n}</div><div><b>${t(label)}</b>${sub?`<br><small style="color:var(--muted)">${t(sub)}</small>`:""}</div></div>`; },
+  clock(h,sub){ const hh=Math.floor(h)%24, mm=Math.floor((h-Math.floor(h))*60); return `<div class="visual"><div class="clock">${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}</div>${sub?`<small style="color:var(--muted)">${t(sub)}</small>`:""}</div>`; },
+  progress(f,label){ const p=Math.round(cl(f,0,1)*100); return `<div style="display:grid;gap:6px"><b>${t(label)}: ${pct(p/100)}</b><div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p}"><i style="width:${p}%"></i></div></div>`; },
+  eq(formula,numbers,note){ return `<div class="eqbox"><div class="eqf">${formula}</div>${numbers?`<div class="eqn">${numbers}</div>`:""}${note?`<small>${t(note)}</small>`:""}</div>`; }
+};
+const blocks=(...h)=>`<div class="blocks">${h.filter(Boolean).join("")}</div>`;
+
+/* ---------------- MODÜLLER / MODULES ----------------
+   Hemoliz, Osmotik Frajilite ve Tamponlama (pratik). 4 modules: tonisite, frajilite, tampon, ph.
+   Model numbers (time constants, critical volume, drop counts, protein buffer groups) are simplified;
+   book values and pages are in each module note. LAB = value from the department lab manual (pending, Q5-A). */
+const M={};
+const sp=v=>(v>=0?"+":"−")+pct(Math.abs(v));          // signed percent
+const hm=h=>{const hh=Math.floor(h)%24, mm=Math.floor((h-Math.floor(h))*60); return String(hh).padStart(2,"0")+":"+String(mm).padStart(2,"0");};
+const PEND=()=>`<p class="src">${L("⚠ Laboratuvar kılavuzu ile kontrol edilecek değerler “(kılavuz)” ile işaretlidir.","⚠ Values marked “(manual)” will be checked against the lab manual.")}</p>`;
+const LABT=()=>L(" (kılavuz)"," (manual)");
+const phi=z=>1/(1+Math.exp(-1.702*z));               // normal cumulative (logistic approximation)
+const BLOOD=a=>`rgba(196,24,40,${cl(a,0,1).toFixed(3)})`;
+const ncl=x=>{const v=x<0.001?"0":dec(x,Math.round(x*100)%10===0?1:2); return LANG==="en"?v+"%":"%"+v;};
+
+/* ---- shared red-cell model (Boyle–van't Hoff; b = non-osmotic volume share) ----
+   Volume 1 = normal cell in an isotonic solution. Critical hemolytic volumes are MODEL numbers chosen so that
+   normal cells match Ganong (ch. 31, PDF p. 788): lysis begins at 0.5% NaCl, 50% at 0.40–0.42%, complete at 0.35%. */
+const RBC={b:0.4, types:[
+  {k:"n",tr:"Normal eritrosit",en:"Normal red cell",Vc:1.72,sd:0.115,c:"--h3"},
+  {k:"s",tr:"Sferosit",en:"Spherocyte",Vc:1.30,sd:0.07,c:"--signal"},
+  {k:"m",tr:"Hipokrom-mikrositer",en:"Hypochromic microcytic",Vc:2.04,sd:0.13,c:"--h5"}]};
+const volNaCl=x=>RBC.b+(1-RBC.b)*0.9/Math.max(x,0.01);                 // equilibrium volume in x% NaCl
+const hemo=(V,ty)=>V>=9?1:phi((V-ty.Vc)/ty.sd);                         // share of cells lysed at volume V
+const hemoNaCl=(x,ty)=>x<=0.001?1:hemo(volNaCl(x),ty);
+
+/* M1 · TONİSİTE VE HEMOLİZ — 6 tubes of 0.3 Osm/L */
+const SOL=[
+  {tr:"NaCl (%0,9)",en:"NaCl (0.9%)",perm:0,imp:0.3,ptr:"Na⁺ ve Cl⁻ hücreye girmez",pen:"Na⁺ and Cl⁻ do not enter the cell"},
+  {tr:"Gliserin",en:"Glycerol",perm:0.3,imp:0,tau:14,ptr:"Gliserin zardan geçer (yavaş)",pen:"Glycerol crosses the membrane (slowly)"},
+  {tr:"Üre",en:"Urea",perm:0.3,imp:0,tau:4,ptr:"Üre zardan hızla geçer",pen:"Urea crosses the membrane quickly"},
+  {tr:"Na asetat",en:"Na acetate",perm:0,imp:0.3,ptr:"Na⁺ hücreye girmez",pen:"Na⁺ does not enter the cell",lab:true},
+  {tr:"Asetik asit",en:"Acetic acid",perm:0.3,imp:0,tau:7,ptr:"Ayrışmamış asetik asit zardan geçer",pen:"Undissociated acetic acid crosses the membrane",lab:true},
+  {tr:"Saf su",en:"Pure water",perm:0,imp:0,ptr:"Dışarıda çözünen madde yok",pen:"No solute outside"}];
+M.tonisite={
+  tab:{tr:"1 · Tonisite",en:"1 · Tonicity"},
+  eyebrow:{tr:"Modül 1 · 0,3 Osm/L çözeltiler",en:"Module 1 · 0.3 Osm/L solutions"},
+  title:{tr:"Osmolarite, tonisite ve hemoliz",en:"Osmolarity, tonicity, and hemolysis"},
+  sub:{tr:"Tüm çözeltiler izoosmotiktir (0,3 Osm/L). Hücrenin şişip şişmemesini zardan geçemeyen maddeler belirler.",en:"All solutions are isosmotic (0.3 Osm/L). Whether the cell swells depends on the solutes that cannot cross the membrane."},
+  card:{tr:"Bir tüp seçin: NaCl, gliserin, üre, Na asetat, asetik asit ya da saf su. Hücre hacmini ve hemolizi izleyin.",en:"Choose a tube: NaCl, glycerol, urea, Na acetate, acetic acid, or pure water. Watch the cell volume and hemolysis."},
+  init:()=>({V:1,n:0,H:0,sol:-1,tt:0}),
+  predict:{q:{tr:"Eritrositler 0,3 Osm/L gliserin çözeltisine konursa hücre hacmi ne olur?",en:"If red cells are placed in a 0.3 Osm/L glycerol solution, what happens to cell volume?"},
+    set:{sol:1}, a:"up",
+    why:{tr:"Gliserin zardan geçer ve hücre içi osmolariteyi artırır; su hücreye girer, hücre şişer. Çözelti izoosmotiktir ama izotonik değildir (Guyton s. 315).",en:"Glycerol crosses the membrane and raises the osmolarity inside the cell; water enters and the cell swells. The solution is isosmotic but not isotonic (Guyton p. 315)."}},
+  controls:[
+    {type:"range",id:"sol",label:{tr:"Tüp (çözelti)",en:"Tube (solution)"},min:0,max:5,step:1,value:0,show:v=>t(SOL[v]),ends:[{tr:"NaCl",en:"NaCl"},{tr:"Saf su",en:"Pure water"}],help:{tr:"Her tüpe 3 ml çözelti + 1 damla eritrosit süspansiyonu. Seçim yeni bir tüp başlatır.",en:"Each tube: 3 ml of solution + 1 drop of red-cell suspension. A new choice starts a new tube."}},
+    {type:"button",id:"again",label:{tr:"Tüpü yenile",en:"New tube"},act:s=>{s.V=1;s.n=0;s.H=0;s.tt=0;},help:{tr:"Aynı çözeltiyle taze hücreler.",en:"Fresh cells in the same solution."}}
+  ],
+  step(s,dt,c){
+    const S0=SOL[c.sol];
+    if(s.sol!==c.sol){ s.sol=c.sol; s.V=1; s.n=0; s.H=0; s.tt=0; }
+    s.tt+=dt;
+    const w=Math.max(s.V-RBC.b,0.05), out=Math.max(S0.imp+S0.perm,0.004);
+    if(S0.perm>0) s.n+=(S0.perm-s.n/w)*w*dt/S0.tau;                        // permeant solute enters
+    const Vt=Math.min(RBC.b+(0.3*(1-RBC.b)+s.n)/out,4);
+    if(s.H<0.999) s.V=ap(s.V,Vt,0.7,dt);
+    s.H=Math.max(s.H,hemo(s.V,RBC.types[0]));
+    s.osmIn=(0.3*(1-RBC.b)+s.n)/Math.max(s.V-RBC.b,0.05); s.Vd=Math.min(s.V,2.2);
+  },
+  rows:(s,c)=>{const S0=SOL[c.sol]; return [[
+    {l:L("Çözelti","Solution"),s:L("0,3 Osm/L","0.3 Osm/L"),v:(S0.imp+S0.perm)/0.3,c:"--h1",fmt:()=>t(S0),small:true},
+    {l:L("Zardan geçiş","Membrane crossing"),s:L(S0.ptr,S0.pen),v:S0.perm>0?1:0,c:"--h5",fmt:()=>S0.perm>0?L("Geçer","Crosses"):L("Geçmez","No"),small:true},
+    {l:L("Hücre içi osmolarite","Osmolarity inside"),s:L("mOsm/L (model)","mOsm/L (model)"),v:cl(s.osmIn/0.6,0,1),c:"--h2",fmt:()=>Math.round(s.osmIn*1000)+""}
+  ],[
+    {l:L("Su hareketi","Water movement"),s:L("osmozla","by osmosis"),v:0.5,c:"--h1",fmt:()=>s.H>0.98?"—":(s.osmIn>(S0.imp+S0.perm)+0.002||(S0.imp+S0.perm)<0.01?L("İçeri","Inward"):L("Denge","Balance")),small:true},
+    {l:L("Hücre hacmi","Cell volume"),s:L("normalin katı","times normal"),v:s.Vd/2.2,c:"--h3",fmt:()=>s.H>0.98?L("parçalandı","lysed"):dec(s.V,2)+"×"},
+    {l:L("Hemoliz","Hemolysis"),s:L("parçalanan hücre","cells lysed"),v:s.H,c:"--signal",fmt:()=>pct(s.H)}
+  ]];},
+  fb:()=>null,
+  series:[
+    {k:"Vd",n:{tr:"Hücre hacmi (×)",en:"Cell volume (×)"},c:"--h3",min:0.5,max:2.2,primary:true,axis:v=>dec(v,1)+"×",fmt:v=>dec(v,2)+"×",band:[0.95,1.05],bandLabel:{tr:"normal hacim",en:"normal volume"}},
+    {k:"H",n:{tr:"Hemoliz",en:"Hemolysis"},c:"--signal",min:0,max:1,fmt:v=>pct(v)}
+  ],
+  chart:{win:40},
+  now(s,c){
+    const S0=SOL[c.sol], o=[];
+    if(S0.perm===0&&S0.imp>0) o.push(tg("İzotonik","Isotonic")+L(`${t(S0)}: çözünen madde hücreye girmez. Hücre hacmi değişmez, hemoliz olmaz.`,`${t(S0)}: the solute does not enter the cell. Cell volume does not change; no hemolysis.`));
+    if(S0.perm>0) o.push(tg("İzoosmotik ama hipotonik","Isosmotic but hypotonic")+L(`${t(S0)} zardan geçer. Hücre içi osmolarite artar, su içeri girer ve hücre şişer.`,`${t(S0)} crosses the membrane. The osmolarity inside rises, water enters, and the cell swells.`));
+    if(S0.imp+S0.perm<0.01) o.push(tg("Hipotonik","Hypotonic")+L("Saf suda dışarıda çözünen madde yoktur: su hızla hücreye girer.","Pure water has no solute: water enters the cell quickly."));
+    if(s.V>1.3&&s.H<0.98) o.push(tg("Şişme","Swelling")+L("Hücre disk biçiminden küre biçimine geçiyor. Küre, zarın alabileceği en büyük hacimdir.","The cell is changing from a disc to a sphere. The sphere is the largest volume the membrane can hold."));
+    if(s.H>0.02) o.push(tg("Hemoliz","Hemolysis")+L(`Hücrelerin ${pct(s.H)}'i parçalandı. Hemoglobin çözeltiye geçti; santrifüjden sonra üstteki sıvı kırmızıdır.`,`${pct(s.H)} of the cells have lysed. Hemoglobin has entered the solution; after centrifugation the upper fluid is red.`));
+    if(S0.lab) o.push(tg("Kılavuz","Manual")+L("Bu tüpün sonucu laboratuvar kılavuzu ile kontrol edilecek.","The result of this tube will be checked against the lab manual."));
+    return o;
+  },
+  visual:(s,c)=>blocks(B.eq(L("Tonisite ← zardan geçemeyen maddeler","Tonicity ← solutes that cannot cross"),L(`Dış: ${Math.round((SOL[c.sol].imp+SOL[c.sol].perm)*1000)} mOsm/L · geçemeyen: ${Math.round(SOL[c.sol].imp*1000)} mOsm/L`,`Outside: ${Math.round((SOL[c.sol].imp+SOL[c.sol].perm)*1000)} mOsm/L · cannot cross: ${Math.round(SOL[c.sol].imp*1000)} mOsm/L`),{tr:"Aynı osmolarite (izoosmotik) her zaman aynı tonisite (izotonik) demek değildir.",en:"The same osmolarity (isosmotic) does not always mean the same tonicity (isotonic)."}),
+    B.bars({tr:"6 tüpün sonucu (model)",en:"Result of the 6 tubes (model)"},SOL.map(x=>{const h=(x.perm>0||x.imp+x.perm<0.01)?1:0; return [x,h,1,h?"--signal":"--ok",(h?L("hemoliz var","hemolysis"):L("hemoliz yok","no hemolysis"))+(x.lab?LABT():"")];}))),
+  draw:{h:250,fn(g,W,H,s,c){
+    const tx0=W*0.08, tw=Math.min(70,W*0.16), ty=26, th=H-60;
+    g.lineWidth=2.5; g.strokeStyle=css("--ink");
+    // tube: upper fluid red by hemolysis, pellet of intact cells at the bottom
+    g.fillStyle=BLOOD(0.08+0.85*s.H); g.fillRect(tx0,ty+20,tw,th-40);
+    const pel=(1-s.H)*28; g.fillStyle=BLOOD(0.95); g.fillRect(tx0,ty+th-20-pel,tw,pel);
+    g.beginPath(); g.moveTo(tx0,ty); g.lineTo(tx0,ty+th-20); g.arc(tx0+tw/2,ty+th-20,tw/2,Math.PI,0,true); g.lineTo(tx0+tw,ty); g.stroke();
+    g.fillStyle=css("--ink"); g.font=`700 13px ${css("--f-body")}`; g.textAlign="center"; g.fillText(t(SOL[c.sol]),tx0+tw/2,H-8);
+    // cell: disc (ellipse) becomes a sphere (circle), then bursts
+    const cx=W*0.62, cy=H/2, R0=Math.min(W*0.18,H*0.26);
+    if(s.H<0.98){ const f=cl((s.V-1)/0.72,0,1), rx=R0*(1-0.25*f)*Math.cbrt(Math.min(s.V,1.72)), ry=R0*(0.45+0.55*f)*Math.cbrt(Math.min(s.V,1.72))*0.9;
+      g.fillStyle=BLOOD(0.85); g.beginPath(); g.ellipse(cx,cy,rx,ry,0,0,7); g.fill();
+      if(f<0.6){ g.fillStyle=BLOOD(0.5); g.beginPath(); g.ellipse(cx,cy,rx*0.45*(1-f),ry*0.35*(1-f),0,0,7); g.fill(); }
+      // water arrows
+      const inW=SOL[c.sol].perm>0||SOL[c.sol].imp+SOL[c.sol].perm<0.01;
+      if(inW){ g.strokeStyle=css("--h1"); g.lineWidth=2; [0,1,2,3].forEach(k=>{const a=k*Math.PI/2+0.6, r1=R0*1.6, r2=R0*1.2; g.beginPath(); g.moveTo(cx+r1*Math.cos(a),cy+r1*Math.sin(a)); g.lineTo(cx+r2*Math.cos(a),cy+r2*Math.sin(a)); g.stroke();}); }
+    } else { g.strokeStyle=BLOOD(0.6); g.lineWidth=2; g.setLineDash([4,4]); g.beginPath(); g.arc(cx,cy,R0*1.15,0,7); g.stroke(); g.setLineDash([]);
+      g.fillStyle=BLOOD(0.25); for(let k=0;k<26;k++){ const a=k*2.4, r=R0*(0.4+0.9*((k*37)%10)/10); g.beginPath(); g.arc(cx+r*Math.cos(a),cy+r*Math.sin(a),3,0,7); g.fill(); }
+      g.fillStyle=css("--ink"); g.font=`700 14px ${css("--f-body")}`; g.textAlign="center"; g.fillText(L("Hemoliz: zar yırtıldı","Hemolysis: membrane ruptured"),cx,cy+R0*1.6); }
+    g.fillStyle=css("--muted"); g.font=`13px ${css("--f-body")}`; g.textAlign="center"; g.fillText(L("Eritrosit (model)","Red cell (model)"),cx,16);
+  }},
+  daily:{tr:"Damar içine verilen sıvıların osmolaritesi eritrositleri şişirmeyecek ya da büzmeyecek biçimde ayarlanır (Guyton s. 317).",en:"Fluids given into a vein are adjusted so that they do not swell or shrink the red cells (Guyton p. 317)."},
+  tasks:{tr:["NaCl ve Na asetat tüplerini karşılaştırın. İkisi de neden hemoliz yapmaz?","Üre ve gliserin tüplerinde hemoliz hızını karşılaştırın. Hangisi daha hızlı?","Saf su tüpünde hemoliz neden en hızlı oluşur?"],
+         en:["Compare the NaCl and Na acetate tubes. Why does neither cause hemolysis?","Compare the speed of hemolysis in the urea and glycerol tubes. Which is faster?","Why is hemolysis fastest in the pure-water tube?"]},
+  note:()=>L(`<p><strong>Osmolarite:</strong> bir litre çözeltideki osmotik etkin parçacık (osmol) sayısıdır. <strong>Tonisite</strong> ise zardan geçemeyen maddelerin derişimine bağlıdır: izotonik çözelti hücre hacmini değiştirmez, hipotonik çözelti hücreyi şişirir, hipertonik çözelti büzer. Osmolaritesi hücreninkine eşit çözeltiye, madde zardan geçse de geçmese de <strong>izoosmotik</strong> denir (Guyton s. 315). %0,9 NaCl izotoniktir (Guyton s. 315; Ganong Böl. 1, PDF s. 20).</p><p>Üre ve gliserin zardan geçer: hücre içine girdikçe içerideki osmolariteyi artırır, su hücreye girer ve hücre şişer. Bu çözeltiler izoosmotik ama hipotoniktir. Şişen eritrosit disk biçiminden küre biçimine geçer ve sonunda hemoglobinini kaybeder; hemoglobin çözeltiyi kırmızıya boyar (Ganong Böl. 31, PDF s. 788).</p><p>Na asetat ve asetik asit tüplerinin sonucu ve açıklaması laboratuvar kılavuzundan alınacaktır${LABT()}.</p><p class="src">Model: hacim, hücrenin osmotik olmayan payı (0,4) ile hesaplanır; kritik hacim ve geçiş hızları basitleştirilmiş sayılardır.</p>`+SRC("Kaynak: Guyton ve Hall (15. baskı), Böl. 25, s. 315, 317; Ganong (27. baskı), Böl. 1, PDF s. 20; Böl. 31, PDF s. 788.","")+PEND(),
+             `<p><strong>Osmolarity</strong> is the number of osmotically active particles (osmoles) in one liter of solution. <strong>Tonicity</strong> depends on the concentration of the solutes that cannot cross the membrane: an isotonic solution does not change cell volume, a hypotonic solution swells the cell, and a hypertonic solution shrinks it. A solution with the same osmolarity as the cell is called <strong>isosmotic</strong>, whether or not the solute crosses the membrane (Guyton p. 315). 0.9% NaCl is isotonic (Guyton p. 315; Ganong ch. 1, PDF p. 20).</p><p>Urea and glycerol cross the membrane: as they enter, the osmolarity inside rises, water enters, and the cell swells. These solutions are isosmotic but hypotonic. A swelling red cell changes from a disc to a sphere and finally loses its hemoglobin, which colors the solution red (Ganong ch. 31, PDF p. 788).</p><p>The result and the explanation for the Na acetate and acetic acid tubes will be taken from the lab manual${LABT()}.</p><p class="src">Model: volume is calculated with a non-osmotic share of the cell (0.4); the critical volume and the entry rates are simplified numbers.</p>`+SRC("","Source: Guyton and Hall (15th ed.), ch. 25, p. 315, 317; Ganong (27th ed.), ch. 1, PDF p. 20; ch. 31, PDF p. 788.")+PEND())
+};
+
+/* M2 · OSMOTİK FRAJİLİTE — 9 tubes (slide table) */
+const TUBES=[0,0.3,0.4,0.45,0.5,0.55,0.6,0.7,0.9];
+M.frajilite={
+  tab:{tr:"2 · Frajilite",en:"2 · Fragility"},
+  eyebrow:{tr:"Modül 2 · kantitatif frajilite testi",en:"Module 2 · quantitative fragility test"},
+  title:{tr:"Osmotik frajilite",en:"Osmotic fragility"},
+  sub:{tr:"NaCl derişimi azaldıkça eritrositler şişer. Hangi derişimde parçalandıkları, yüzey alanı/hacim oranına bağlıdır.",en:"As the NaCl concentration falls, red cells swell. The concentration at which they lyse depends on the surface area to volume ratio."},
+  card:{tr:"%0–0,9 NaCl içeren 9 tüp. Normal eritrosit, sferosit ve hipokrom-mikrositer hücrelerin hemoliz eğrilerini karşılaştırın.",en:"Nine tubes with 0–0.9% NaCl. Compare the hemolysis curves of normal cells, spherocytes, and hypochromic microcytic cells."},
+  init:()=>({V:1,H:0,key:""}),
+  predict:{q:{tr:"Sferositlerde hemolizin başladığı NaCl yüzdesi, normal eritrositlere göre nasıl değişir?",en:"Compared with normal red cells, how does the NaCl percentage at which hemolysis begins change in spherocytes?"},
+    set:{typ:1,nacl:0.6}, a:"up",
+    why:{tr:"Sferositlerin yüzey alanı/hacim oranı düşüktür; şişebilecekleri hacim payı azdır. Daha az hipotonik bir çözeltide, yani daha yüksek NaCl yüzdesinde parçalanırlar: osmotik frajilite artmıştır (Ganong Böl. 31, PDF s. 788).",en:"Spherocytes have a low surface area to volume ratio, so they have little room to swell. They lyse in a less hypotonic solution, that is, at a higher NaCl percentage: osmotic fragility is increased (Ganong ch. 31, PDF p. 788)."}},
+  controls:[
+    {type:"range",id:"nacl",label:{tr:"NaCl derişimi",en:"NaCl concentration"},min:0,max:0.9,step:0.05,value:0.9,show:v=>ncl(v),ends:[{tr:"%0 (saf su)",en:"0% (pure water)"},{tr:"%0,9",en:"0.9%"}],help:{tr:"Tüp = %1 NaCl + saf su, toplam 10 ml. Seçim yeni bir tüp başlatır.",en:"Tube = 1% NaCl + pure water, 10 ml in total. A new choice starts a new tube."}},
+    {type:"range",id:"typ",label:{tr:"Hücre tipi",en:"Cell type"},min:0,max:2,step:1,value:0,show:v=>t(RBC.types[v]),ends:[{tr:"Normal",en:"Normal"},{tr:"Hipokrom",en:"Hypochromic"}],help:{tr:"Normal eritrosit, sferosit (yüzey/hacim düşük) ya da hipokrom-mikrositer hücre (yüzey/hacim yüksek).",en:"Normal red cell, spherocyte (low surface/volume), or hypochromic microcytic cell (high surface/volume)."}}
+  ],
+  step(s,dt,c){
+    const k=c.nacl+"|"+c.typ, ty=RBC.types[c.typ];
+    if(s.key!==k){ s.key=k; s.V=1; s.H=0; }
+    const Vt=Math.min(c.nacl<=0.001?4:volNaCl(c.nacl),4);
+    if(s.H<0.999) s.V=ap(s.V,Vt,0.8,dt);
+    s.H=Math.max(s.H,hemo(s.V,ty)); s.Vd=Math.min(s.V,2.6);
+    s.osm=286*c.nacl/0.9;
+  },
+  rows:(s,c)=>{const ty=RBC.types[c.typ]; return [[
+    {l:L("NaCl","NaCl"),s:L("%1 NaCl ml + su ml","ml 1% NaCl + ml water"),v:c.nacl/0.9,c:"--h1",fmt:()=>`${dec(c.nacl*10,1)} + ${dec(10-c.nacl*10,1)}`},
+    {l:L("Etkin osmolarite","Effective osmolarity"),s:"mOsm/L",v:s.osm/300,c:"--h2",fmt:()=>Math.round(s.osm)+""},
+    {l:L("Hücre hacmi","Cell volume"),s:L("normalin katı","times normal"),v:s.Vd/2.6,c:"--h3",fmt:()=>s.H>0.98?L("parçalandı","lysed"):dec(s.V,2)+"×"}
+  ],[
+    {l:L("Hücre tipi","Cell type"),s:L("kritik hacim (model)","critical volume (model)"),v:ty.Vc/2.6,c:ty.c,fmt:()=>dec(ty.Vc,2)+"×"},
+    {l:L("Hemoliz","Hemolysis"),s:L("bu tüpte","in this tube"),v:s.H,c:"--signal",fmt:()=>pct(s.H)}
+  ]];},
+  fb:()=>null,
+  series:[
+    {k:"Vd",n:{tr:"Hücre hacmi (×)",en:"Cell volume (×)"},c:"--h3",min:0.5,max:2.6,primary:true,axis:v=>dec(v,1)+"×",fmt:v=>dec(v,2)+"×"},
+    {k:"H",n:{tr:"Hemoliz",en:"Hemolysis"},c:"--signal",min:0,max:1,fmt:v=>pct(v)}
+  ],
+  chart:{win:20},
+  now(s,c){
+    const ty=RBC.types[c.typ], o=[];
+    o.push(L(`%1 NaCl ${dec(c.nacl*10,1)} ml + saf su ${dec(10-c.nacl*10,1)} ml = ${ncl(c.nacl)} NaCl (yaklaşık ${Math.round(s.osm)} mOsm/L).`,`${dec(c.nacl*10,1)} ml 1% NaCl + ${dec(10-c.nacl*10,1)} ml pure water = ${ncl(c.nacl)} NaCl (about ${Math.round(s.osm)} mOsm/L).`));
+    if(c.nacl>=0.85) o.push(tg("İzotonik","Isotonic")+L("Hücre hacmi değişmez.","Cell volume does not change."));
+    else if(s.H<0.02) o.push(tg("Hipotonik","Hypotonic")+L("Hücre şişti ama zar henüz yırtılmadı: eritrosit içi boş bir torba gibi şişebilir.","The cell has swollen but the membrane has not ruptured: the red cell can swell like an empty bag."));
+    if(s.H>=0.02&&s.H<0.98) o.push(tg("Kısmi hemoliz","Partial hemolysis")+L(`Hücrelerin ${pct(s.H)}'i parçalandı. Hücreler aynı anda parçalanmaz.`,`${pct(s.H)} of the cells have lysed. Cells do not all lyse at once.`));
+    if(s.H>=0.98) o.push(tg("Tam hemoliz","Complete hemolysis")+L("Tüm hücreler parçalandı; üstteki sıvı koyu kırmızı.","All cells have lysed; the upper fluid is dark red."));
+    if(c.typ===1) o.push(tg("Sferosit","Spherocyte")+L("Yüzey alanı/hacim oranı düşük: eğri sağa kayar, osmotik frajilite artar"+LABT()+".","Low surface area to volume ratio: the curve shifts to the right; osmotic fragility is increased"+LABT()+"."));
+    if(c.typ===2) o.push(tg("Hipokrom-mikrositer","Hypochromic microcytic")+L("Yüzey alanı/hacim oranı yüksek: eğri sola kayar, osmotik frajilite azalır"+LABT()+".","High surface area to volume ratio: the curve shifts to the left; osmotic fragility is decreased"+LABT()+"."));
+    return o;
+  },
+  visual:(s,c)=>blocks(B.bars({tr:"9 tüpte hemoliz ("+t(RBC.types[c.typ])+")",en:"Hemolysis in 9 tubes ("+t(RBC.types[c.typ])+")"},TUBES.map((x,i)=>[`${i+1} · ${ncl(x)}`,hemoNaCl(x,RBC.types[c.typ]),1,"--signal",pct(hemoNaCl(x,RBC.types[c.typ]))]))),
+  draw:{h:330,fn(g,W,H,s,c){
+    const ty=RBC.types[c.typ], n=TUBES.length, gap=Math.max(4,W*0.015), tw=Math.min(34,(W-20-gap*(n-1))/n), x0=(W-(tw*n+gap*(n-1)))/2, th=92, ty0=10;
+    g.font=`11px ${css("--f-body")}`; g.textAlign="center";
+    TUBES.slice().reverse().forEach((x,j)=>{ const i=n-1-j, xx=x0+j*(tw+gap), h=hemoNaCl(x,ty), on=Math.abs(x-c.nacl)<0.026;
+      g.fillStyle=BLOOD(0.06+0.88*h); g.fillRect(xx,ty0+14,tw,th-30);
+      g.fillStyle=BLOOD(0.95); const p=(1-h)*12; g.fillRect(xx,ty0+th-16-p,tw,p);
+      g.strokeStyle=on?css("--signal"):css("--ink"); g.lineWidth=on?3:1.5; g.beginPath(); g.moveTo(xx,ty0); g.lineTo(xx,ty0+th-16); g.arc(xx+tw/2,ty0+th-16,tw/2,Math.PI,0,true); g.lineTo(xx+tw,ty0); g.stroke();
+      g.fillStyle=css("--ink"); g.fillText(String(i+1),xx+tw/2,ty0+th+12); g.fillStyle=css("--muted"); g.fillText(dec(x,x*10%1===0?1:2),xx+tw/2,ty0+th+25); });
+    // curve: hemolysis % vs NaCl %
+    const px=40, py=ty0+th+40, pw=W-px-14, ph=H-py-30, X=v=>px+(v/0.9)*pw, Y=v=>py+ph-v*ph;
+    g.strokeStyle=css("--line"); g.lineWidth=1; g.beginPath(); g.moveTo(px,py); g.lineTo(px,py+ph); g.lineTo(px+pw,py+ph); g.stroke();
+    g.fillStyle=css("--muted"); g.textAlign="right"; [0,0.5,1].forEach(v=>g.fillText(pct(v),px-4,Y(v)+4));
+    g.textAlign="center"; [0,0.3,0.45,0.6,0.9].forEach(v=>g.fillText(dec(v,v*10%1===0?1:2),X(v),py+ph+14)); g.fillText(L("% NaCl","% NaCl"),px+pw/2,py+ph+27);
+    RBC.types.forEach((T,k)=>{ g.strokeStyle=css(T.c); g.lineWidth=k===c.typ?3.5:1.5; g.globalAlpha=k===c.typ?1:0.55; g.beginPath(); for(let i=0;i<=90;i++){ const v=i/100, yy=Y(hemoNaCl(v,T)); i?g.lineTo(X(v),yy):g.moveTo(X(v),yy);} g.stroke(); g.globalAlpha=1; });
+    g.fillStyle=css("--signal"); g.beginPath(); g.arc(X(c.nacl),Y(s.H),5,0,7); g.fill();
+    g.textAlign="left"; g.font=`12px ${css("--f-body")}`; RBC.types.forEach((T,k)=>{ g.fillStyle=css(T.c); g.fillText("— "+t(T),px+pw*0.68,py+12+k*15); });
+  }},
+  daily:{tr:"Kalıtsal sferositozda eritrositler küçük ve küreseldir; dalakta sıkışmaya dayanamaz ve parçalanırlar (Guyton s. 454).",en:"In hereditary spherocytosis, red cells are small and spherical; they cannot withstand compression in the spleen and rupture (Guyton p. 454)."},
+  tasks:{tr:["Normal hücrede hemolizin başladığı, %50'ye ulaştığı ve tamamlandığı NaCl yüzdelerini bulun.","Hücre tipini “Sferosit” yapın. Aynı tüplerde hemoliz nasıl değişti?","%0,45 NaCl tüpünde üç hücre tipini karşılaştırın."],
+         en:["For normal cells, find the NaCl percentages at which hemolysis begins, reaches 50%, and is complete.","Set the cell type to “Spherocyte”. How did hemolysis change in the same tubes?","Compare the three cell types in the 0.45% NaCl tube."]},
+  note:()=>L(`<p><strong>Osmotik frajilite</strong> testi, eritrositlerin hipotonik NaCl çözeltilerine direncini ölçer. Hipotonik çözeltide eritrositler şişer, küre biçimini alır ve sonunda hemoglobinlerini kaybeder. Normal eritrositlerde hemoliz <strong>%0,5</strong> NaCl'de başlar, <strong>%0,40–0,42</strong>'de hücrelerin yarısı parçalanır ve <strong>%0,35</strong>'te hemoliz tamamlanır (Ganong Böl. 31, PDF s. 788).</p><p><strong>Kalıtsal sferositoz:</strong> zar iskeleti proteinlerindeki (spektrin, bant 3, ankirin) değişiklikler nedeniyle hücreler küreseldir ve hipotonik NaCl'de daha kolay parçalanır; dalakta da tutulup yıkılırlar (Ganong Böl. 31, PDF s. 788; Guyton s. 454). Sferositte hemolizin başladığı NaCl yüzdesi ve hipokrom-mikrositer hücrelerin eğrisi laboratuvar kılavuzundan alınacaktır${LABT()}.</p><p>Tüplerdeki NaCl etkin osmolaritesi, %0,9 NaCl = 286 mOsm/L kabul edilerek hesaplanmıştır (Guyton s. 314–315).</p><p class="src">Model: kritik hacimler normal hücre için Ganong değerlerine uyacak biçimde seçilmiştir; sferosit ve hipokrom eğrileri yalnızca yönü gösterir.</p>`+SRC("Kaynak: Ganong (27. baskı), Böl. 31, PDF s. 788; Guyton ve Hall (15. baskı), Böl. 25, s. 314–315; Böl. 33, s. 454.","")+PEND(),
+             `<p>The <strong>osmotic fragility</strong> test measures how well red cells resist hypotonic NaCl solutions. In a hypotonic solution red cells swell, become spherical, and finally lose their hemoglobin. In normal red cells hemolysis begins at <strong>0.5%</strong> NaCl, half of the cells lyse at <strong>0.40–0.42%</strong>, and hemolysis is complete at <strong>0.35%</strong> (Ganong ch. 31, PDF p. 788).</p><p><strong>Hereditary spherocytosis:</strong> because of changes in membrane skeleton proteins (spectrin, band 3, ankyrin), the cells are spherical and lyse more readily in hypotonic NaCl; they are also trapped and destroyed in the spleen (Ganong ch. 31, PDF p. 788; Guyton p. 454). The NaCl percentage at which spherocytes begin to lyse and the curve of hypochromic microcytic cells will be taken from the lab manual${LABT()}.</p><p>The effective osmolarity of the tubes assumes 0.9% NaCl = 286 mOsm/L (Guyton p. 314–315).</p><p class="src">Model: the critical volumes are chosen to match Ganong's values for normal cells; the spherocyte and hypochromic curves show only the direction.</p>`+SRC("","Source: Ganong (27th ed.), ch. 31, PDF p. 788; Guyton and Hall (15th ed.), ch. 25, p. 314–315; ch. 33, p. 454.")+PEND())
+};
+
+/* M3 · PLAZMANIN TAMPON GÜCÜ — drops of 0.1 N HCl or NaOH, water vs 10% plasma */
+const DROP=5;                                  // µmol per drop (0.05 ml of 0.1 N)
+const PLB=[{T:25,pK:6.1},{T:1,pK:6.8},{T:30,pK:4.2},{T:10,pK:6.5},{T:12,pK:9.6}];   // µmol per 1 ml plasma (MODEL)
+const REAG=[{tr:"0,1 N HCl + metil oranj",en:"0.1 N HCl + methyl orange",acid:true,end:3.1},{tr:"0,1 N NaOH + fenolftalein",en:"0.1 N NaOH + phenolphthalein",acid:false,end:8.3}];
+const charge=(pH,V,pl,net,SID)=>{ let z=Math.pow(10,-pH)-Math.pow(10,pH-14); if(pl) PLB.forEach(b=>{ z-=b.T/(1+Math.pow(10,b.pK-pH))/V*1e-3; }); return z+(SID+net)/V*1e-3; };
+const solvePH=(V,pl,net,SID)=>{ let lo=0,hi=14; for(let i=0;i<60;i++){ const m=(lo+hi)/2; if(charge(m,V,pl,net,SID)>0) lo=m; else hi=m; } return (lo+hi)/2; };
+const SID0=(()=>{ const V=10; let z=Math.pow(10,-7.4)-Math.pow(10,7.4-14); PLB.forEach(b=>{ z-=b.T/(1+Math.pow(10,b.pK-7.4))/V*1e-3; }); return -z*V*1e3; })();
+const RES={};                                  // endpoint drop counts: key "plasma|reag"
+const indColor=(pH,acid)=>acid?(pH<=3.1?"#d0102a":pH<4.4?"#f07b1c":"#f2c418"):(pH>=8.3?"#c21dbf":"rgba(220,230,240,.55)");
+M.tampon={
+  tab:{tr:"3 · Tampon gücü",en:"3 · Buffer power"},
+  eyebrow:{tr:"Modül 3 · damla sayımı",en:"Module 3 · drop count"},
+  title:{tr:"Plazmanın tampon gücü",en:"The buffer power of plasma"},
+  sub:{tr:"Saf suya ve %10 plazmaya damla damla asit ya da baz ekleyin. İndikatörün rengi değişene kadar kaç damla gerekir?",en:"Add acid or base drop by drop to pure water and to 10% plasma. How many drops until the indicator changes color?"},
+  card:{tr:"0,1 N HCl + metil oranj ya da 0,1 N NaOH + fenolftalein. Saf su ile %10 plazmayı karşılaştırın.",en:"0.1 N HCl + methyl orange or 0.1 N NaOH + phenolphthalein. Compare pure water with 10% plasma."},
+  init:()=>({d:0,pH:7,acc:0,key:"",done:false}),
+  predict:{q:{tr:"%10 plazmada metil oranjın kırmızıya dönmesi için gereken HCl damla sayısı, saf suya göre nasıl değişir?",en:"Compared with pure water, how does the number of HCl drops needed to turn methyl orange red change in 10% plasma?"},
+    set:{pl:true,rg:0,auto:true}, a:"up",
+    why:{tr:"Plazmadaki tamponlar (en çok bikarbonat ve proteinler) eklenen H⁺'nin çoğunu bağlar; pH yavaş düşer ve renk değişimi için daha çok damla gerekir (Guyton s. 412–413).",en:"The buffers in plasma (mainly bicarbonate and proteins) bind most of the added H⁺; pH falls slowly, so more drops are needed for the color change (Guyton p. 412–413)."}},
+  controls:[
+    {type:"toggle",id:"pl",label:{tr:"Tüpte plazma var",en:"Plasma in the tube"},value:false,help:{tr:"Kapalı: 10 ml saf su. Açık: 1 ml plazma + 9 ml saf su (%10 plazma).",en:"Off: 10 ml pure water. On: 1 ml plasma + 9 ml pure water (10% plasma)."}},
+    {type:"range",id:"rg",label:{tr:"Ayıraç",en:"Reagent"},min:0,max:1,step:1,value:0,show:v=>t(REAG[v]),ends:[{tr:"HCl",en:"HCl"},{tr:"NaOH",en:"NaOH"}],help:{tr:"Her tüpe 5 damla indikatör.",en:"5 drops of indicator in each tube."}},
+    {type:"button",id:"drop",label:{tr:"1 damla ekle",en:"Add 1 drop"},act:s=>{ if(s.d<40) s.d++; },help:{tr:"1 damla ≈ 0,05 ml (model).",en:"1 drop ≈ 0.05 ml (model)."}},
+    {type:"toggle",id:"auto",label:{tr:"Otomatik damlat",en:"Add drops automatically"},value:false,help:{tr:"Renk değişene kadar her 0,6 saniyede 1 damla.",en:"1 drop every 0.6 s until the color changes."}},
+    {type:"button",id:"new",label:{tr:"Yeni tüp",en:"New tube"},act:s=>{ s.d=0; s.done=false; s.acc=0; },help:{tr:"Damla sayısını sıfırlar.",en:"Resets the drop count."}}
+  ],
+  step(s,dt,c){
+    const k=(c.pl?1:0)+"|"+c.rg, R=REAG[c.rg];
+    if(s.key!==k){ s.key=k; s.d=0; s.done=false; s.acc=0; }
+    if(c.auto&&!s.done&&s.d<40){ s.acc+=dt; if(s.acc>=0.6){ s.acc=0; s.d++; } }
+    const V=10+0.05*s.d, net=(R.acid?-1:1)*DROP*s.d;
+    s.pH=solvePH(V,c.pl,net,c.pl?SID0:0);
+    s.free=R.acid?Math.max(0,(Math.pow(10,-s.pH)-Math.pow(10,-7.4))*V*1e3):Math.max(0,(Math.pow(10,s.pH-14)-Math.pow(10,7.4-14))*V*1e3);
+    s.add=DROP*s.d; s.buf=Math.max(0,s.add-s.free);
+    const hit=R.acid?s.pH<=R.end:s.pH>=R.end;
+    if(hit&&!s.done){ s.done=true; RES[k]=s.d; }
+  },
+  rows:(s,c)=>{const R=REAG[c.rg]; return [[
+    {l:L("Damla","Drops"),s:t(R),v:s.d/20,c:"--h1",fmt:()=>String(s.d)},
+    {l:L(R.acid?"Eklenen H⁺":"Eklenen OH⁻",R.acid?"H⁺ added":"OH⁻ added"),s:"µmol",v:cl(s.add/100,0,1),c:"--h2",fmt:()=>String(Math.round(s.add))},
+    {l:L("Tamponlanan","Buffered"),s:"µmol",v:s.add?s.buf/s.add:0,c:"--h5",fmt:()=>String(Math.round(s.buf))}
+  ],[
+    {l:"pH",s:L("tüpteki","in the tube"),v:s.pH/14,c:"--h3",fmt:()=>dec(s.pH,2)},
+    {l:L("İndikatör","Indicator"),s:R.acid?L("metil oranj","methyl orange"):L("fenolftalein","phenolphthalein"),v:s.done?1:0,c:"--signal",fmt:()=>s.done?(R.acid?L("kırmızı","red"):L("eflatun","pink")):L("değişmedi","no change"),small:true}
+  ]];},
+  fb:()=>null,
+  series:[{k:"pH",n:{tr:"pH",en:"pH"},c:"--h3",min:0,max:14,primary:true,axis:v=>dec(v,0),fmt:v=>dec(v,2),band:[3.1,8.3],bandLabel:{tr:"renk değişim sınırları (kılavuz)",en:"color-change limits (manual)"}}],
+  chart:{win:30},
+  now(s,c){
+    const R=REAG[c.rg], o=[], wk=(0)+"|"+c.rg, pk=(1)+"|"+c.rg;
+    if(s.d===0) o.push(L("“1 damla ekle”ye basın ya da “Otomatik damlat”ı açın.","Press “Add 1 drop” or switch on “Add drops automatically”."));
+    if(s.d>0&&c.pl&&s.add>0) o.push(tg("Tampon","Buffer")+L(`Eklenen ${Math.round(s.add)} µmol ${R.acid?"H⁺":"OH⁻"} iyonunun ${pct(s.add?s.buf/s.add:0)}'i tamponlarca bağlandı.`,`${pct(s.add?s.buf/s.add:0)} of the ${Math.round(s.add)} µmol of ${R.acid?"H⁺":"OH⁻"} added was bound by buffers.`));
+    if(s.d>0&&!c.pl) o.push(tg("Saf su","Pure water")+L("Suda tampon yoktur: pH ilk damlalarda büyük ölçüde değişir.","Water has no buffer: pH changes a lot with the first drops."));
+    if(s.done) o.push(tg("Renk değişti","Color changed")+L(`${s.d} damlada renk değişti (pH ${dec(s.pH,1)}).`,`The color changed after ${s.d} drops (pH ${dec(s.pH,1)}).`));
+    if(RES[wk]!=null&&RES[pk]!=null) o.push(tg("Karşılaştırma","Comparison")+L(`Saf su ${RES[wk]} damla, %10 plazma ${RES[pk]} damla. Fark, plazmanın tampon gücünü gösterir.`,`Pure water ${RES[wk]} drops, 10% plasma ${RES[pk]} drops. The difference shows the buffer power of plasma.`));
+    if(!R.acid&&c.pl) o.push(tg("Not","Note")+L("Bikarbonat asidi tamponlamada güçlüdür; baz eklenince H₂CO₃ ile tepkimeye girer ama plazmada H₂CO₃ azdır (model).","Bicarbonate is strong at buffering acid; added base reacts with H₂CO₃, but plasma has little H₂CO₃ (model)."));
+    return o;
+  },
+  visual:(s,c)=>blocks(B.bars({tr:"Renk değişimine kadar damla (sizin denemeleriniz)",en:"Drops to color change (your trials)"},[[{tr:"Su + HCl",en:"Water + HCl"},RES["0|0"]??0,20,"--h1",RES["0|0"]??"–"],[{tr:"Plazma + HCl",en:"Plasma + HCl"},RES["1|0"]??0,20,"--h5",RES["1|0"]??"–"],[{tr:"Su + NaOH",en:"Water + NaOH"},RES["0|1"]??0,20,"--h1",RES["0|1"]??"–"],[{tr:"Plazma + NaOH",en:"Plasma + NaOH"},RES["1|1"]??0,20,"--h5",RES["1|1"]??"–"]]),
+    B.eq("H⁺ + HCO₃⁻ ⇌ H₂CO₃ ⇌ CO₂ + H₂O",L("Asit eklenince denge sağa kayar; H⁺ artışı sınırlı kalır.","When acid is added the reaction shifts to the right; the rise in H⁺ stays small."),{tr:"Kuvvetli asit (HCl), çok zayıf bir aside (H₂CO₃) dönüşür (Guyton s. 413).",en:"A strong acid (HCl) is changed into a very weak acid (H₂CO₃) (Guyton p. 413)."})),
+  draw:{h:230,fn(g,W,H,s,c){
+    const R=REAG[c.rg], tw=Math.min(80,W*0.2), tx=W*0.3-tw/2, ty=30, th=H-60;
+    g.fillStyle=indColor(s.pH,R.acid); g.fillRect(tx,ty+th*0.25,tw,th*0.75-tw/2);
+    g.beginPath(); g.arc(tx+tw/2,ty+th-tw/2,tw/2,0,Math.PI); g.fill();
+    g.strokeStyle=css("--ink"); g.lineWidth=2.5; g.beginPath(); g.moveTo(tx,ty); g.lineTo(tx,ty+th-tw/2); g.arc(tx+tw/2,ty+th-tw/2,tw/2,Math.PI,0,true); g.lineTo(tx+tw,ty); g.stroke();
+    if(c.auto&&!s.done){ g.fillStyle=css("--h1"); g.beginPath(); g.arc(tx+tw/2,ty-8+((s.acc/0.6)*(th*0.25)),4,0,7); g.fill(); }
+    g.fillStyle=css("--ink"); g.font=`700 13px ${css("--f-body")}`; g.textAlign="center"; g.fillText(c.pl?L("1 ml plazma + 9 ml su","1 ml plasma + 9 ml water"):L("10 ml saf su","10 ml pure water"),tx+tw/2,H-6);
+    const bx=W*0.58; g.textAlign="left"; g.font=`700 34px ${css("--f-body")}`; g.fillText(String(s.d),bx,ty+46);
+    g.font=`14px ${css("--f-body")}`; g.fillStyle=css("--muted"); g.fillText(L("damla","drops"),bx,ty+66); g.fillText("pH "+dec(s.pH,2),bx,ty+92);
+    g.fillText(R.acid?L("Kırmızı: pH ≤ 3,1","Red: pH ≤ 3.1")+LABT():L("Eflatun: pH ≥ 8,3","Pink: pH ≥ 8.3")+LABT(),bx,ty+116);
+  }},
+  daily:{tr:"Mide hücreleri çok asidik bir sıvı salgılar; kanda ise H⁺ derişimi çok düşük ve dar sınırlarda tutulur (Guyton s. 412).",en:"Stomach cells secrete a very acidic fluid, while in blood the H⁺ concentration is kept very low and within narrow limits (Guyton p. 412)."},
+  tasks:{tr:["Saf suya HCl damlatın. Metil oranj kaçıncı damlada kırmızıya döndü?","Aynı denemeyi %10 plazmayla yapın. Kaç damla gerekti?","NaOH ile su ve plazmayı karşılaştırın. Plazma asidi mi, bazı mı daha iyi tamponluyor?"],
+         en:["Add HCl to pure water. After how many drops did methyl orange turn red?","Repeat with 10% plasma. How many drops were needed?","Compare water and plasma with NaOH. Does plasma buffer acid or base better?"]},
+  note:()=>L(`<p><strong>Tampon</strong>, H⁺ iyonlarını geri dönüşümlü olarak bağlayan maddedir; H⁺'yi vücuttan atmaz, yalnızca bağlı tutar ve pH değişimini küçültür (Guyton s. 412). Bikarbonat tamponunda kuvvetli asit HCl, çok zayıf asit H₂CO₃'e dönüşür; H₂CO₃ CO₂ ve suya ayrışır (Guyton s. 413). Bikarbonat tampon sisteminin pK değeri 6,1'dir (Guyton s. 414).</p><p>Kanın başlıca tamponları plazma proteinleri, hemoglobin ve karbonik asit–bikarbonat sistemidir; hemoglobinin tampon kapasitesi plazma proteinlerinin yaklaşık 6 katıdır (Ganong Böl. 35, PDF s. 912–913). Vücut sıvılarındaki kimyasal tamponlamanın %60–70'i hücre içindedir (Guyton s. 415).</p><p>Deneyde indikatörün renk değişimi için gereken damla sayısı, saf suya göre %10 plazmada plazmanın tampon gücünü gösterir. İndikatörlerin renk değişim sınırları laboratuvar kılavuzundan alınacaktır${LABT()}.</p><p class="src">Model: 1 damla = 0,05 ml 0,1 N (5 µmol); 1 ml plazmadaki tampon grupları basitleştirilmiş sayılardır.</p>`+SRC("Kaynak: Guyton ve Hall (15. baskı), Böl. 31, s. 412–415; Ganong (27. baskı), Böl. 35, PDF s. 912–913.","")+PEND(),
+             `<p>A <strong>buffer</strong> binds H⁺ ions reversibly; it does not remove H⁺ from the body but keeps it bound and makes the change in pH smaller (Guyton p. 412). In the bicarbonate buffer, the strong acid HCl is changed into the very weak acid H₂CO₃, which dissociates into CO₂ and water (Guyton p. 413). The pK of the bicarbonate buffer system is 6.1 (Guyton p. 414).</p><p>The main buffers of blood are the plasma proteins, hemoglobin, and the carbonic acid–bicarbonate system; hemoglobin has about 6 times the buffering capacity of the plasma proteins (Ganong ch. 35, PDF p. 912–913). 60–70% of the chemical buffering of the body fluids is inside the cells (Guyton p. 415).</p><p>In the experiment, the number of drops needed for the indicator to change color in 10% plasma, compared with pure water, shows the buffer power of plasma. The color-change limits of the indicators will be taken from the lab manual${LABT()}.</p><p class="src">Model: 1 drop = 0.05 ml of 0.1 N (5 µmol); the buffer groups in 1 ml of plasma are simplified numbers.</p>`+SRC("","Source: Guyton and Hall (15th ed.), ch. 31, p. 412–415; Ganong (27th ed.), ch. 35, PDF p. 912–913.")+PEND())
+};
+
+/* M4 · pH DÜZENLENMESİ — buffers (seconds), lungs (3–12 min), kidneys (hours to days). 1 s = 5 model minutes. */
+const HH=(h,p)=>6.1+Math.log10(h/(0.03*p));
+M.ph={
+  tab:{tr:"4 · pH düzenlenmesi",en:"4 · pH regulation"},
+  eyebrow:{tr:"Modül 4 · üç savunma hattı",en:"Module 4 · three lines of defense"},
+  title:{tr:"pH'nın sabit tutulması",en:"Keeping pH constant"},
+  sub:{tr:"Asit ya da baz yükleyin. Tamponlar saniyeler, akciğerler dakikalar, böbrekler saatler–günler içinde çalışır.",en:"Add an acid or a base load. Buffers act in seconds, the lungs in minutes, and the kidneys in hours to days."},
+  card:{tr:"Henderson–Hasselbalch eşitliği ile pH, HCO₃⁻ ve Pco₂. Tamponları, solunumu ve böbreği tek tek kapatıp açın.",en:"pH, HCO₃⁻, and Pco₂ with the Henderson–Hasselbalch equation. Switch buffers, breathing, and kidneys on and off one by one."},
+  init:()=>({h:24,p:40,pH:7.4,acid:0,ren:0,tm:0,free:0}),
+  controls:[
+    {type:"button",id:"acid",label:{tr:"Asit yükle (10 mmol/L)",en:"Add acid (10 mmol/L)"},act:s=>{s.acid+=10;},help:{tr:"Hücre dışı sıvıya kuvvetli asit eklenir (model).",en:"A strong acid is added to the extracellular fluid (model)."}},
+    {type:"button",id:"base",label:{tr:"Baz yükle (10 mmol/L)",en:"Add base (10 mmol/L)"},act:s=>{s.acid-=10;},help:{tr:"Hücre dışı sıvıya baz eklenir (model).",en:"A base is added to the extracellular fluid (model)."}},
+    {type:"toggle",id:"buf",label:{tr:"Kimyasal tamponlar",en:"Chemical buffers"},value:true,help:{tr:"Kapatırsanız eklenen H⁺ serbest kalır (deney).",en:"If you switch them off, the added H⁺ stays free (experiment)."}},
+    {type:"toggle",id:"lung",label:{tr:"Solunum yanıtı",en:"Respiratory response"},value:true,help:{tr:"Pco₂'yi değiştirir (3–12 dakika).",en:"Changes Pco₂ (3–12 minutes)."}},
+    {type:"toggle",id:"kid",label:{tr:"Böbrek yanıtı",en:"Kidney response"},value:true,help:{tr:"Yeni HCO₃⁻ yapar ya da HCO₃⁻ atar (saatler–günler).",en:"Makes new HCO₃⁻ or excretes HCO₃⁻ (hours to days)."}},
+    {type:"button",id:"rs",label:{tr:"Normale döndür",en:"Back to normal"},act:s=>{s.h=24;s.p=40;s.acid=0;s.ren=0;s.tm=0;},help:{tr:"Tüm değerleri normale getirir.",en:"Sets all values back to normal."}}
+  ],
+  chart:{win:120},
+  step(s,dt,c){
+    s.tm+=dt*5;                                                     // model minutes
+    if(c.kid) s.ren=ap(s.ren,s.acid,90,dt);                         // kidneys: new HCO3- equal to the acid load, slowly
+    const load=s.acid-s.ren;                                        // acid not yet removed
+    s.h=cl(24-(c.buf?load:0),2,60);
+    let pTarget=40;
+    if(c.lung){ const pU=HH(s.h,40), pT=7.4-0.35*(7.4-pU); pTarget=cl(s.h/(0.03*Math.pow(10,pT-6.1)),12,55); }
+    s.p=ap(s.p,pTarget,1.5,dt);
+    s.free=c.buf?0:Math.max(load,0);
+    s.pH=c.buf?HH(s.h,s.p):(load>=0?-Math.log10(Math.pow(10,-HH(24,s.p))+load*1e-3):14+Math.log10(Math.pow(10,HH(24,s.p)-14)-load*1e-3));
+    s.pH=cl(s.pH,2.5,11.5);
+  },
+  rows:(s,c)=>[[
+    {l:L("Asit yükü","Acid load"),s:"mmol/L",v:cl(0.5+(s.acid-s.ren)/40,0,1),c:"--h2",fmt:()=>dec(s.acid-s.ren,1)},
+    {l:L("Tamponlar","Buffers"),s:L("saniyeler","seconds"),v:c.buf?s.h/48:0,c:"--h5",fmt:()=>c.buf?"HCO₃⁻ "+dec(s.h,1):L("kapalı","off")},
+    {l:L("Akciğer","Lungs"),s:L("3–12 dakika","3–12 minutes"),v:s.p/80,c:"--h1",fmt:()=>"Pco₂ "+dec(s.p,1)},
+    {l:L("Böbrek","Kidneys"),s:L("saatler–günler","hours to days"),v:cl(0.5+s.ren/40,0,1),c:"--h3",fmt:()=>c.kid?(s.ren>=0?"+":"−")+dec(Math.abs(s.ren),1)+" HCO₃⁻":L("kapalı","off")}
+  ],[
+    {l:L("Arter kanı pH","Arterial pH"),s:L("normal 7,35–7,45","normal 7.35–7.45"),v:cl((s.pH-6.8)/1.2,0,1),c:"--signal",fmt:()=>dec(s.pH,2)}
+  ]],
+  fb:(s,c)=>{const d=Math.abs(s.pH-7.4); return {kind:"neg",on:c.lung||c.kid,strength:cl(d*5,0,1),text:(c.lung||c.kid)?L("Negatif geri bildirim: pH sapınca solunum ve böbrek onu düzeltir.","Negative feedback: when pH deviates, the lungs and kidneys correct it."):L("Solunum ve böbrek yanıtı kapalı: sapma düzeltilmiyor.","Respiratory and kidney responses off: the deviation is not corrected.")};},
+  series:[
+    {k:"pH",n:{tr:"pH",en:"pH"},c:"--signal",min:6.8,max:7.8,primary:true,band:[7.35,7.45],bandLabel:{tr:"normal",en:"normal"},axis:v=>dec(v,1),fmt:v=>dec(v,2)},
+    {k:"h",n:{tr:"HCO₃⁻ (mmol/L)",en:"HCO₃⁻ (mmol/L)"},c:"--h5",min:0,max:48,fmt:v=>dec(v,1)},
+    {k:"p",n:{tr:"Pco₂ (mm Hg)",en:"Pco₂ (mm Hg)"},c:"--h1",min:0,max:80,fmt:v=>dec(v,1)}
+  ],
+  now(s,c){
+    const o=[], load=s.acid-s.ren;
+    if(Math.abs(s.acid)<0.01) o.push(L("pH 7,4. “Asit yükle” ya da “Baz yükle”ye basın.","pH 7.4. Press “Add acid” or “Add base”."));
+    if(load>0.5&&c.buf) o.push(tg("Tampon","Buffer")+L("Saniyeler içinde H⁺ + HCO₃⁻ → H₂CO₃ → CO₂ + H₂O. HCO₃⁻ azaldı, pH'daki düşüş sınırlı kaldı.","Within seconds H⁺ + HCO₃⁻ → H₂CO₃ → CO₂ + H₂O. HCO₃⁻ fell, and the fall in pH stayed small."));
+    if(load>0.5&&!c.buf) o.push(tg("Tampon yok","No buffer")+L("Eklenen H⁺ serbest kaldı: pH çok düştü. Tamponlar olmasaydı küçük bir asit yükü bile yaşamla bağdaşmazdı.","The added H⁺ stayed free: pH fell steeply. Without buffers even a small acid load would not be compatible with life."));
+    if(c.lung&&Math.abs(s.p-40)>1) o.push(tg("Solunum","Breathing")+L(s.p<40?"Solunum hızlandı, CO₂ atıldı: Pco₂ düştü ve pH normale yaklaştı (3–12 dakika; %50–75 etkili).":"Solunum yavaşladı: Pco₂ yükseldi.",s.p<40?"Breathing increased and CO₂ was blown off: Pco₂ fell and pH moved toward normal (3–12 minutes; 50–75% effective).":"Breathing slowed: Pco₂ rose."));
+    if(c.kid&&Math.abs(s.ren)>0.5) o.push(tg("Böbrek","Kidneys")+L(s.ren>0?"Böbrekler H⁺ salgılayıp yeni HCO₃⁻ yapıyor; saatler–günler içinde HCO₃⁻ ve Pco₂ normale döner.":"Böbrekler HCO₃⁻ atıyor.",s.ren>0?"The kidneys secrete H⁺ and make new HCO₃⁻; within hours to days HCO₃⁻ and Pco₂ return to normal.":"The kidneys excrete HCO₃⁻."));
+    return o;
+  },
+  visual:(s,c)=>blocks(B.eq("pH = 6,1 + log (HCO₃⁻ / 0,03 × Pco₂)".replace(/,/g,LANG==="en"?".":","),`6${LANG==="en"?".":","}1 + log (${dec(s.h,1)} / ${dec(0.03*s.p,2)}) = ${dec(s.pH,2)}`,{tr:"Henderson–Hasselbalch eşitliği (Guyton s. 414). Normal: HCO₃⁻ 24 mmol/L, Pco₂ 40 mm Hg → pH 7,4.",en:"Henderson–Hasselbalch equation (Guyton p. 414). Normal: HCO₃⁻ 24 mmol/L, Pco₂ 40 mm Hg → pH 7.4."}),
+    B.gauge(s.pH,{min:6.8,max:7.8,zones:[[7.35,"--h1"],[7.45,"--ok"],[7.8,"--signal"]],label:{tr:"pH",en:"pH"},fmt:v=>dec(v,2),sub:L("normal 7,35–7,45","normal 7.35–7.45")}),
+    B.counter(Math.floor(s.tm/60)+L(" sa "," h ")+String(Math.floor(s.tm%60)).padStart(2,"0")+L(" dk"," min"),{tr:"Geçen süre (model)",en:"Time passed (model)"},{tr:"1 saniye = 5 dakika",en:"1 second = 5 minutes"})),
+  daily:{tr:"Vücut her gün yaklaşık 80 mEq uçucu olmayan asit üretir; tamponlar, akciğerler ve böbrekler pH'yı birlikte korur (Guyton s. 417).",en:"The body produces about 80 mEq of nonvolatile acid each day; buffers, lungs, and kidneys protect pH together (Guyton p. 417)."},
+  tasks:{tr:["“Asit yükle”ye basın. pH, HCO₃⁻ ve Pco₂ hangi sırayla değişti?","Tamponları kapatıp aynı yükü verin. pH ne kadar düştü?","Böbrek yanıtını kapatın. Solunum pH'yı tamamen normale getirebiliyor mu?"],
+         en:["Press “Add acid”. In what order did pH, HCO₃⁻, and Pco₂ change?","Switch off the buffers and add the same load. How far did pH fall?","Switch off the kidney response. Can breathing bring pH fully back to normal?"]},
+  note:()=>L(`<p>H⁺ derişimindeki değişikliklere karşı üç savunma hattı vardır: (1) <strong>kimyasal tamponlar</strong> saniyeler içinde pH değişimini küçültür, H⁺'yi vücuttan atmaz; (2) <strong>solunum merkezi</strong> CO₂ atılımını değiştirir; bu yanıt 3–12 dakikada oluşur ve %50–75 etkilidir; (3) <strong>böbrekler</strong> asidik ya da alkali idrar çıkararak saatler–günler içinde en güçlü düzenlemeyi yapar (Guyton s. 412, 417). Arter kanı pH'sı 7,35–7,45 aralığındadır (Guyton 7,4; Ganong 7,35–7,45).</p><p><strong>Henderson–Hasselbalch:</strong> pH = 6,1 + log (HCO₃⁻ / 0,03 × Pco₂). Normal HCO₃⁻ 24 mmol/L ve Pco₂ 40 mm Hg ile pH 7,4'tür (Guyton s. 414). Amonyak ve fosfat tamponları böbrek tübül sıvısında çalışır (Guyton s. 420).</p><p class="src">Model: 1 saniye = 5 dakika; tampon yokken pH yalnızca yönü göstermek için hesaplanır.</p>`+SRC("Kaynak: Guyton ve Hall (15. baskı), Böl. 31, s. 412–420; Ganong (27. baskı), Böl. 35.",""),
+             `<p>There are three lines of defense against changes in H⁺ concentration: (1) <strong>chemical buffers</strong> reduce the change in pH within seconds but do not remove H⁺ from the body; (2) the <strong>respiratory center</strong> changes CO₂ removal; this response occurs within 3–12 minutes and is 50–75% effective; (3) the <strong>kidneys</strong> excrete acidic or alkaline urine and are the most powerful regulators over hours to days (Guyton p. 412, 417). Arterial pH is 7.35–7.45 (Guyton 7.4; Ganong 7.35–7.45).</p><p><strong>Henderson–Hasselbalch:</strong> pH = 6.1 + log (HCO₃⁻ / 0.03 × Pco₂). With normal HCO₃⁻ 24 mmol/L and Pco₂ 40 mm Hg, pH is 7.4 (Guyton p. 414). The ammonia and phosphate buffers work in the renal tubular fluid (Guyton p. 420).</p><p class="src">Model: 1 second = 5 minutes; without buffers, pH is calculated only to show the direction.</p>`+SRC("","Source: Guyton and Hall (15th ed.), ch. 31, p. 412–420; Ganong (27th ed.), ch. 35."))
+};
+
+/* ---------------- TEST ----------------
+   Approved A2 (review_hemolysis_osmotic_fragility_buffering.md): T1–T6, 84 item points
+   (mcq 4 · tf 10 · order 24 · match 15 · fill 15 · order 16) + confidence (−24 to +12) + 4 gift = 100. */
+const QUIZ=[
+  {type:"mcq",pts:4,mod:"frajilite",
+   q:{tr:"Normal eritrositlerde hemoliz hangi NaCl yoğunluğunda tamamlanır?",en:"At which NaCl concentration is hemolysis of normal red cells complete?"},
+   o:{tr:["%0,9","%0,5","%0,42","%0,35","%0"],en:["0.9%","0.5%","0.42%","0.35%","0%"]},a:3,
+   why:{tr:"Normal eritrositlerde hemoliz %0,5'te başlar, %0,40–0,42'de hücrelerin yarısı parçalanır ve %0,35'te hemoliz tamamlanır (Ganong Böl. 31).",en:"In normal red cells hemolysis begins at 0.5%, half of the cells lyse at 0.40–0.42%, and hemolysis is complete at 0.35% (Ganong ch. 31)."}},
+  {type:"tf",pts:10,mod:"tonisite",mods:["tonisite","tonisite","frajilite","tampon","ph"],
+   q:{tr:"Her ifade için Doğru ya da Yanlış seçin.",en:"Mark each statement true or false."},
+   o:{tr:["%0,9 NaCl çözeltisi eritrosit hacmini değiştirmez.","Her izoosmotik çözelti izotoniktir.","Sferositlerin yüzey alanı/hacim oranı normal eritrositlerden yüksektir.","Tamponlar H⁺ iyonlarını vücuttan uzaklaştırır.","Bikarbonat tampon sisteminin pK değeri 6,1'dir."],
+      en:["A 0.9% NaCl solution does not change red cell volume.","Every isosmotic solution is isotonic.","Spherocytes have a higher surface area to volume ratio than normal red cells.","Buffers remove H⁺ ions from the body.","The pK of the bicarbonate buffer system is 6.1."]},a:[true,false,false,false,true],
+   fix:{tr:["Doğru: %0,9 NaCl izotoniktir (Guyton s. 315).","Yanlış: zardan geçen bir maddenin izoosmotik çözeltisi (ör. üre) hücreyi şişirir; tonisiteyi geçemeyen maddeler belirler (Guyton s. 315).","Yanlış: sferositlerde bu oran azalmıştır; bu nedenle daha kolay parçalanırlar.","Yanlış: tamponlar H⁺'yi yalnızca bağlı tutar; atılımı akciğer ve böbrek yapar (Guyton s. 412).","Doğru (Guyton s. 414)."],
+        en:["True: 0.9% NaCl is isotonic (Guyton p. 315).","False: an isosmotic solution of a solute that crosses the membrane (e.g., urea) swells the cell; tonicity depends on the solutes that cannot cross (Guyton p. 315).","False: in spherocytes this ratio is decreased, so they lyse more easily.","False: buffers only keep H⁺ bound; the lungs and kidneys remove it (Guyton p. 412).","True (Guyton p. 414)."]},
+   why:{tr:"Her ifade eşit puan alır.",en:"Each statement earns equal points."}},
+  {type:"order",pts:24,mod:"tonisite",
+   q:{tr:"Eritrositler 0,3 Osm/L üre çözeltisine konunca olanları doğru sıraya koyun.",en:"Put the events that follow placing red cells in a 0.3 Osm/L urea solution in the correct order."},
+   o:{tr:["Su hücre içine girer","Membran yırtılır","Eritrositler 0,3 Osm/L üre çözeltisine konur","Hücre içi osmolarite artar","Hemoglobin dışarı çıkar, sıvı kırmızılaşır","Üre membrandan hücre içine geçer","Hücre şişer ve küre biçimini alır"],
+      en:["Water enters the cell","The membrane ruptures","Red cells are placed in a 0.3 Osm/L urea solution","The osmolarity inside the cell rises","Hemoglobin leaves the cell and the fluid turns red","Urea crosses the membrane into the cell","The cell swells and becomes spherical"]},a:[2,5,3,0,6,1,4],
+   why:{tr:"Üre zardan geçer → hücre içi osmolarite artar → su osmozla girer → hücre şişer, küreselleşir → zar yırtılır → hemoglobin çözeltiye geçer. Çözelti izoosmotik ama hipotoniktir (Guyton s. 315; Ganong Böl. 31).",en:"Urea crosses the membrane → the osmolarity inside rises → water enters by osmosis → the cell swells and becomes spherical → the membrane ruptures → hemoglobin enters the solution. The solution is isosmotic but hypotonic (Guyton p. 315; Ganong ch. 31)."}},
+  {type:"match",pts:15,mod:"tonisite",mods:["tonisite","tonisite","tonisite","tonisite","frajilite"],
+   q:{tr:"Her çözeltiyi eritrositlerde beklenen sonuçla eşleştirin. İki seçenek açıkta kalacak.",en:"Match each solution with the expected result in red cells. Two options will be left over."},
+   left:{tr:["%0,9 NaCl","Saf su","%3 NaCl","0,3 Osm/L üre","%0,45 NaCl"],en:["0.9% NaCl","Pure water","3% NaCl","0.3 Osm/L urea","0.45% NaCl"]},
+   o:{tr:["Kısmi hemoliz","Hücre büzüşür","Zar hasarı (hemositoliz)","Hacim değişmez","Geçirgen madde ile şişme ve hemoliz","Önce büzüşme, sonra normal hacim","Tam hemoliz"],
+      en:["Partial hemolysis","The cell shrinks","Membrane damage (hemocytolysis)","Volume does not change","Swelling and hemolysis by a permeant solute","First shrinking, then normal volume","Complete hemolysis"]},a:[3,6,1,4,0],
+   why:{tr:"%0,9 NaCl izotoniktir; saf su ve üre hücreyi şişirir; %3 NaCl hipertoniktir; %0,45 NaCl'de normal hücrelerin bir kısmı parçalanır (Guyton s. 315; Ganong Böl. 31).",en:"0.9% NaCl is isotonic; pure water and urea swell the cell; 3% NaCl is hypertonic; in 0.45% NaCl some normal cells lyse (Guyton p. 315; Ganong ch. 31)."}},
+  {type:"fill",pts:15,mod:"tampon",mods:["tampon","tampon","ph","ph","ph"],
+   q:{tr:"Boşlukları listeden seçerek doldurun.",en:"Fill in the blanks by choosing from the lists."},
+   segs:{tr:["Hücre dışı sıvıda en güçlü tampon sistemi "," sistemidir. Eritrosit içinde önemli bir tampon "," molekülüdür. Kimyasal tamponlar "," içinde, solunum sistemi "," içinde, böbrekler ise "," içinde etki eder."],
+         en:["The most powerful buffer system of the extracellular fluid is the "," system. An important buffer inside red cells is "," Chemical buffers act within "," the respiratory system within "," and the kidneys over ","."]},
+   blanks:[{o:{tr:["bikarbonat","fosfat","amonyak"],en:["bicarbonate","phosphate","ammonia"]},a:0},
+           {o:{tr:["albümin","hemoglobin","glukoz"],en:["albumin.","hemoglobin.","glucose."]},a:1},
+           {o:{tr:["saatler","günler","saniyeler"],en:["hours,","days,","seconds,"]},a:2},
+           {o:{tr:["3–12 saat","3–12 dakika","3–12 gün"],en:["3–12 hours,","3–12 minutes,","3–12 days,"]},a:1},
+           {o:{tr:["dakikalar","saniyeler","saatler–günler"],en:["minutes","seconds","hours to days"]},a:2}],
+   why:{tr:"Bikarbonat hücre dışı sıvının en güçlü tamponudur; hemoglobin eritrositte önemli bir tampondur. Tamponlar saniyeler, solunum 3–12 dakika, böbrekler saatler–günler içinde çalışır (Guyton s. 412, 415, 417).",en:"Bicarbonate is the most powerful extracellular buffer; hemoglobin is an important buffer in red cells. Buffers act within seconds, breathing within 3–12 minutes, and the kidneys over hours to days (Guyton p. 412, 415, 417)."}},
+  {type:"order",pts:16,mod:"ph",
+   q:{tr:"Kana kuvvetli asit (HCl) eklenince bikarbonat tamponunda olanları doğru sıraya koyun.",en:"Put the events in the bicarbonate buffer after a strong acid (HCl) is added to blood in the correct order."},
+   o:{tr:["H₂CO₃ oluşur","CO₂ akciğerlerden atılır","H⁺ iyonları HCO₃⁻ ile birleşir","H₂CO₃, CO₂ ve H₂O'ya ayrışır","Kana HCl eklenir"],
+      en:["H₂CO₃ is formed","CO₂ is removed through the lungs","H⁺ ions combine with HCO₃⁻","H₂CO₃ dissociates into CO₂ and H₂O","HCl is added to blood"]},a:[4,2,0,3,1],
+   why:{tr:"HCl'nin H⁺ iyonu HCO₃⁻ ile birleşir ve çok zayıf asit H₂CO₃ oluşur; H₂CO₃ CO₂ ve suya ayrışır; artan CO₂ solunumu uyarır ve akciğerlerden atılır (Guyton s. 413).",en:"The H⁺ of HCl combines with HCO₃⁻ to form the very weak acid H₂CO₃; H₂CO₃ dissociates into CO₂ and water; the extra CO₂ stimulates breathing and is removed through the lungs (Guyton p. 413)."}}
+];
+/* M6 MINI-QUIZ ROUNDS: 40-min practical → 2 rounds (rule 2.12). Round 1 after the hemolysis part, round 2 at the end. */
+const QUIZ_MID=[
+ {items:[   // round 1: hemolysis and osmotic fragility
+  {type:"tf",mod:"tonisite",
+   q:{tr:"Doğru mu, yanlış mı?",en:"True or false?"},
+   o:{tr:["Hipotonik çözeltide eritrosit şişer."],en:["A red cell swells in a hypotonic solution."]},a:[true],
+   why:{tr:"Doğru: su hücreye girer ve hücre şişer (Guyton s. 315).",en:"True: water enters the cell and the cell swells (Guyton p. 315)."}},
+  {type:"mcq",mod:"frajilite",
+   q:{tr:"Normal eritrositlerde hemoliz hangi NaCl yüzdesinde başlar?",en:"At which NaCl percentage does hemolysis of normal red cells begin?"},
+   o:{tr:["%0,9","%0,7","%0,5","%0,2"],en:["0.9%","0.7%","0.5%","0.2%"]},a:2,
+   why:{tr:"Normal eritrositlerde hemoliz %0,5 NaCl'de başlar (Ganong Böl. 31).",en:"Hemolysis of normal red cells begins at 0.5% NaCl (Ganong ch. 31)."}},
+  {type:"fill",mod:"frajilite",
+   q:{tr:"Boşluğu doldurun.",en:"Fill in the blank."},
+   segs:{tr:["Sferositlerde osmotik frajilite ","."],en:["In spherocytes, osmotic fragility is ","."]},
+   blanks:[{o:{tr:["artar","azalır","değişmez"],en:["increased","decreased","unchanged"]},a:0}],
+   why:{tr:"Sferositler hipotonik NaCl'de normal hücrelerden daha kolay parçalanır (Ganong Böl. 31).",en:"Spherocytes lyse more readily than normal cells in hypotonic NaCl (Ganong ch. 31)."}}
+ ]},
+ {items:[   // round 2: buffers and pH regulation
+  {type:"tf",mod:"ph",
+   q:{tr:"Doğru mu, yanlış mı?",en:"True or false?"},
+   o:{tr:["Asit fazlası, bikarbonat tamponunda CO₂'ye dönüşür ve akciğerlerden atılır."],en:["In the bicarbonate buffer, excess acid is changed into CO₂ and removed through the lungs."]},a:[true],
+   why:{tr:"Doğru: H⁺ + HCO₃⁻ → H₂CO₃ → CO₂ + H₂O; CO₂ solunumla atılır (Guyton s. 413).",en:"True: H⁺ + HCO₃⁻ → H₂CO₃ → CO₂ + H₂O; CO₂ is breathed out (Guyton p. 413)."}},
+  {type:"mcq",mod:"tampon",
+   q:{tr:"%10 plazmada renk değişimi için saf suya göre daha çok HCl damlası gerekir. Nedeni nedir?",en:"In 10% plasma, more HCl drops are needed for the color change than in pure water. Why?"},
+   o:{tr:["Plazmanın rengi","İndikatörün bozulması","Plazmanın tampon gücü","Suyun pH'sının düşük olması"],en:["The color of plasma","Breakdown of the indicator","The buffer power of plasma","The low pH of water"]},a:2,
+   why:{tr:"Plazmadaki tamponlar eklenen H⁺'nin çoğunu bağlar; pH yavaş değişir (Guyton s. 412–413).",en:"The buffers in plasma bind most of the added H⁺, so pH changes slowly (Guyton p. 412–413)."}},
+  {type:"match",mod:"ph",
+   q:{tr:"Eşleştirin. Bir seçenek açıkta kalacak.",en:"Match. One option will be left over."},
+   left:{tr:["Kimyasal tamponlar","Böbrekler"],en:["Chemical buffers","Kidneys"]},
+   o:{tr:["3–12 dakika","Saatler–günler","Saniyeler"],en:["3–12 minutes","Hours to days","Seconds"]},a:[2,1],
+   why:{tr:"3–12 dakika, solunum yanıtının süresidir (Guyton s. 412, 417).",en:"3–12 minutes is the time of the respiratory response (Guyton p. 412, 417)."}}
+ ]}
+];
+
+/* ---------------- TEST ENGINE 2026-11g ----------------
+   2026-11g: mini-quiz rounds (QUIZ_MID = list of rounds of 3 items; links #mid1… and #board1…; Q126–Q143).
+   Any number of items, any order. Item types: mcq, tf, order, match, fill, open.
+   Default test: 6 automatic items, 84 points (see QUIZ). Points rule: all item points + 2 per automatic item + 4 = 100.
+   Automatic items are scored here; open items (special cases) are scored by the lecturer (Sheet columns).
+   Pre-test: total + topic feedback only. Mid, post, delayed: key, item scores, topics.
+   One row per test is sent to the Sheet (schema 2: values go under their column names). */
+const tx=v=>(v&&typeof v==="object"&&!Array.isArray(v)&&("tr" in v))?v[LANG]:v;
+const QT={
+  choose:{tr:"Seçin…",en:"Choose…"},
+  T:{tr:"D",en:"T"}, F:{tr:"Y",en:"F"}, pts:{tr:"puan",en:"points"},
+  type_mcq:{tr:"Çoktan seçmeli",en:"Multiple choice"}, type_tf:{tr:"Doğru / yanlış",en:"True / false"}, type_order:{tr:"Sıralama",en:"Ordering"},
+  type_match:{tr:"Eşleştirme",en:"Matching"}, type_fill:{tr:"Boşluk doldurma",en:"Fill in the blanks"}, type_open:{tr:"Açık uçlu",en:"Open-ended"},
+  lecturerTag:{tr:"eğitimci puanlar",en:"scored by the lecturer"},
+  check:{tr:"Cevapları kontrol et",en:"Check answers"}, clear:{tr:"Temizle",en:"Clear"},
+  right:{tr:"Doğru.",en:"Correct."}, rightAns:{tr:"Doğru cevap:",en:"Correct answer:"}, rightOrder:{tr:"Doğru sıra:",en:"Correct order:"}, rightMatch:{tr:"Doğru eşleşme:",en:"Correct matches:"}, rightFill:{tr:"Doğru cevaplar:",en:"Correct answers:"},
+  pairNote:{tr:"Doğru sıradaki her ardışık çift puan alır.",en:"Each consecutive pair in the correct order earns points."},
+  tryIt:{tr:"Simülasyonda deneyin →",en:"Try it in the simulation →"},
+  rubricT:{tr:"Kendi kontrolünüz: yazdığınız basamakları işaretleyin (puana eklenmez; bu soruyu eğitimci puanlar)",en:"Self-check: tick the steps you wrote (not added to your score; the lecturer scores this question)"},
+  selfPts:{tr:"Kendi değerlendirmeniz: {x}/{m} (puana eklenmez)",en:"Your self-check: {x}/{m} (not added to your score)"},
+  openSaved:{tr:"Cevabınız kaydedildi. Bu soruyu eğitimci puanlayacak.",en:"Your answer has been saved. The lecturer will score this question."},
+  answer:{tr:"Cevabınız",en:"Your answer"},
+  autoNote:{tr:"otomatik puan; açık uçlu soruyu eğitimci puanlar",en:"automatic score; the lecturer scores the open-ended question"},
+  sure:{tr:"Bu cevaptan emin misiniz?",en:"Are you sure of this answer?"}, sureY:{tr:"Eminim",en:"Sure"}, sureN:{tr:"Emin değilim",en:"Not sure"},
+  scoreBox:{tr:"Puanlama: «Eminim» işaretli soru doğruysa +2, yanlışsa −4 puan; «Emin değilim» 0 puan. Kısmen doğru sorularda puan orantılıdır. 4 puan bizden hediye.",en:"Scoring: a 'sure' item earns +2 if right and costs 4 if wrong; 'not sure' gives 0. Partly right items count in proportion. 4 points are a gift from us."},
+  scoreBoxGift:{tr:"Puanlama: 4 puan bizden hediye.",en:"Scoring: 4 points are a gift from us."},
+  totT:{tr:"Toplam",en:"Total"}, totItems:{tr:"sorular",en:"items"}, totConf:{tr:"güven",en:"confidence"}, totGift:{tr:"hediye",en:"gift"},
+  sureWrong:{tr:"Emin olduğunuz hâlde yanlış: {list}. Bu soruların konularını tekrar edin.",en:"Sure but wrong: {list}. Review the topics of these questions."},
+  topicsT:{tr:"Konulara göre sonucunuz",en:"Your result by topic"}, topicHint:{tr:"✓ iyi (en az %75) · ~ kısmen (%50–74) · ✗ tekrar edin (%50'nin altında)",en:"✓ good (75% or more) · ~ partly (50–74%) · ✗ review (below 50%)"},
+  send:{tr:"Sonucumu eğitimciye gönder",en:"Send my result to the lecturer"},
+  sent:{tr:"Gönderildi. Teşekkürler! Kodunuz: {a}",en:"Sent. Thank you! Your code: {a}"}, sending:{tr:"Gönderiliyor…",en:"Sending…"},
+  sentBefore:{tr:"Bu test için sonucunuz gönderildi.",en:"Your result for this test has been sent."},
+  sendFail:{tr:"Gönderilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.",en:"Could not send. Check your internet connection and try again."},
+  sendHint:{tr:"Gönderdikten sonra değiştirilemez.",en:"You cannot change it after sending."},
+  sendHintOpen:{tr:"Önce açık uçlu sorudaki kendi kontrolünüzü yapın.",en:"First complete the self-check of the open-ended question."},
+  sendHintForm:{tr:"Önce yukarıdaki kısa formu doldurun, sonra gönderin.",en:"First complete the short form above, then send."},
+  myCode:{tr:"Kodunuz",en:"Your code"},
+  testMode:{tr:"Test modu: SHEET_URL boş, sonuçlar gönderilmez.",en:"Test mode: SHEET_URL is empty, so results are not sent."},
+  codeHelp:{tr:"Bu kod size rastgele verildi; adınız kaydedilmez. Kodunuzu not edin. Testlerin hepsini aynı cihazda çözün; böylece sonuçlarınız eşleşir.",en:"This code was given to you at random; your name is not stored. Write your code down. Take all the tests on the same device so that your results match."},
+  otherDev:{tr:"İlk testi başka bir cihazda mı çözdünüz?",en:"Did you take the first test on another device?"},
+  enterCode:{tr:"O cihazdaki kodunuzu yazın",en:"Type the code from that device"},
+  codeSet:{tr:"Kod değiştirildi.",en:"Code changed."},
+  codeBad:{tr:"Kod PHY- ile başlar ve 4 karakter içerir (ör. PHY-7KQ2).",en:"The code starts with PHY- and has 4 characters (e.g., PHY-7KQ2)."},
+  prog:{tr:"Programınız",en:"Your program"}, progNeed:{tr:"Önce yukarıdan programınızı seçin.",en:"First choose your program above."},
+  oneTry:{tr:"Her test bir kez çözülür. Kontrolden sonra cevaplar değiştirilemez.",en:"Each test can be taken once. Answers cannot be changed after checking."},
+  lockPre:{tr:"Doğru cevaplar son testten sonra açılacak.",en:"The correct answers will open after the post-test."},
+  preClosed:{tr:"Son testi çözdüğünüz için ön test kapandı.",en:"The pre-test is closed because you have already taken the post-test."},
+  midClosed:{tr:"Son testi çözdüğünüz için mini quiz turları kapandı.",en:"The mini-quiz rounds are closed because you have already taken the post-test."},
+  kT:{tr:"Mini quiz",en:"Mini-quiz"}, kRound:{tr:"Tur {r}/{n}",en:"Round {r}/{n}"}, kList:{tr:"Mini quiz turları",en:"Mini-quiz rounds"},
+  kListHint:{tr:"Eğitimcinin gösterdiği turu açın (QR kod ya da aşağıdaki liste). Her tur 3 kısa sorudur.",en:"Open the round the lecturer shows (QR code or the list below). Each round has 3 short questions."},
+  kAll:{tr:"‹ Tüm turlar",en:"‹ All rounds"}, kClosed:{tr:"kapalı",en:"closed"}, kPill:{tr:"{r}/{n} doğru ({k} tur)",en:"{r}/{n} right ({k} rounds)"},
+  kIntro:{tr:"{n} kısa soru. Her sorunun süresi var (10–30 saniye). Doğru ve hızlı cevap daha çok puan alır; grubun zorlandığı sorular daha çok puan verir. Süre telefonunuzda ölçülür; internet hızı puanınızı etkilemez. Puanlar herkes bitirince tahtada hesaplanır. Her tur bir kez çözülür.",en:"{n} short questions. Each question has a time limit (10–30 seconds). Right and fast answers earn more points; questions the group finds hard give more points. Time is measured on your phone, so your internet speed does not change your score. Points are calculated on the board when everyone has finished. Each round can be taken once."},
+  kStart:{tr:"Başla",en:"Start"}, kNext:{tr:"Sonraki soru",en:"Next question"}, kSee:{tr:"Sonucumu gör",en:"See my result"}, kSubmit:{tr:"Cevapla",en:"Answer"},
+  kQ:{tr:"Soru {i}/{n}",en:"Question {i}/{n}"}, kSoFar:{tr:"{r}/{n} doğru",en:"{r}/{n} right"},
+  kRight:{tr:"Doğru! ({s} sn)",en:"Correct! ({s} s)"}, kWrong:{tr:"Yanlış.",en:"Wrong."}, kTimeout:{tr:"Süre doldu.",en:"Time is up."},
+  kSum:{tr:"{r}/{n} doğru",en:"{r}/{n} right"}, kPtsBoard:{tr:"Puanlar herkes bitirince tahtada hesaplanır: doğru ve hızlı cevaplar, grubun zorlandığı sorularda daha çok puan alır.",en:"Points are calculated on the board when everyone has finished: right and fast answers earn more on questions the group found hard."},
+  kBoard:{tr:"Tahtaya bakın! Kodunuz:",en:"Look at the board! Your code:"},
+  kResend:{tr:"Tekrar gönder",en:"Send again"}, kTrue:{tr:"Doğru",en:"True"}, kFalse:{tr:"Yanlış",en:"False"},
+  noPre:{tr:"Ön testi çözmediniz. Son testi yine de çözebilirsiniz; karşılaştırma yapılamaz.",en:"You did not take the pre-test. You can still take the post-test, but no comparison is possible."},
+  toPost:{tr:"Ön testi tamamladınız ({x}). Son testi dersin son 10 dakikasında çözün.",en:"You have completed the pre-test ({x}). Take the post-test in the last 10 minutes of the lecture."},
+  goPost:{tr:"Son teste geç",en:"Go to the post-test"}, goLate:{tr:"Gecikmeli teste geç",en:"Go to the delayed test"},
+  postDone:{tr:"Son test tamamlandı ({y}).",en:"Post-test completed ({y})."},
+  lateWhen:{tr:"Gecikmeli test {d} tarihinde açılacak. Aynı sorular, ne kadarını hatırladığınızı gösterir.",en:"The delayed test will open on {d}. The same questions show how much you remember."},
+  lateNoPost:{tr:"Gecikmeli test, son testten {n} gün sonra açılır.",en:"The delayed test opens {n} days after the post-test."},
+  lateOpen:{tr:"Gecikmeli test açıldı.",en:"The delayed test is open."},
+  lateDone:{tr:"Gecikmeli test tamamlandı ({z}).",en:"Delayed test completed ({z})."},
+  wcount:{tr:"Kelime sayısı: {n} (puanlama için en az 10)",en:"Word count: {n} (at least 10 for scoring)"},
+  noneAns:{tr:"Hiç cevap yok. Önce soruları cevaplayın.",en:"No answers yet. Answer the questions first."},
+  blankWarn:{tr:"Boş ya da eksik soru var: {list}. Yine de kontrol edilsin mi? Kontrolden sonra cevaplar değiştirilemez.",en:"Unanswered or incomplete: {list}. Check anyway? Answers cannot be changed after checking."},
+  bOrder:{tr:"{n} (numarasız adım: {u})",en:"{n} (steps without a number: {u})"},
+  ordHint:{tr:"Adımlara doğru sırayla dokunun. Numarayı silmek için numaralı adıma yeniden dokunun. Numarasız adımlar sona eklenir.",en:"Tap the steps in the correct order. To remove a number, tap the numbered step again. Steps without a number go to the end."},
+  ordClear:{tr:"Sırayı temizle",en:"Clear order"}, ordNone:{tr:"numara yok",en:"no number"},
+  bShort:{tr:"{n} (10 kelimeden kısa: eğitimci 0 puan verir)",en:"{n} (under 10 words: the lecturer gives 0 points)"},
+  force:{tr:"Yine de kontrol et",en:"Check anyway"}, back:{tr:"Geri dön",en:"Go back"},
+  fbT:{tr:"Kısa değerlendirme (isteğe bağlı)",en:"Short feedback (optional)"},
+  fbScale:{tr:"1 = Kesinlikle katılmıyorum · 5 = Kesinlikle katılıyorum",en:"1 = Strongly disagree · 5 = Strongly agree"},
+  resetQ:{tr:"Bu tarayıcıdaki test kayıtları silinsin mi? (Ortak bilgisayar için)",en:"Delete the test records in this browser? (For a shared computer)"},
+  testP_base:{tr:"Ön testi dersten önce, son testi dersin son 10 dakikasında çözün. Her test bir kez çözülür. Ön testte toplam puanınızı ve konu başına sonucunuzu görürsünüz; doğru cevaplar son testten sonra açılır.",en:"Take the pre-test before the lecture and the post-test in the last 10 minutes of the lecture. Each test can be taken once. In the pre-test you see your total and your result by topic; the correct answers open after the post-test."},
+  testP_open:{tr:" Açık uçlu soruyu eğitimci puanlar.",en:" The lecturer scores the open-ended question."},
+  testP_mid:{tr:" Ders boyunca süreli mini quiz turları vardır.",en:" There are timed mini-quiz rounds during the lecture."},
+  testP_late:{tr:" Son testten {n} gün sonra aynı sorularla gecikmeli test açılır.",en:" A delayed test with the same questions opens {n} days after the post-test."}
+};
+const FB=[ // M4 feedback form (handbook p. 114 style); M5 one-minute paper
+  {k:"helped",tr:"Simülasyon konuyu anlamama yardım etti.",en:"The simulation helped me understand the topic."},
+  {k:"clear",tr:"Ekrandaki açıklamalar açık ve anlaşılırdı.",en:"The explanations on the screen were clear."},
+  {k:"easy",tr:"Simülasyonu kullanmak kolaydı.",en:"The simulation was easy to use."},
+  {k:"matched",tr:"Test soruları derste öğrendiklerimle uyumluydu.",en:"The test questions matched what I learned in the lecture."}];
+const MP=[{k:"learned",tr:"Bugün öğrendiğim en önemli şey:",en:"The most important thing I learned today:"},
+          {k:"unclear",tr:"Hâlâ tam anlamadığım şey:",en:"What is still unclear to me:"}];
+const qt=(k,o)=>{let s=(QT[k][LANG]||QT[k].tr); if(o) for(const p in o) s=s.split("{"+p+"}").join(o[p]); return s;};
+const LU="ABCDEFGH", ll="abcdefgh", r2=v=>Math.round(v*100)/100, nf=v=>dec(r2(v),Number.isInteger(r2(v))?0:(Number.isInteger(r2(v)*10)?1:2));
+const MODES=["pre","mid","post","late"].filter(m=>TESTS[m]);
+/* mini-quiz rounds (2026-11g): a 2026-11f flat list of items is read as one round (checkMid reports it) */
+const ROUNDS=(Array.isArray(QUIZ_MID)&&QUIZ_MID.length&&QUIZ_MID[0]&&QUIZ_MID[0].type)?[{items:QUIZ_MID}]:(QUIZ_MID||[]).map(r=>({items:(r&&r.items)||[]}));
+const NR=ROUNDS.length, MIDS=ROUNDS.flatMap(r=>r.items);
+let kr=1;   // round shown on the test tab (1…NR); 0 = list of rounds
+const mk=r=>"mid"+r, RQ=()=>(ROUNDS[kr-1]||{items:[]}).items;
+const setOf=m=>m==="mid"?RQ():QUIZ;
+const isAuto=q=>q.type!=="open";
+const HAS_OPEN=QUIZ.some(q=>!isAuto(q));
+const maxOf=set=>r2(set.filter(isAuto).reduce((a,q)=>a+q.pts,0));
+const nOf=q=>q.type==="mcq"?1:q.type==="match"?tx(q.left).length:q.type==="fill"?q.blanks.length:tx(q.o).length;
+let ST=store.get(KST); if(!ST||typeof ST!=="object") ST={};
+if("mid" in ST){ if(ST.mid&&!ST.mid1) ST.mid1=ST.mid; delete ST.mid; store.set(KST,ST); }   // a 2026-11f mini-quiz result counts as round 1 (stored once)
+["pre","post","late"].concat(ROUNDS.map((_,i)=>mk(i+1))).forEach(m=>{if(!(m in ST)) ST[m]=null;});
+const saveST=()=>store.set(KST,ST);
+const curKey=()=>qmode==="mid"?mk(kr):qmode;
+const hashOf=()=>qmode==="mid"?(kr?mk(kr):"mini"):qmode;   // #mid1… for a round, #mini for the list of rounds
+const hashSync=()=>{ try{ if(location.hash.slice(1)!==hashOf()) history.replaceState(null,"","#"+hashOf()); }catch(e){} };
+let qmode=MODES[0], seq={}, warned=false, devMem=null;   // seq[i] = rows of order item i in the order they were tapped
+const ordAns=(q,i)=>{ const s=seq[i]||[]; return s.concat(tx(q.o).map((_,k)=>k).filter(k=>!s.includes(k))); };   // steps without a number go to the end
+UI.testP={tr:QT.testP_base.tr+(HAS_OPEN?QT.testP_open.tr:"")+(TESTS.mid?QT.testP_mid.tr:"")+(TESTS.late?QT.testP_late.tr.replace("{n}",LATE_DAYS):""),en:QT.testP_base.en+(HAS_OPEN?QT.testP_open.en:"")+(TESTS.mid?QT.testP_mid.en:"")+(TESTS.late?QT.testP_late.en.replace("{n}",LATE_DAYS):"")};
+UI.mode_pre=UI.pre; UI.mode_post=UI.post; UI.mode_mid={tr:"Mini quiz",en:"Mini-quiz"}; UI.mode_late={tr:"Gecikmeli test",en:"Delayed test"};
+function countWords(s){return (s||"").split(/[\s,;:.!?()\/\-–—>→←↑↓=+]+/).filter(w=>/\p{L}{2,}|\d/u.test(w)).length;}
+const CODE_RE=/^PHY-[A-Z2-9]{4}$/;
+function myCode(){ let c=store.get("sim-code")||devMem; const old=typeof c==="string"&&c.match(/^NF-([A-Z2-9]{4})$/); if(old){ c="PHY-"+old[1]; store.set("sim-code",c); }
+  if(!c||!CODE_RE.test(c)){ const A="ABCDEFGHJKLMNPRSTUVYZ23456789"; c="PHY-"+Array.from({length:4},()=>A[Math.floor(Math.random()*A.length)]).join(""); store.set("sim-code",c); } devMem=c; return c; }
+const anyDone=()=>Object.keys(ST).some(m=>ST[m]);
+const prog=()=>{ const p=store.get("sim-program"); return PROGRAMS.some(x=>x.k===p)?p:""; };
+const progOK=()=>PROGRAMS.length<2||!!prog();
+function progHtml(){ if(PROGRAMS.length<2) return ""; const p=prog();
+  return `<div class="progline${p?"":" need"}"><label for="prog">${qt("prog")}:</label> <select id="prog"><option value="">${qt("choose")}</option>${PROGRAMS.map(x=>`<option value="${x.k}" ${x.k===p?"selected":""}>${x[LANG]}</option>`).join("")}</select></div>`; }
+function renderCodeBox(){
+  const box=$("#rumuzbox"); if(!box) return; box.hidden=false;
+  box.innerHTML=(SHEET_URL?"":`<p class="testmode" role="note">${qt("testMode")}</p>`)+`<div class="codeline">${qt("myCode")}: <span class="code" id="mycode">${myCode()}</span></div><small>${qt("codeHelp")}</small>`+progHtml()+
+    (anyDone()?"":`<details class="othercode"><summary>${qt("otherDev")}</summary><label for="rumuz">${qt("enterCode")}</label> <input id="rumuz" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="PHY-7KQ2"> <button class="btn ghost" type="button" id="codeok">OK</button> <span id="codemsg" role="status"></span></details>`);
+  const ok=$("#codeok"); if(ok) ok.onclick=()=>{ const v=($("#rumuz").value||"").trim().toLocaleUpperCase("tr-TR").replace(/^NF-?/,"PHY-").replace(/^PHY(?!-)/,"PHY-");
+    if(!CODE_RE.test(v)){ $("#codemsg").textContent=qt("codeBad"); return; } store.set("sim-code",v); devMem=v; $("#mycode").textContent=v; $("#codemsg").textContent=qt("codeSet"); };
+  const ps=$("#prog"); if(ps) ps.onchange=()=>{ store.set("sim-program",ps.value||null); if(qmode==="mid"&&kr&&!ST[mk(kr)]) renderQuiz(); else renderCodeBox(); };
+}
+/* ----- delayed test ----- */
+const lateAt=()=>ST.post?ST.post.t+LATE_DAYS*864e5:null;
+const lateOpen=()=>!!ST.post&&Date.now()>=lateAt();
+const fmtDate=ms=>new Date(ms).toLocaleDateString(LANG==="en"?"en-GB":"tr-TR",{day:"numeric",month:"long",year:"numeric"});
+/* ----- scoring ----- */
+function grade(set,raw){
+  return set.map((q,i)=>{ const r=raw.ans[i];
+    if(q.type==="open") return null;
+    if(q.type==="mcq") return r===q.a?q.pts:0;
+    if(q.type==="order"){ const n=q.a.length, pos=k=>q.a.indexOf(k); let p=0; for(let k=0;k<n-1;k++) if(pos(r[k+1])===pos(r[k])+1) p++; return r2(p*q.pts/(n-1)); }
+    const key=q.type==="fill"?q.blanks.map(b=>b.a):q.a; let c=0; key.forEach((a,j)=>{ if(r[j]===a) c++; }); return r2(c*q.pts/key.length);
+  });
+}
+function unitOK(q,r,j){ // is sub-unit j right? (tf statement, match row, fill blank)
+  if(q.type==="tf"||q.type==="match") return r[j]===q.a[j];
+  if(q.type==="fill") return r[j]===q.blanks[j].a; return false;
+}
+function topics(set,rec){
+  const T={}; const add=(m,e,p)=>{ if(!T[m]) T[m]={e:0,p:0}; T[m].e+=e; T[m].p+=p; };
+  set.forEach((q,i)=>{ if(!isAuto(q)) return; const r=rec.raw.ans[i];
+    if(q.type==="mcq"||q.type==="order") add(q.mod,rec.qs[i],q.pts);
+    else { const n=nOf(q); for(let j=0;j<n;j++) add((q.mods&&q.mods[j])||q.mod, unitOK(q,r,j)?q.pts/n:0, q.pts/n); } });
+  return Object.keys(T).map(m=>{ const pc=T[m].p?T[m].e/T[m].p:0; return {m, label:M[m]?t(M[m].tab):m, pc, mark:pc>=.75?"✓":pc>=.5?"~":"✗"}; });
+}
+const topicStr=(set,rec)=>topics(set,rec).map(x=>`${x.label}: ${Math.round(x.pc*100)}%`).join(" · ");
+const selfOf=(set,rec)=>set.map((q,i)=>q.type==="open"?r2((rec.self[i]||[]).filter(Boolean).length*q.pts/tx(q.rubric).length):null);
+/* Confidence points and gift (Q107-B, Q108-A, Q109-A): per automatic item "sure" = +2·s − 4·(1 − s), s = item score share
+   (fully right +2, fully wrong −4); "not sure" or no mark = 0. Gift: 4 points per test. Total = items + confidence + 4,
+   never below 0, at most 100. Topic feedback and item analysis use the item points only. Not used in the mini-quiz. */
+const GIFT=4;
+const confOf=(q,s,c)=>CONFIDENCE&&isAuto(q)&&c===1?r2(2*s-4*(1-s)):0;
+const confPts=(set,rec)=>r2(set.reduce((a,q,i)=>a+(isAuto(q)?confOf(q,(rec.qs[i]||0)/q.pts,rec.raw.conf[i]):0),0));
+const totMax=set=>Math.min(100,r2(maxOf(set)+(CONFIDENCE?2*set.filter(isAuto).length:0)+GIFT));
+const totalOf=(set,rec)=>cl(r2(rec.auto+confPts(set,rec)+GIFT),0,100);
+const sgn=v=>v>0?"+"+nf(v):v<0?"−"+nf(-v):"0";
+const totalStr=(set,rec)=>`${nf(totalOf(set,rec))}/${nf(totMax(set))}`;
+/* ----- rendering ----- */
+function renderModes(){
+  const box=$("#qmode"); if(!box) return;
+  box.innerHTML=MODES.map(m=>`<button type="button" data-m="${m}" aria-pressed="${m===qmode}">${t(UI["mode_"+m])}</button>`).join("");
+  box.querySelectorAll("button").forEach(b=>b.onclick=()=>{qmode=b.dataset.m; if(qmode==="mid") kr=NR===1?1:0; renderModes(); renderQuiz(); hashSync(); });
+}
+function itemHtml(q,i,done){
+  const o=q.o?tx(q.o):[], id=`${qmode}-${i}`; let body="";
+  if(q.type==="mcq") body=`<div class="opts">${o.map((x,j)=>`<label class="opt" id="o${i}_${j}"><input type="radio" name="q${i}" value="${j}" id="r-${id}-${j}"><span><b>${LU[j]})</b> ${x}</span></label>`).join("")}</div>`;
+  if(q.type==="order") body=`<div class="ordbox" id="ord${i}"></div>`;
+  if(q.type==="match") body=`<div class="match">${tx(q.left).map((h,j)=>`<div class="mrow" id="m${i}_${j}"><label for="sel-${id}-${j}"><b>${j+1}.</b> ${h}</label><select id="sel-${id}-${j}"><option value="">${qt("choose")}</option>${o.map((x,k)=>`<option value="${k}">${ll[k]}) ${x}</option>`).join("")}</select></div>`).join("")}</div>`;
+  if(q.type==="tf") body=`<div class="tfl">${o.map((x,j)=>`<div class="tfrow" id="tf${i}_${j}"><span><b>${ll[j]})</b> ${x}</span><span class="tfbtns"><label><input type="radio" name="tf${i}_${j}" value="1" id="tf-${id}-${j}-d"> ${qt("T")}</label><label><input type="radio" name="tf${i}_${j}" value="0" id="tf-${id}-${j}-y"> ${qt("F")}</label></span><div class="fix" id="fix${i}_${j}" hidden></div></div>`).join("")}</div>`;
+  if(q.type==="fill"){ const sg=tx(q.segs); body=`<p class="filltext">`+sg.map((s,j)=>s+(j<q.blanks.length?`<span class="fblank" id="f${i}_${j}"><label class="sr" for="fl-${id}-${j}">${j+1}</label><select id="fl-${id}-${j}"><option value="">${j+1} …</option>${tx(q.blanks[j].o).map((x,k)=>`<option value="${k}">${x}</option>`).join("")}</select></span>`:"")).join("")+`</p>`; }
+  if(q.type==="open") body=`<label for="open-${id}" class="sr">${qt("answer")}</label><textarea id="open-${id}" data-q="${i}" rows="6" placeholder="${tx(q.ph)||t(UI.ph)}"></textarea><small class="wc" id="wc${i}">${qt("wcount",{n:0})}</small><div class="rubric" id="rubric${i}" hidden><b>${qt("rubricT")}</b>${tx(q.rubric).map((r,j)=>`<label class="rb"><input type="checkbox" id="rb-${id}-${j}" data-rb="${j}" data-q="${i}"> ${r}</label>`).join("")}<p class="selfpts" id="self${i}"></p></div>`;
+  const conf=CONFIDENCE&&isAuto(q)?`<div class="conf"><span>${qt("sure")}</span><label><input type="radio" name="cf${i}" value="1" id="cf-${id}-1"> ${qt("sureY")}</label><label><input type="radio" name="cf${i}" value="0" id="cf-${id}-0"> ${qt("sureN")}</label></div>`:"";
+  const tag=`${i+1} · ${tx(q.tag)||qt("type_"+q.type)} · ${nf(q.pts)} ${qt("pts")}${isAuto(q)?"":" · "+qt("lecturerTag")}`;
+  return `<div class="q" id="q${i}"><fieldset><legend><span class="qtag">${tag}</span>${tx(q.q)}</legend>${body}${conf}<div class="why" id="w${i}" hidden></div></fieldset></div>`;
+}
+/* Tap ordering (Q105-A): tap the steps in order; each tap shows the next number; tapping a numbered step removes its
+   number and the later numbers move down (Q115-A); "Clear order" starts again; steps without a number go to the end.
+   After checking, the steps are shown in the student's order (right / wrong marks per row). */
+function renderOrder(i,locked){
+  const q=setOf(qmode)[i], o=tx(q.o), box=document.getElementById("ord"+i); if(!box) return;
+  if(locked){ const r=ST[qmode].raw.ans[i];
+    box.innerHTML=`<ol class="ord">${r.map((idx,pos)=>`<li class="ordrow" id="ordrow${i}_${pos}"><span class="tnum on">${pos+1}</span><span class="otext"><b>${LU[idx]})</b> ${o[idx]}</span></li>`).join("")}</ol>`; return; }
+  const s=seq[i]||(seq[i]=[]);
+  box.innerHTML=`<p class="ordhint">${qt("ordHint")}</p><div class="tapord" role="group" aria-label="${qt("type_order")}">`+
+    o.map((x,k)=>{ const at=s.indexOf(k); return `<button type="button" class="tstep" data-q="${i}" data-tap="${k}" aria-pressed="${at>=0}"><span class="tnum">${at>=0?at+1:`<span class="sr">${qt("ordNone")}</span>`}</span><span class="otext"><b>${LU[k]})</b> ${x}</span></button>`; }).join("")+
+    `</div><div class="ordbar"><button type="button" class="btn ghost" data-oclear="${i}" ${s.length?"":"disabled"}>${qt("ordClear")}</button></div>`;
+}
+function gateHtml(){
+  if(qmode==="pre"&&!ST.pre&&ST.post) return qt("preClosed");
+  if(qmode==="mid"&&kr&&!ST[mk(kr)]&&ST.post) return qt("midClosed");
+  if(qmode==="late"&&!ST.late&&!lateOpen()) return ST.post?qt("lateWhen",{d:fmtDate(lateAt())}):qt("lateNoPost",{n:LATE_DAYS});
+  return "";
+}
+function noteHtml(){
+  const rec=ST[qmode];
+  if(qmode==="pre"&&rec&&!ST.post) return `${qt("toPost",{x:totalStr(QUIZ,rec)})} ${qt("lockPre")} <button class="btn ghost" type="button" data-go="test" data-mode="post">${qt("goPost")}</button>`;
+  if(qmode==="post"&&!rec) return (ST.pre?"":qt("noPre")+" ")+qt("oneTry");
+  if(qmode==="post"&&rec&&TESTS.late) return qt("postDone",{y:totalStr(QUIZ,rec)})+" "+(lateOpen()?qt("lateOpen"):qt("lateWhen",{d:fmtDate(lateAt())}));
+  return rec?"":qt("oneTry");
+}
+function renderQuiz(){
+  clearInterval(kTick); if(qmode==="mid") return renderKahoot();
+  const set=setOf(qmode), rec=ST[qmode], done=!!rec, f=$("#quiz"); warned=false;
+  const g=gateHtml(); if(g&&!done){ f.innerHTML=`<div class="q qnote">${g}</div>`; testNote(); renderCodeBox(); return; }
+  set.forEach((q,i)=>{ if(q.type==="order") seq[i]=[]; });
+  const note=noteHtml();
+  f.innerHTML=(note?`<div class="q qnote" id="qnote">${note}</div>`:"")+`<div class="q scorebox" id="qscorebox" role="note">${qt(CONFIDENCE?"scoreBox":"scoreBoxGift")}</div>`+set.map((q,i)=>itemHtml(q,i,done)).join("")+
+    `<div class="q"><div class="blankwarn" id="qwarn" role="alert" hidden></div><div class="score">${done?"":`<button class="btn" type="submit" id="qsubmit">${qt("check")}</button><button class="btn ghost" type="button" id="qclear">${qt("clear")}</button>`}<span id="qres"></span></div>`+
+    `<div class="topics" id="qtopics" hidden></div><div class="surewrong" id="qsure" hidden></div><div class="compare" id="qcmp" style="margin-top:12px"></div>`+
+    `<div class="fbform" id="fbform" hidden></div><div class="sendbox" id="sendbox" hidden><button class="btn" type="button" id="qsend">${qt("send")}</button><span id="sendmsg" role="status"></span></div></div>`;
+  set.forEach((q,i)=>{ if(q.type==="order") renderOrder(i,done); });
+  if(done) showResult(set,rec); else $("#qclear").onclick=()=>renderQuiz();
+  $("#qsend").onclick=sendResult;
+  showCompare(); testNote(); renderCodeBox();
+}
+function fillAnswers(set,rec){
+  const A=rec.raw.ans, id=i=>`${qmode}-${i}`;
+  set.forEach((q,i)=>{ const r=A[i];
+    if(q.type==="mcq"&&r>=0){const el=document.getElementById(`r-${id(i)}-${r}`); if(el) el.checked=true;}
+    if(q.type==="match") r.forEach((v,j)=>{const s=document.getElementById(`sel-${id(i)}-${j}`); if(s) s.value=v===null?"":String(v);});
+    if(q.type==="fill") r.forEach((v,j)=>{const s=document.getElementById(`fl-${id(i)}-${j}`); if(s) s.value=v===null?"":String(v);});
+    if(q.type==="tf") r.forEach((v,j)=>{ if(v!==null){const el=document.getElementById(`tf-${id(i)}-${j}-${v?"d":"y"}`); if(el) el.checked=true;}});
+    if(q.type==="open"){ const ta=document.getElementById("open-"+id(i)); if(ta){ ta.value=r; ta.readOnly=true; } const w=document.getElementById("wc"+i); if(w) w.textContent=qt("wcount",{n:countWords(r)}); }
+    const c=rec.raw.conf[i]; if(c!==null&&c!==undefined){ const el=document.getElementById(`cf-${id(i)}-${c}`); if(el) el.checked=true; }
+  });
+  $("#quiz").querySelectorAll("input:not([data-rb]):not([data-fb]),select").forEach(x=>x.disabled=true);
+}
+function wh(i,p,q,txt,link,cp){const w=document.getElementById("w"+i); w.hidden=false; w.innerHTML=(p==null?"":`<b>${nf(p)}/${nf(q.pts)} ${qt("pts")}${cp==null?"":" · "+qt("totConf")+" "+sgn(cp)}.</b> `)+txt+(link&&q.mod&&M[q.mod]?` <a href="#${q.mod}" data-go="${q.mod}">${qt("tryIt")}</a>`:"");}
+function markKey(set,rec){
+  set.forEach((q,i)=>{ const r=rec.raw.ans[i], o=q.o?tx(q.o):[], s=rec.qs[i], cp=CONFIDENCE&&isAuto(q)&&rec.raw.conf[i]===1?confOf(q,s/q.pts,1):null;
+    const W=(i,p,q,txt,link)=>wh(i,p,q,txt,link,cp);   // item line with the confidence points of this item
+    if(q.type==="mcq"){ o.forEach((_,j)=>{const el=document.getElementById(`o${i}_${j}`); el.classList.toggle("right",j===q.a); el.classList.toggle("wrong",j===r&&j!==q.a);});
+      W(i,s,q,(r===q.a?qt("right")+" ":qt("rightAns")+" "+LU[q.a]+") "+o[q.a]+". ")+tx(q.why),true); }
+    if(q.type==="order"){ const pos=k=>q.a.indexOf(k); r.forEach((idx,p)=>{ const okNext=p<r.length-1&&pos(r[p+1])===pos(idx)+1, okPrev=p>0&&pos(r[p-1])===pos(idx)-1; document.getElementById(`ordrow${i}_${p}`).classList.add(okNext||okPrev?"right":"wrong"); });
+      W(i,s,q,qt("rightOrder")+" "+q.a.map(k=>LU[k]).join(" → ")+". "+qt("pairNote")+" "+tx(q.why),true); }
+    if(q.type==="match"){ q.a.forEach((k,j)=>document.getElementById(`m${i}_${j}`).classList.add(r[j]===k?"right":"wrong"));
+      W(i,s,q,qt("rightMatch")+" "+q.a.map((k,j)=>(j+1)+"-"+ll[k]).join(", ")+". "+tx(q.why),true); }
+    if(q.type==="fill"){ q.blanks.forEach((b,j)=>document.getElementById(`f${i}_${j}`).classList.add(r[j]===b.a?"right":"wrong"));
+      W(i,s,q,qt("rightFill")+" "+q.blanks.map((b,j)=>(j+1)+") "+tx(b.o)[b.a]).join(", ")+". "+tx(q.why),true); }
+    if(q.type==="tf"){ const fx=tx(q.fix); q.a.forEach((a,j)=>{document.getElementById(`tf${i}_${j}`).classList.add(r[j]===a?"right":"wrong"); const el=document.getElementById(`fix${i}_${j}`); el.hidden=false; el.textContent=fx[j];});
+      W(i,s,q,tx(q.why),true); }
+    if(q.type==="open") W(i,null,q,tx(q.why),true);
+  });
+}
+function showResult(set,rec){
+  fillAnswers(set,rec);
+  const keyed=qmode!=="pre";
+  if(keyed){ markKey(set,rec);
+    set.forEach((q,i)=>{ if(q.type!=="open") return; const rb=document.getElementById("rubric"+i); rb.hidden=false;
+      rb.querySelectorAll("[data-rb]").forEach((x,j)=>{x.checked=!!(rec.self[i]&&rec.self[i][j]); x.disabled=rec.sent;}); }); }
+  else set.forEach((q,i)=>{ if(q.type==="open") wh(i,null,q,qt("openSaved"),false); });
+  // topic feedback (all modes)
+  const tp=topics(set,rec), tb=$("#qtopics");
+  if(tp.length){ tb.hidden=false; tb.innerHTML=`<b>${qt("topicsT")}</b><ul>${tp.map(x=>`<li><span class="tm ${x.mark==="✓"?"ok":x.mark==="~"?"mid":"bad"}">${x.mark}</span> ${x.label}</li>`).join("")}</ul><small>${qt("topicHint")}</small>`; }
+  // confidence: sure but wrong (keyed modes only; in the pre-test it would hint at the key)
+  if(CONFIDENCE&&keyed){ const sw=set.map((q,i)=>isAuto(q)&&rec.raw.conf[i]===1&&rec.qs[i]<q.pts?i+1:null).filter(Boolean);
+    if(sw.length){ const el=$("#qsure"); el.hidden=false; el.textContent=qt("sureWrong",{list:sw.join(", ")}); } }
+  if(qmode==="post"&&(FEEDBACK||MINUTE)) renderFb(rec);
+  updateTotal();
+  $("#sendbox").hidden=false;
+  if(!SHEET_URL){ $("#qsend").disabled=true; $("#sendmsg").innerHTML=`<span class="testmode">${qt("testMode")}</span>`; }
+  else { if(rec.sent){ $("#qsend").disabled=true; $("#sendmsg").textContent=qt("sentBefore")+(rec.alias?" ("+rec.alias+")":""); }
+    else if(keyed) $("#sendmsg").textContent=[HAS_OPEN?qt("sendHintOpen"):"",qmode==="post"&&(FEEDBACK||MINUTE)?qt("sendHintForm"):"",qt("sendHint")].filter(Boolean).join(" "); }
+}
+function renderFb(rec){
+  const box=$("#fbform"); box.hidden=false; rec.fb=rec.fb||{}; rec.mp=rec.mp||{};
+  box.innerHTML=`<b>${qt("fbT")}</b>`+(FEEDBACK?`<small>${qt("fbScale")}</small>`+FB.map(x=>`<div class="likert" role="radiogroup" aria-label="${x[LANG]}"><span>${x[LANG]}</span><span class="lk">${[1,2,3,4,5].map(v=>`<label><input type="radio" name="fb-${x.k}" value="${v}" data-fb="${x.k}" ${rec.fb[x.k]===v?"checked":""} ${rec.sent?"disabled":""}> ${v}</label>`).join("")}</span></div>`).join(""):"")+
+    (MINUTE?MP.map(x=>`<label class="mp" for="mp-${x.k}">${x[LANG]}</label><textarea id="mp-${x.k}" data-mp="${x.k}" rows="2" ${rec.sent?"readonly":""}>${(rec.mp[x.k]||"").replace(/</g,"&lt;")}</textarea>`).join(""):"");
+}
+function updateTotal(){
+  const rec=ST[qmode], el=$("#qres"); if(!rec||!el) return; const set=setOf(qmode);
+  const parts=[`${qt("totItems")} ${nf(rec.auto)}/${nf(maxOf(set))}`].concat(CONFIDENCE?[`${qt("totConf")} ${sgn(confPts(set,rec))}`]:[],[`${qt("totGift")} ${GIFT}`]);
+  el.innerHTML=`<span class="big">${qt("totT")} ${totalStr(set,rec)}</span> <span class="tparts">${parts.join(" · ")}</span>`+(HAS_OPEN?` <span class="tnote">(${qt("autoNote")})</span>`:"");
+  set.forEach((q,i)=>{ if(q.type!=="open"||qmode==="pre") return; const s=document.getElementById("self"+i); if(s) s.textContent=qt("selfPts",{x:nf(selfOf(set,rec)[i]),m:nf(q.pts)}); });
+  const n=$("#qnote"); if(n) n.innerHTML=noteHtml();
+  showCompare(); testNote();
+}
+function showCompare(){
+  const el=$("#qcmp"); if(!el) return; let h="";
+  ["pre","mid","post","late"].forEach(m=>{
+    if(m==="mid"){ let r=0,n=0,k=0; ROUNDS.forEach((R,i)=>{ const x=ST[mk(i+1)]; if(x){ r+=x.auto; n+=R.items.length; k++; } });   // one pill for all rounds
+      if(k) h+=`<span class="pill">${t(UI.mode_mid)}: ${qt("kPill",{r,n,k})}</span>`; return; }
+    if(ST[m]) h+=`<span class="pill">${t(UI["mode_"+m])}: ${totalStr(setOf(m),ST[m])}</span>`; });
+  if(ST.pre&&ST.post){const d=r2(totalOf(QUIZ,ST.post)-totalOf(QUIZ,ST.pre)); h+=`<span class="pill" style="color:var(--ok)">${d>=0?"+":""}${nf(d)} ${qt("pts")}</span>`;}
+  el.innerHTML=h;
+}
+function testNote(){
+  const el=document.getElementById("testnote"); if(!el) return; let h="";
+  if(ST.late) h=qt("lateDone",{z:totalStr(QUIZ,ST.late)});
+  else if(ST.post) h=TESTS.late?(lateOpen()?`<span>${qt("lateOpen")}</span> <button class="btn" type="button" data-go="test" data-mode="late">${qt("goLate")}</button>`:qt("postDone",{y:totalStr(QUIZ,ST.post)})+" "+qt("lateWhen",{d:fmtDate(lateAt())})):qt("postDone",{y:totalStr(QUIZ,ST.post)});
+  else if(ST.pre) h=`<span>${qt("toPost",{x:totalStr(QUIZ,ST.pre)})}</span> <button class="btn" type="button" data-go="test" data-mode="post">${qt("goPost")}</button>`;
+  el.hidden=!h; el.innerHTML=h;
+}
+function readRaw(set){
+  const id=i=>`${qmode}-${i}`;
+  const ans=set.map((q,i)=>{
+    if(q.type==="mcq"){ const s=document.querySelector(`input[name=q${i}]:checked`); return s?+s.value:-1; }
+    if(q.type==="order") return ordAns(q,i);
+    if(q.type==="match") return tx(q.left).map((_,j)=>{const e=document.getElementById(`sel-${id(i)}-${j}`); return e&&e.value!==""?+e.value:null;});
+    if(q.type==="fill") return q.blanks.map((_,j)=>{const e=document.getElementById(`fl-${id(i)}-${j}`); return e&&e.value!==""?+e.value:null;});
+    if(q.type==="tf") return tx(q.o).map((_,j)=>{const e=document.querySelector(`input[name=tf${i}_${j}]:checked`); return e?e.value==="1":null;});
+    return (document.getElementById("open-"+id(i))||{}).value||"";
+  });
+  const conf=set.map((q,i)=>{ const e=document.querySelector(`input[name=cf${i}]:checked`); return e?+e.value:null; });
+  return {ans,conf};
+}
+function blankList(set,raw){
+  const b=[];
+  set.forEach((q,i)=>{ const r=raw.ans[i], n=i+1;
+    if(q.type==="mcq"&&r<0) b.push(n);
+    if(q.type==="order"){ const u=tx(q.o).length-(seq[i]||[]).length; if(u>0) b.push(qt("bOrder",{n,u})); }
+    if((q.type==="match"||q.type==="fill"||q.type==="tf")&&r.some(v=>v===null)) b.push(n);
+    if(q.type==="open"){ const w=countWords(r); if(w===0) b.push(n); else if(w<MINW) b.push(qt("bShort",{n})); } });
+  return b;
+}
+const isEmpty=(set,raw)=>set.every((q,i)=>{ const r=raw.ans[i]; return q.type==="mcq"?r<0:q.type==="order"?!(seq[i]||[]).length:q.type==="open"?!countWords(r):r.every(v=>v===null); });
+function finish(set,raw){
+  const qs=grade(set,raw);
+  ST[qmode]={raw, qs, auto:r2(qs.reduce((a,b)=>a+(b||0),0)), self:{}, fb:null, mp:null, sent:false, t:Date.now()};
+  saveST(); renderQuiz();
+  const el=$("#qres"); if(el) el.scrollIntoView({block:"center",behavior:"smooth"});
+}
+$("#quiz").addEventListener("submit",e=>{
+  e.preventDefault(); if(qmode==="mid"||ST[qmode]) return; const set=setOf(qmode);
+  const r=readRaw(set), wbox=$("#qwarn");
+  if(!progOK()){ wbox.hidden=false; wbox.textContent=qt("progNeed"); $("#rumuzbox").scrollIntoView({block:"center",behavior:"smooth"}); return; }
+  if(isEmpty(set,r)){ wbox.hidden=false; wbox.textContent=qt("noneAns"); return; }
+  const b=blankList(set,r);
+  if(b.length&&!warned){
+    warned=true; wbox.hidden=false;
+    wbox.innerHTML=`<p>${qt("blankWarn",{list:b.join(", ")})}</p><div class="score"><button class="btn" type="button" id="qforce">${qt("force")}</button><button class="btn ghost" type="button" id="qback">${qt("back")}</button></div>`;
+    $("#qforce").onclick=()=>finish(set,readRaw(set));
+    $("#qback").onclick=()=>{wbox.hidden=true; warned=false;};
+    wbox.scrollIntoView({block:"nearest",behavior:"smooth"}); return;
+  }
+  finish(set,r);
+});
+$("#quiz").addEventListener("click",e=>{ if(qmode==="mid"||ST[qmode]) return;
+  const c=e.target.closest("[data-oclear]");
+  if(c){ const i=+c.dataset.oclear; seq[i]=[]; renderOrder(i,false); const f=document.querySelector(`#ord${i} [data-tap]`); if(f) f.focus(); return; }
+  const b=e.target.closest("[data-tap]"); if(!b) return;
+  const i=+b.dataset.q, k=+b.dataset.tap, s=seq[i]||(seq[i]=[]), at=s.indexOf(k);
+  if(at>=0) s.splice(at,1); else s.push(k);          // a numbered step loses its number; later numbers move down
+  renderOrder(i,false); const nb=document.querySelector(`#ord${i} [data-tap="${k}"]`); if(nb) nb.focus(); });
+$("#quiz").addEventListener("change",e=>{ const el=e.target, rec=ST[qmode]; if(!rec||rec.sent) return;
+  if(el.dataset.rb!==undefined){ const i=+el.dataset.q; rec.self[i]=rec.self[i]||[]; rec.self[i][+el.dataset.rb]=el.checked; saveST(); updateTotal(); }
+  if(el.dataset.fb!==undefined){ rec.fb=rec.fb||{}; rec.fb[el.dataset.fb]=+el.value; saveST(); } });
+$("#quiz").addEventListener("input",e=>{ const el=e.target;
+  if(el.dataset.mp!==undefined){ const rec=ST[qmode]; if(rec&&!rec.sent){ rec.mp=rec.mp||{}; rec.mp[el.dataset.mp]=el.value.slice(0,1000); saveST(); } return; }
+  if(el.tagName!=="TEXTAREA"||el.dataset.q===undefined) return; const w=document.getElementById("wc"+el.dataset.q); if(w) w.textContent=qt("wcount",{n:countWords(el.value)}); warned=false; });
+/* ----- M6 mini-quiz (Kahoot style). The phone measures time (Date.now when the question appears), so a slow
+   connection does not change the score. The phone shows right/wrong and time; the POINTS are calculated on the
+   board (#board) when the group has answered (Q84-A):
+     P = share of the round who answered right (time-out = wrong); S = 1 − time/limit
+     right: 500 + 500 × (2 − P) × S      wrong: 0
+   One run per browser; progress is saved after every step, so a reload continues the same question with the
+   time that is left. ----- */
+const KRUN=KST+"-mid", KLIM={tf:10,mcq:20,fill:20,match:30};
+const kSec=q=>q.sec||KLIM[q.type]||20;
+MIDS.forEach(q=>{ q.pts=1; });   // the test page counts right answers; points come from the board
+let kTick=null;
+{ const run=store.get(KRUN); if(run&&MODES.includes("mid")){ const r=run.r||1; if(r>=1&&r<=NR){ qmode="mid"; kr=r; } else store.set(KRUN,null); } }   // a round in progress opens first (a 2026-11f run is round 1)
+const kKey=q=>q.type==="mcq"?q.a:q.type==="fill"?q.blanks.map(b=>b.a):q.a;
+const kOK=(q,a)=>a!==null&&a!==undefined&&(q.type==="mcq"?a===q.a:Array.isArray(a)&&kKey(q).every((k,j)=>a[j]===k));
+const kRightN=run=>run.ok.reduce((x,y)=>x+(y?1:0),0);
+function kAnsStr(q,a){ if(a===null||a===undefined) return "-";
+  if(q.type==="mcq") return LU[a]; if(q.type==="tf") return a.map(v=>v===null?"-":(v?"D":"Y")).join("");
+  return a.map((v,j)=>(j+1)+"-"+(v===null?"?":ll[v])).join(" "); }
+function kRightStr(q){ const o=q.o?tx(q.o):[];
+  if(q.type==="mcq") return LU[q.a]+") "+o[q.a];
+  if(q.type==="tf") return q.a.map(v=>v?qt("kTrue"):qt("kFalse")).join(", ");
+  if(q.type==="fill") return q.blanks.map(b=>tx(b.o)[b.a]).join(", ");
+  return tx(q.left).map((h,j)=>h+" → "+o[q.a[j]]).join("; "); }
+const kHead=()=>`${qt("kT")}${NR>1?" · "+qt("kRound",{r:kr,n:NR}):""}`;
+const kBack=()=>NR>1?`<button class="btn ghost" type="button" id="kall">${qt("kAll")}</button>`:"";
+function kBackOn(){ const b=$("#kall"); if(b) b.onclick=()=>{ kr=0; hashSync(); renderKahoot(); }; }
+function kList(){   // list of rounds (the "Mini quiz" button when there are several rounds)
+  const f=$("#quiz"); renderCodeBox(); testNote();
+  f.innerHTML=`<div class="q kq"><h3 class="kh">${qt("kList")}</h3><p>${qt("kListHint")}</p><ul class="klist kround">`+
+    ROUNDS.map((R,i)=>{ const r=i+1, rec=ST[mk(r)];
+      return `<li><button type="button" class="btn ghost" data-kr="${r}">${qt("kRound",{r,n:NR})}</button> `+
+        (rec?`<span class="tm ok">✓</span> ${qt("kSum",{r:rec.auto,n:R.items.length})}`:ST.post?`<small>${qt("kClosed")}</small>`:"")+`</li>`; }).join("")+`</ul></div>`;
+  f.querySelectorAll("[data-kr]").forEach(b=>b.onclick=()=>{ kr=+b.dataset.kr; hashSync(); renderKahoot(); });
+  showCompare();
+}
+function renderKahoot(){
+  const f=$("#quiz"); clearInterval(kTick);
+  const run=store.get(KRUN); if(run&&(run.r||1)!==kr){ kr=run.r||1; hashSync(); }   // a started round must be finished first
+  if(!kr) return kList();
+  const set=RQ(), n=set.length, rec=ST[mk(kr)];
+  const g=gateHtml(); if(g&&!rec){ f.innerHTML=`<div class="q qnote">${g}</div>${NR>1?`<div class="score">${kBack()}</div>`:""}`; kBackOn(); testNote(); renderCodeBox(); return; }
+  renderCodeBox(); testNote();
+  if(rec) return kDone();
+  if(!run){ f.innerHTML=`<div class="q kq"><h3 class="kh">${kHead()}</h3><p>${qt("kIntro",{n})}</p>`+
+      `<div class="score"><button class="btn" type="button" id="kstart" ${progOK()?"":"disabled"}>${qt("kStart")}</button>${kBack()}${progOK()?"":`<span class="testmode">${qt("progNeed")}</span>`}</div></div>`;
+    kBackOn(); $("#kstart").onclick=()=>{ store.set(KRUN,{r:kr,i:0,ans:[],ms:[],ok:[],ph:"q",t0:null}); renderKahoot(); }; return; }
+  if(run.i>=n) return kFinish(run);
+  if(run.ph==="fb") return kFeedback(run);
+  kQuestion(run);
+}
+function kQuestion(run){
+  const set=RQ(), q=set[run.i], n=set.length, lim=kSec(q)*1000, f=$("#quiz");
+  if(!run.t0){ run.t0=Date.now(); store.set(KRUN,run); }
+  if(Date.now()-run.t0>=lim) return kAnswer(null);
+  const o=q.o?tx(q.o):[]; let body="";
+  if(q.type==="mcq") body=`<div class="kopts">${o.map((x,j)=>`<button type="button" class="kopt" data-k="${j}"><b>${LU[j]}</b> ${x}</button>`).join("")}</div>`;
+  if(q.type==="tf") body=`<p class="kstmt">${o[0]}</p><div class="kopts two"><button type="button" class="kopt" data-tf="1"><b>${qt("T")}</b> ${qt("kTrue")}</button><button type="button" class="kopt" data-tf="0"><b>${qt("F")}</b> ${qt("kFalse")}</button></div>`;
+  if(q.type==="fill"){ const sg=tx(q.segs); body=`<p class="kstmt">${sg[0]}<span class="kblank">____</span>${sg[1]||""}</p><div class="kopts">${tx(q.blanks[0].o).map((x,k)=>`<button type="button" class="kopt" data-k="${k}">${x}</button>`).join("")}</div>`; }
+  if(q.type==="match") body=`<div class="match">${tx(q.left).map((h,j)=>`<div class="mrow"><label for="ksel-${j}"><b>${j+1}.</b> ${h}</label><select id="ksel-${j}"><option value="">${qt("choose")}</option>${o.map((x,k)=>`<option value="${k}">${ll[k]}) ${x}</option>`).join("")}</select></div>`).join("")}</div><div class="score"><button class="btn" type="button" id="kgo">${qt("kSubmit")}</button></div>`;
+  f.innerHTML=`<div class="q kq"><div class="khead"><span>${NR>1?qt("kRound",{r:kr,n:NR})+" · ":""}${qt("kQ",{i:run.i+1,n})} · ${kSec(q)} ${L("sn","s")}</span><span class="ktime" id="ktime"></span></div>`+
+    `<div class="kbar"><i id="kbar"></i></div><p class="kstem">${tx(q.q)}</p>${body}</div>`;
+  kFocus();
+  f.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>kAnswer(q.type==="fill"?[+b.dataset.k]:+b.dataset.k));
+  f.querySelectorAll("[data-tf]").forEach(b=>b.onclick=()=>kAnswer([b.dataset.tf==="1"]));
+  const go=$("#kgo"); if(go) go.onclick=()=>kAnswer(tx(q.left).map((_,j)=>{ const v=$("#ksel-"+j).value; return v===""?null:+v; }));
+  const tick=()=>{ if(qmode!=="mid"||$("#v-test").hidden){ clearInterval(kTick); return; } const left=Math.max(0,lim-(Date.now()-run.t0)); const tm=$("#ktime"), bar=$("#kbar");
+    if(tm) tm.textContent=Math.ceil(left/1000); if(bar) bar.style.width=(100*left/lim)+"%"; if(left<=0) kAnswer(null); };
+  tick(); kTick=setInterval(tick,100);
+}
+function kAnswer(a){
+  clearInterval(kTick); const run=store.get(KRUN); if(!run||run.ph!=="q") return;
+  const q=RQ()[run.i], lim=kSec(q)*1000, ms=Math.min(lim,Date.now()-(run.t0||Date.now()));
+  run.ans[run.i]=a; run.ms[run.i]=ms; run.ok[run.i]=kOK(q,a)?1:0; run.ph="fb";
+  store.set(KRUN,run); kFeedback(run);
+}
+function kFeedback(run){
+  const set=RQ(), q=set[run.i], a=run.ans[run.i], right=run.ok[run.i], last=run.i===set.length-1;
+  const msg=right?qt("kRight",{s:dec(run.ms[run.i]/1000,1)}):(a===null?qt("kTimeout"):qt("kWrong"));
+  $("#quiz").innerHTML=`<div class="q kq"><div class="khead"><span>${NR>1?qt("kRound",{r:kr,n:NR})+" · ":""}${qt("kQ",{i:run.i+1,n:set.length})}</span><span>${qt("kSoFar",{r:kRightN(run),n:run.i+1})}</span></div>`+
+    `<p class="kres ${right?"ok":"bad"}">${msg}</p><p>${qt("rightAns")} <b>${kRightStr(q)}</b></p><p class="why">${tx(q.why)}</p>`+
+    `<div class="score"><button class="btn" type="button" id="knext">${last?qt("kSee"):qt("kNext")}</button></div></div>`;
+  kFocus();
+  $("#knext").onclick=()=>{ const r=store.get(KRUN); r.i++; r.ph="q"; r.t0=null; store.set(KRUN,r); renderKahoot(); };
+}
+function kFocus(){ const rb=$("#rumuzbox"); if(rb) rb.hidden=true; const k=$("#quiz .kq"); if(k&&k.scrollIntoView) k.scrollIntoView({block:"start"}); }   // during the run only the question is shown
+function kFinish(run){
+  ST[mk(kr)]={raw:{ans:run.ans,ms:run.ms,ok:run.ok,conf:[]}, qs:run.ok.slice(), auto:kRightN(run), self:{}, fb:null, mp:null, sent:false, t:Date.now()};
+  saveST(); store.set(KRUN,null); kDone();
+}
+function kDone(){
+  const rec=ST[mk(kr)], set=RQ();
+  $("#quiz").innerHTML=`<div class="q kq"><h3 class="kh">${kHead()}</h3><p class="kbig">${qt("kSum",{r:rec.auto,n:set.length})}</p>`+
+    `<ul class="klist">${set.map((q,i)=>`<li><span class="tm ${rec.qs[i]?"ok":"bad"}">${rec.qs[i]?"✓":"✗"}</span> ${qt("kQ",{i:i+1,n:set.length})}: ${dec((rec.raw.ms[i]||0)/1000,1)} ${L("sn","s")}</li>`).join("")}</ul>`+
+    `<p>${qt("kPtsBoard")}</p><p class="kboard">${qt("kBoard")} <span class="code">${myCode()}</span></p>`+
+    `<div class="sendbox" id="sendbox"><button class="btn" type="button" id="qsend">${qt("kResend")}</button><span id="sendmsg" role="status"></span></div>`+
+    (NR>1?`<div class="score">${kBack()}</div>`:"")+`</div>`;
+  $("#qsend").onclick=sendResult; kBackOn();
+  if(!SHEET_URL){ $("#qsend").disabled=true; $("#sendmsg").innerHTML=`<span class="testmode">${qt("testMode")}</span>`; }
+  else if(rec.sent){ $("#qsend").hidden=true; $("#sendmsg").textContent=qt("sentBefore")+(rec.alias?" ("+rec.alias+")":""); }
+  else if(!rec.tried){ rec.tried=true; saveST(); sendResult(); }
+  showCompare();
+}
+function kPayload(rec,alias){   // one row per student and round (Q134-A): Test = mid1, mid2 …
+  const set=RQ(), cols=[["Round",kr]];
+  set.forEach((q,i)=>{ const n=i+1, lim=kSec(q)*1000, ms=Math.min(lim,rec.raw.ms[i]||lim), ok=rec.raw.ok[i]?1:0;
+    cols.push([`R${n}`,ok],[`S${n}`,ok?r2(1-ms/lim):0],[`A${n}`,kAnsStr(q,rec.raw.ans[i])],[`T${n} sec`,r2(ms/1000)]); });
+  cols.push(["Mini-quiz right",rec.auto],["Mini-quiz items",set.length]);
+  if(PROGRAMS.length>1) cols.push(["Program",prog()]);
+  cols.push(["Item codes",itemCodes(set)],["Version",SURUM],["Language",LANG]);
+  return {schema:2, course:COURSE+"-quiz", alias, test:mk(kr), cols};
+}
+function checkMid(){   // 2026-11g: 1–10 rounds, exactly 3 items per round (Q126-A, Q127-A, Q128-A)
+  if(Array.isArray(QUIZ_MID)&&QUIZ_MID.length&&QUIZ_MID[0]&&QUIZ_MID[0].type) console.error("QUIZ_MID: write rounds: [ {items:[3 items]}, {items:[…]}, … ] (engine 2026-11g); this flat list is read as one round");
+  if(NR<1||NR>10) console.error(`QUIZ_MID: use 1–10 rounds (this file has ${NR})`);
+  ROUNDS.forEach((R,ri)=>{
+    if(R.items.length!==3) console.error(`QUIZ_MID round ${ri+1}: use exactly 3 items (this round has ${R.items.length})`);
+    R.items.forEach((q,i)=>{ const err=m=>console.error(`QUIZ_MID round ${ri+1}, item ${i+1} (${q.type}): ${m}`); const L=x=>(tx(x)||[]).length;
+      if(!["mcq","tf","match","fill"].includes(q.type)) err("mini-quiz types: mcq, tf, match, fill");
+      if(!q.mod||!M[q.mod]) err("mod is not a module key: "+q.mod);
+      if(q.type==="mcq"&&!(q.a>=0&&q.a<L(q.o))) err("a out of range");
+      if(q.type==="tf"&&(L(q.o)!==1||q.a.length!==1)) err("tf: one statement and one answer");
+      if(q.type==="match"&&(L(q.left)!==2||q.a.length!==2||L(q.o)<3)) err("match: 2 left items, 2 answers, 3 options");
+      if(q.type==="fill"&&(q.blanks.length!==1||L(q.segs)!==2)) err("fill: 1 blank and 2 text pieces"); }); });
+}
+/* ----- leaderboard for the projector: #board1, #board2 … (#board = round 1). Reads the "-quiz" tab through the Apps Script
+   every 5 s; only the rows of that round (Test = mid1, mid2 …; Apps Script 2026-11g). "Reset (new group)" restarts the time
+   window of this round only (e.g. a second class section); the default window is the last 20 minutes (Q136–Q138, Q143-A). ----- */
+const BT={tr:{t:"Mini quiz · Liderlik tablosu",tr_:"Mini quiz {r}/{n} · Liderlik tablosu",prev:"‹ Önceki tur",next:"Sonraki tur ›",n:"{n} öğrenci gönderdi",none:"Henüz sonuç yok. Öğrenciler mini quizi bitirince burada görünür.",
+    reset:"Sıfırla (yeni grup)",close:"Kapat",q:"Soru {k}: {r}/{n} doğru",formula:"Doğru cevap = 500 + 500 × (2 − P) × hız · P = soruyu doğru yapanların oranı",off:"SHEET_URL boş: tablo yalnızca sonuç gönderen bir simülatörde çalışır.",err:"Bağlantı yok, tekrar deneniyor…",pts:"puan",upd:"Son güncelleme"},
+  en:{t:"Mini-quiz · Leaderboard",tr_:"Mini-quiz {r}/{n} · Leaderboard",prev:"‹ Previous round",next:"Next round ›",n:"{n} students sent a result",none:"No results yet. Students appear here when they finish the mini-quiz.",
+    reset:"Reset (new group)",close:"Close",q:"Question {k}: {r}/{n} right",formula:"Right answer = 500 + 500 × (2 − P) × speed · P = share who got the question right",off:"SHEET_URL is empty: the board only works in a simulator that sends results.",err:"No connection, trying again…",pts:"points",upd:"Last update"}};
+let bTimer=null, bR=1;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const bt=(k,v)=>{ let s=BT[LANG][k]; if(v) Object.keys(v).forEach(x=>s=s.replace("{"+x+"}",v[x])); return s; };
+const bTitle=()=>NR>1?bt("tr_",{r:bR,n:NR}):bt("t");
+function boardSince(){ const s=store.get(KST+"-board"+bR); return (s&&Date.now()-s<3*3600e3)?s:Date.now()-20*60e3; }   // default: the last 20 minutes
+function showBoard(r){
+  bR=Math.min(Math.max(1,r||1),Math.max(1,NR));
+  try{ if(location.hash.slice(1)!=="board"+bR) history.replaceState(null,"","#board"+bR); }catch(e){}
+  let el=$("#board"); if(!el){ el=document.createElement("div"); el.id="board"; el.setAttribute("role","dialog"); document.body.appendChild(el); }
+  el.setAttribute("aria-label",bTitle()); el.hidden=false; document.body.classList.add("boardon");
+  const nav=NR>1?`<button class="btn ghost" type="button" id="bprev" ${bR>1?"":"disabled"}>${bt("prev")}</button><button class="btn" type="button" id="bnext" ${bR<NR?"":"disabled"}>${bt("next")}</button>`:"";
+  el.innerHTML=`<div class="bwrap"><div class="bhead"><h2>${bTitle()}</h2><div class="bbtn">${nav}<button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
+    `<p class="bcount" id="bcount"></p><ol class="blist" id="blist"></ol><p class="bitems" id="bitems"></p><p class="bnote">${bt("formula")}</p><p class="bnote" id="bnote" role="status"></p></div>`;
+  $("#breset").onclick=()=>{ store.set(KST+"-board"+bR,Date.now()); boardLoad(); };
+  if(NR>1){ $("#bprev").onclick=()=>showBoard(bR-1); $("#bnext").onclick=()=>showBoard(bR+1); }
+  $("#bclose").onclick=()=>{ clearInterval(bTimer); el.hidden=true; document.body.classList.remove("boardon"); open("giris"); };
+  clearInterval(bTimer);
+  if(!SHEET_URL){ $("#bnote").textContent=bt("off"); return; }
+  boardLoad(); bTimer=setInterval(boardLoad,5000);
+}
+function boardLoad(){
+  const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"board="+encodeURIComponent(COURSE+"-quiz")+"&test="+mk(bR)+"&since="+boardSince()+"&n="+BOARD_TOP;
+  fetch(u,{cache:"no-store"}).then(r=>r.json()).then(d=>{
+    if(!d||!d.ok) throw new Error(d&&d.error||"bad");
+    $("#bcount").textContent=bt("n",{n:d.n});
+    $("#blist").innerHTML=d.top.length?d.top.map(r=>`<li class="r${Math.min(r.rank,4)}"><span class="brank">${r.rank}</span><span class="balias">${esc(r.alias)}</span><span class="bpts">${r.points} ${bt("pts")}</span></li>`).join(""):`<li class="bempty">${bt("none")}</li>`;
+    $("#bitems").textContent=(d.items||[]).map(x=>bt("q",{k:x.k,r:x.right,n:x.n})).join(" · ");
+    $("#bnote").textContent=bt("upd")+": "+new Date().toLocaleTimeString(LANG==="tr"?"tr-TR":"en-US");
+  }).catch(()=>{ const n=$("#bnote"); if(n) n.textContent=bt("err"); });
+}
+/* ----- M2 "predict first" (Q100-A, Q122-A, Q123-A). A module with predict:{q,set,a,why} shows a box above its controls:
+   the student picks ↑ / ↓ / no change and presses "Lock" (one try). Lock applies the task's settings like a preset and runs
+   the module; the box then shows the prediction, the right answer and the explanation. "Skip" uses the try and shows the
+   answer and the explanation. 0 points. The post-test row sends "M2 answers" (U up, D down, S no change, - skipped / not
+   done; one letter per task in module order) and "M2 right" (number of right predictions). ----- */
+const KM2=PFX+"-m2", ARW={up:"↑",down:"↓",same:"="};
+const M2_TASKS=PREDICT?ORDER.filter(k=>M[k]&&M[k].predict):[];
+let M2=store.get(KM2); if(!M2||typeof M2!=="object") M2={};
+const M2T={title:{tr:"Önce tahmin edin",en:"Predict first"}, noPts:{tr:"(puan yok)",en:"(no points)"},
+  o_up:{tr:"Artar",en:"Rises"}, o_down:{tr:"Azalır",en:"Falls"}, o_same:{tr:"Değişmez",en:"No change"},
+  lock:{tr:"Kilitle",en:"Lock"}, skip:{tr:"Atla",en:"Skip"}, yours:{tr:"Tahmininiz",en:"Your prediction"}, answer:{tr:"Doğru cevap",en:"Right answer"},
+  skipped:{tr:"Atladınız.",en:"You skipped this task."},
+  note:{tr:"Tek deneme. Kilitleyince ayarlar uygulanır ve modül çalışır; sonra doğru cevabı görürsünüz.",en:"One try. When you lock, the settings are applied and the module runs; then you see the right answer."}};
+const m2t=k=>t(M2T[k]), m2Opt=a=>ARW[a]+"\u00a0"+m2t("o_"+a);   // no line break between arrow and word
+function renderPredict(){
+  const box=$("#m-predict"); if(!box) return; const m=M[cur], P=m&&M2_TASKS.includes(cur)?m.predict:null;
+  box.hidden=!P; if(!P){ box.innerHTML=""; return; }
+  const r=M2[cur], head=`<div class="phead"><b>${m2t("title")}</b> <small>${m2t("noPts")}</small></div><p class="pq">${t(P.q)}</p>`;
+  if(r){ const ok=r.p===P.a;
+    box.innerHTML=head+`<p class="pres" role="status">`+(r.p?`${m2t("yours")}: <b>${m2Opt(r.p)}</b> · ${m2t("answer")}: <b>${m2Opt(P.a)}</b> <span class="tm ${ok?"ok":"bad"}">${ok?"✓":"✗"}</span>`
+      :`${m2t("skipped")} ${m2t("answer")}: <b>${m2Opt(P.a)}</b>`)+`</p><p class="pwhy">${t(P.why)}</p>`; return; }
+  box.innerHTML=head+`<div class="popts" role="radiogroup" aria-label="${m2t("yours")}">${["up","down","same"].map(a=>`<label><input type="radio" name="m2opt" value="${a}"> ${m2Opt(a)}</label>`).join("")}</div>`+
+    `<div class="pbtns"><button type="button" class="btn" id="m2lock" disabled>${m2t("lock")}</button><button type="button" class="btn ghost" id="m2skip">${m2t("skip")}</button></div><small class="pnote">${m2t("note")}</small>`;
+  box.querySelectorAll("input[name=m2opt]").forEach(x=>x.onchange=()=>{ $("#m2lock").disabled=false; });
+  $("#m2lock").onclick=()=>{ const s=box.querySelector("input[name=m2opt]:checked"); if(s) m2Done(s.value); };
+  $("#m2skip").onclick=()=>m2Done(null);
+}
+function m2Done(p){
+  const m=M[cur], P=m.predict; M2[cur]={p, t:Date.now()}; store.set(KM2,M2);
+  if(p){ Object.keys(P.set||{}).forEach(id=>unPreset(m,id)); Object.assign(C,P.set||{}); buildControls(m);   // like a preset
+    if(paused){ paused=false; $("#b-pause").textContent=t(UI.pause); } uiTick(true); }                        // run the module
+  renderPredict(); const r=$("#m-predict .pres"); if(r){ r.tabIndex=-1; r.focus(); }
+}
+const m2Answers=()=>M2_TASKS.map(k=>{ const r=M2[k]; return r&&r.p?{up:"U",down:"D",same:"S"}[r.p]:"-"; }).join("");
+const m2Right=()=>M2_TASKS.filter(k=>M2[k]&&M2[k].p===M[k].predict.a).length;
+/* ----- sending (schema 2: [column name, value] pairs; null = create the column, write nothing) -----
+   Column order (engine 2026-11f): per item Q<n> <type> (<pts>), A<n>, K<n> parts (tf, match, fill, order), C<n> sure
+   (open item: Q<n> open: lecturer, notes, self-check, words, answer) → Auto total (84) → Confidence points → Gift (4) →
+   Total (100) → [Total incl. lecturer: only with an open item] → Topics → form answers → [M2 answers, M2 right] →
+   Program → Item codes → Version → Language. */
+function answerStr(q,r){
+  if(q.type==="mcq") return r>=0?LU[r]:"-";
+  if(q.type==="order") return r.map(k=>LU[k]).join("");
+  if(q.type==="match"||q.type==="fill") return r.map((v,j)=>(j+1)+"-"+(v===null?"?":ll[v])).join(" ");
+  if(q.type==="tf") return r.map(v=>v===null?"-":(v?"D":"Y")).join("");
+  return r;
+}
+/* Part marks "K<n> parts" (item analysis of sub-parts): one 1/0 per tf statement, match row, fill blank, or order key pair
+   (pair k = key steps k and k+1 next to each other in the student's order; the same pairs as the scoring). */
+function partsStr(q,r){
+  if(q.type==="order"){ const at=k=>r.indexOf(k); return q.a.slice(0,-1).map((k,j)=>at(q.a[j+1])===at(k)+1?1:0).join(""); }
+  if(q.type==="tf"||q.type==="match"||q.type==="fill") return Array.from({length:nOf(q)},(_,j)=>unitOK(q,r,j)?1:0).join("");
+  return null;
+}
+/* Item code (Q99-A, Q119-A): 6 characters made from the item's type, stem, options / rows / blanks and key, both languages.
+   Any edit of these (even a typo fix) gives a new code; the explanation (why, fix), module and points do not count.
+   "Item codes" = "<module>:<code>" per item, in item order (Q118-A); the item analysis pools rows by code. */
+function itemCode(q){
+  const s=JSON.stringify([q.type,q.q,q.o||null,q.left||null,q.segs||null,q.blanks?q.blanks.map(b=>[b.o,b.a]):null,q.a===undefined?null:q.a]);
+  let h=0x811c9dc5; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,0x01000193)>>>0; }   // FNV-1a, 32 bit
+  const A="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let c=""; h>>>=2; for(let k=0;k<6;k++){ c+=A[h&31]; h>>>=5; } return c;
+}
+const itemCodes=set=>set.map(q=>q.mod+":"+itemCode(q)).join(" ");
+function payloadOf(mode,rec,alias){
+  if(mode==="mid") return kPayload(rec,alias);
+  const set=setOf(mode), cols=[], self=selfOf(set,rec), keyed=mode!=="pre";
+  set.forEach((q,i)=>{ const n=i+1, r=rec.raw.ans[i];
+    if(q.type==="open"){
+      cols.push([`Q${n} open: lecturer (${nf(q.pts)})`,null],[`Q${n} lecturer notes`,null]);
+      cols.push([`Q${n} self-check (feedback)`,keyed?self[i]:null],[`Q${n} words`,countWords(r)],[`A${n} open answer`,r]);
+    } else {
+      cols.push([`Q${n} ${q.type} (${nf(q.pts)})`,rec.qs[i]],[`A${n}`,answerStr(q,r)]);
+      const k=partsStr(q,r); if(k!==null) cols.push([`K${n} parts`,k]);
+      if(CONFIDENCE){ const c=rec.raw.conf[i]; cols.push([`C${n} sure`,c===1?"E":c===0?"D":"-"]); }
+    } });
+  cols.push([`Auto total (${nf(maxOf(set))})`,rec.auto]);
+  if(CONFIDENCE) cols.push(["Confidence points",confPts(set,rec)]);
+  cols.push([`Gift (${GIFT})`,GIFT],[`Total (${nf(totMax(set))})`,totalOf(set,rec)]);
+  if(HAS_OPEN) cols.push([`Total incl. lecturer`,null]);   // lecturer columns only when the test has an open item
+  cols.push(["Topics",topicStr(set,rec)]);
+  // form columns are sent with every test (empty except after the post-test), so the column order stays fixed
+  const isPost=mode==="post";
+  if(FEEDBACK) FB.forEach(x=>cols.push([`Feedback: ${x.k} (1-5)`,isPost?((rec.fb||{})[x.k]??""):null]));
+  if(MINUTE) MP.forEach(x=>cols.push([x.k==="learned"?"Learned most":"Still unclear",isPost?((rec.mp||{})[x.k]||""):null]));
+  if(M2_TASKS.length) cols.push(["M2 answers",isPost?m2Answers():null],["M2 right",isPost?m2Right():null]);   // sent with the post-test row
+  if(PROGRAMS.length>1) cols.push(["Program",prog()]);
+  cols.push(["Item codes",itemCodes(set)],["Version",SURUM],["Language",LANG]);
+  return {schema:2, course:COURSE, alias, test:mode, cols};
+}
+async function sendResult(){
+  const rec=ST[curKey()]; if(!rec||rec.sent||!SHEET_URL) return;
+  const alias=myCode(), payload=payloadOf(qmode,rec,alias);
+  const btn=$("#qsend"); btn.disabled=true; $("#sendmsg").textContent=qt("sending");
+  try{
+    await fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});
+    rec.sent=true; rec.alias=alias; saveST(); $("#sendmsg").textContent=qt("sent",{a:alias}); if(qmode==="mid") $("#qsend").hidden=true;
+    document.querySelectorAll("[data-rb],[data-fb]").forEach(x=>x.disabled=true); document.querySelectorAll("[data-mp]").forEach(x=>x.readOnly=true);
+  }catch(err){ btn.disabled=false; $("#sendmsg").textContent=qt("sendFail"); }
+}
+function resetCheck(){ if(location.hash!=="#test-sifirla") return; if(confirm(qt("resetQ"))){ ST={pre:null,post:null,late:null}; ROUNDS.forEach((_,i)=>{ ST[mk(i+1)]=null; }); saveST(); store.set(KRUN,null); kr=1; M2={}; store.set(KM2,null); qmode=MODES[0]; renderModes(); } try{history.replaceState(null,"","#test");}catch(e){} }
+resetCheck(); window.addEventListener("hashchange",resetCheck);
+/* ----- format check for template authors: problems are listed in the browser console -----
+   Rules (engine 2026-11f): all item points + 2 per automatic item (confidence) + 4 (gift) = 100;
+   order: 4–7 rows and pts = 4 × (rows − 1); every item has a module (mod); tr and en have the same length. */
+function checkQuiz(set,name){
+  const nA=set.filter(isAuto).length, sum=r2(set.reduce((a,q)=>a+(q.pts||0),0));
+  if(r2(sum+2*nA+4)!==100) console.error(`${name}: item points ${nf(sum)} + 2 × ${nA} automatic items + 4 = ${nf(r2(sum+2*nA+4))}; it must be 100 (default: 84 points in 6 automatic items)`);
+  set.forEach((q,i)=>{ const err=m=>console.error(`${name}[${i}] (${q.type}): ${m}`); const L=x=>(tx(x)||[]).length;
+    if(!q.pts||q.pts<=0) err("pts missing");
+    if(q.type==="order"){ const n=L(q.o); if(n<4||n>7) err("order: use 4–7 rows"); if(r2(q.pts)!==4*(n-1)) err(`order: pts must be 4 × (rows − 1) = ${4*(n-1)} (4 points per consecutive pair)`); }
+    if(!q.mod||!M[q.mod]) err("mod is not a module key: "+q.mod);
+    ["tr","en"].forEach(lg=>{ const n=x=>x&&x[lg]?x[lg].length:-1;
+      if(q.o&&q.o.tr&&n(q.o)!==q.o.tr.length) err("o."+lg+" length differs from o.tr");
+      if(q.type==="fill"&&n(q.segs)!==q.blanks.length+1) err(`segs.${lg} must have ${q.blanks.length+1} pieces (one more than the blanks)`); });
+    if(q.type==="mcq"&&!(q.a>=0&&q.a<L(q.o))) err("a out of range");
+    if(q.type==="order"&&q.a.slice().sort((x,y)=>x-y).join()!==[...Array(L(q.o)).keys()].join()) err("a is not an order of all rows");
+    if(q.type==="match"&&(q.a.length!==L(q.left)||q.a.some(k=>k<0||k>=L(q.o)))) err("a must give one option per left item");
+    if(q.type==="tf"&&(q.a.length!==L(q.o)||L(q.fix)!==L(q.o))) err("a and fix need one entry per statement");
+    if(q.type==="fill"&&q.blanks.some(b=>!(b.a>=0&&b.a<L(b.o)))) err("a blank answer is out of range");
+    if(q.type==="open"&&L(q.rubric)<2) err("rubric needs steps");
+    if(q.mods&&q.mods.some(m=>!M[m])) err("mods has an unknown module key"); });
+}
+function checkPredict(){   // M2 tasks: q and why in tr and en, a = up | down | same, set uses the module's control ids
+  M2_TASKS.forEach(k=>{ const P=M[k].predict, err=x=>console.error(`M.${k}.predict: ${x}`), ids=M[k].controls.map(c=>c.id);
+    if(!P.q||!P.q.tr||!P.q.en) err("q needs tr and en"); if(!P.why||!P.why.tr||!P.why.en) err("why needs tr and en");
+    if(!["up","down","same"].includes(P.a)) err('a must be "up", "down" or "same"');
+    Object.keys(P.set||{}).forEach(id=>{ if(!ids.includes(id)) err("set: unknown control id "+id); }); });
+  if(M2_TASKS.length&&(M2_TASKS.length<2||M2_TASKS.length>3)) console.warn(`M2: the design is 2–3 prediction tasks per simulator (one per main module); this file has ${M2_TASKS.length}.`);
+}
+checkQuiz(QUIZ,"QUIZ"); if(TESTS.mid) checkMid(); checkPredict();
+renderModes(); renderCodeBox(); testNote();
+
+/* ---------------- ÇERÇEVE / FRAME (normally unchanged) ---------------- */
+let cur=null, S=null, C=null, hist=[], simT=0, speed=1, paused=false, last=0, uiAcc=0, view="giris";
+function staticText(){
+  document.documentElement.lang=LANG; document.title=t(UI.title);
+  document.querySelectorAll("[data-i]").forEach(el=>{el.textContent=t(UI[el.dataset.i]);});
+  document.querySelectorAll("[data-ih]").forEach(el=>{el.innerHTML=t(UI[el.dataset.ih]);});
+  document.querySelectorAll("[data-ia]").forEach(el=>{el.setAttribute("aria-label",t(UI[el.dataset.ia]));});
+  $("#b-pause").textContent=paused?t(UI.resume):t(UI.pause);
+  $("#gofirst").dataset.go=ORDER[0];
+  document.querySelectorAll("#lang button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.l===LANG));
+  const TABS=[["giris",t(UI.tabStart)],...ORDER.map(k=>[k,t(M[k].tab)]),["test",t(UI.tabTest)]];
+  $("#tabs").innerHTML=TABS.map(([k,n])=>`<button type="button" role="tab" id="t-${k}" data-go="${k}" aria-selected="${k===view}">${n}</button>`).join("");
+  $("#modgrid").innerHTML=ORDER.map(k=>`<button type="button" class="modcard" data-go="${k}"><em>${t(M[k].eyebrow)}</em><strong>${t(M[k].title)}</strong><span>${t(M[k].card)}</span></button>`).join("");
+}
+function ctlDefaults(m){const c={};m.controls.forEach(k=>{if(k.type!=="button") c[k.id]=k.value;}); return c;}
+function unPreset(m,id){ m.controls.forEach(p=>{ if(p.type!=="preset"||C[p.id]<0) return; const o=p.options[C[p.id]]; if(o&&o.set&&id in o.set){ C[p.id]=-1; document.querySelectorAll(`#c-${p.id} button`).forEach(b=>b.setAttribute("aria-pressed","false")); } }); }
+function buildControls(m){
+  const box=$("#m-controls");
+  box.innerHTML=m.controls.map(k=>{
+    const help=t(k.help)?`<small>${t(k.help)}</small>`:"";
+    if(k.type==="range") return `<div class="ctl"><label for="c-${k.id}">${t(k.label)}${k.show?`: <output id="o-${k.id}">${k.show(C[k.id])}</output>`:""}</label><input type="range" id="c-${k.id}" min="${k.min}" max="${k.max}" step="${k.step}" value="${C[k.id]}"><div class="ends"><span>${t(k.ends[0])}</span><span>${t(k.ends[1])}</span></div>${help}</div>`;
+    if(k.type==="toggle") return `<div class="ctl"><label class="switch" for="c-${k.id}"><input type="checkbox" role="switch" id="c-${k.id}" ${C[k.id]?"checked":""}><span>${t(k.label)}</span></label>${help}</div>`;
+    if(k.type==="preset") return `<div class="ctl wide"><span class="lab" id="lb-${k.id}">${t(k.label)}</span><div class="seg" role="group" id="c-${k.id}" aria-labelledby="lb-${k.id}">${k.options.map((o,i)=>`<button type="button" data-pi="${i}" aria-pressed="${C[k.id]===i}">${t(o.label)}</button>`).join("")}</div>${help}</div>`;
+    return `<div class="ctl"><button class="btn" type="button" id="c-${k.id}">${t(k.label)}</button>${help}</div>`;
+  }).join("");
+  m.controls.forEach(k=>{
+    const el=document.getElementById("c-"+k.id);
+    if(k.type==="range") el.addEventListener("input",()=>{C[k.id]=+el.value; const o=document.getElementById("o-"+k.id); if(o) o.textContent=k.show(C[k.id]); unPreset(m,k.id); uiTick(true);});
+    else if(k.type==="toggle") el.addEventListener("change",()=>{C[k.id]=el.checked; unPreset(m,k.id); uiTick(true);});
+    else if(k.type==="preset") el.addEventListener("click",e=>{const b=e.target.closest("[data-pi]"); if(!b) return; const i=+b.dataset.pi, o=k.options[i]; C[k.id]=i; Object.assign(C,o.set||{}); if(o.act) o.act(S,C); buildControls(m); const nb=document.querySelector(`#c-${k.id} [data-pi="${i}"]`); if(nb) nb.focus(); uiTick(true);});
+    else el.addEventListener("click",()=>{k.act(S,C); uiTick(true);});
+  });
+}
+function modText(){
+  const m=M[cur];
+  $("#m-eyebrow").textContent=t(m.eyebrow); $("#m-title").textContent=t(m.title); $("#m-sub").textContent=t(m.sub);
+  $("#m-daily").innerHTML=`<b>${t(UI.daily)}</b> `+t(m.daily);
+  $("#m-tasks").innerHTML=t(m.tasks).map(x=>`<li><span>${x}</span></li>`).join("");
+  $("#m-note").innerHTML=m.note();
+  $("#m-legend").innerHTML=m.series.map(s=>`<span><i style="background:var(${s.c})"></i>${t(s.n)}: <span class="v" id="lv-${s.k}">–</span></span>`).join("");
+  $("#m-chartbox").hidden=!m.series.length;
+  $("#m-drawbox").hidden=!m.draw; if(m.draw) $("#draw").style.height=(m.draw.h||260)+"px";
+  lastNowHTML=""; renderPredict();
+}
+function open(key){
+  const bm=/^board(\d*)$/.exec(key); if(bm){ showBoard(bm[1]?+bm[1]:1); return; }   // leaderboard for the projector: #board1, #board2 … (#board = round 1)
+  const km=/^mid(\d*)$/.exec(key);
+  if(MODES.includes("mid")&&(km||key==="mini")){ qmode="mid"; kr=key==="mini"?(NR===1?1:0):km[1]?+km[1]:1; if(kr>NR) kr=0; renderModes(); key="test"; }   // #mid1, #mid2 … (#mid = round 1); #mini = list of rounds
+  else if(MODES.includes(key)){ qmode=key; renderModes(); key="test"; }   // QR links: #pre, #post, #late
+  if(!M[key]&&key!=="giris"&&key!=="test") key="giris";
+  view=key;
+  document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.go===key));
+  const tb=document.getElementById("t-"+key); if(tb) tb.scrollIntoView({block:"nearest",inline:"nearest"});
+  $("#v-giris").hidden=key!=="giris"; $("#v-test").hidden=key!=="test"; $("#v-mod").hidden=!M[key];
+  try{ const h=key==="test"?hashOf():key; if(location.hash.slice(1)!==h) history.replaceState(null,"","#"+h); }catch(e){}   // the test tab keeps its mode in the address (#pre, #mid2…), so a reload returns to it
+  if(key==="test"){ renderQuiz(); } else testNote();
+  if(!M[key]){ cur=null; return; }
+  cur=key; modText(); reset();
+}
+function reset(){ const m=M[cur]; S=m.init(); C=ctlDefaults(m); hist=[]; simT=0; buildControls(m); for(let i=0;i<3;i++) m.step(S,0.05,C); uiTick(true); }
+function setLang(l){
+  LANG=l; store.set(PFX+"-lang",l); staticText(); renderModes(); testNote();
+  if(cur){ modText(); buildControls(M[cur]); uiTick(true); }
+  if(view==="test") renderQuiz();
+}
+
+function nodeHTML(n){
+  const w=cl(n.v,0,1)*100; const val=n.fmt?n.fmt(n.v):pct(n.v);
+  return `<div class="node"><div class="nl">${n.l}</div><div class="ns">${n.s}</div><div class="nv${n.small?" sm":""}" style="color:var(${n.c})">${val}</div><div class="meter"><i style="width:${w}%;background:var(${n.c})"></i></div></div>`;
+}
+let lastNowHTML="";
+function uiTick(force){
+  if(!cur) return; const m=M[cur];
+  $("#m-path").innerHTML=m.rows(S,C).map(r=>`<div class="prow">${r.map(nodeHTML).join('<div class="arrow" aria-hidden="true">→</div>')}</div>`).join("");
+  const fb=m.fb(S,C); const fbEl=$("#m-fb");
+  if(fb){ fbEl.innerHTML=`<div class="fb ${fb.on?"on":"off"} ${fb.kind}"><span class="dot" style="opacity:${fb.on?0.35+0.65*cl(fb.strength,0,1):1}"></span><span>${fb.text}</span></div>`; } else fbEl.innerHTML="";
+  const nh=m.now(S,C).map(p=>`<p>${p}</p>`).join(""); if(nh!==lastNowHTML){$("#m-now").innerHTML=nh; lastNowHTML=nh;}
+  $("#m-visual").innerHTML=m.visual?m.visual(S,C):"";
+  m.series.forEach(s=>{const el=document.getElementById("lv-"+s.k); if(!el) return; const v=S[s.k]; if(v==null) return; el.textContent=s.fmt?s.fmt(v):pct(v);});
+}
+
+/* ---------------- GRAFİK / CHART ---------------- */
+const cv=$("#chart"), ctx=cv.getContext("2d");
+const winOf=m=>(m.chart&&m.chart.win)||60;
+function fitCanvas(c,g){ const dpr=window.devicePixelRatio||1, W=c.clientWidth, H=c.clientHeight; if(c.width!==Math.round(W*dpr)||c.height!==Math.round(H*dpr)){c.width=Math.round(W*dpr);c.height=Math.round(H*dpr);} g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W,H); return [W,H]; }
+function drawChart(){
+  if(!cur) return; const m=M[cur]; if(!m.series.length) return;
+  const [W,H]=fitCanvas(cv,ctx);
+  const padL=46,padR=10,padT=10,padB=26, pw=W-padL-padR, ph=H-padT-padB;
+  const ink=css("--muted"), grid=css("--grid"), band=css("--band");
+  ctx.font=`12px ${css("--f-mono")}`; ctx.fillStyle=ink; ctx.strokeStyle=grid; ctx.lineWidth=1;
+  const P=m.series.find(s=>s.primary)||m.series[0];
+  const y=(s,v)=>padT+ph-(cl((v-s.min)/(s.max-s.min),0,1))*ph;
+  const day=m.chart&&m.chart.day;
+  if(day){ const xd=h=>padL+(h/24)*pw; ctx.fillStyle=grid; (m.chart.night||[]).forEach(([a,b])=>ctx.fillRect(xd(a),padT,xd(b)-xd(a),ph)); }
+  if(P.band){ ctx.fillStyle=band; const y1=y(P,P.band[1]), y0=y(P,P.band[0]); ctx.fillRect(padL,y1,pw,y0-y1); ctx.fillStyle=ink; ctx.textAlign="right"; ctx.fillText(t(P.bandLabel)||t(UI.normal),padL+pw-4,y1+13); }
+  ctx.textAlign="right"; ctx.textBaseline="middle";
+  for(let i=0;i<=4;i++){ const v=P.min+(P.max-P.min)*i/4, yy=y(P,v); ctx.strokeStyle=grid; ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(padL+pw,yy); ctx.stroke(); const lab=P.axis?P.axis(v):""; if(lab!==""){ctx.fillStyle=ink; ctx.fillText(lab,padL-6,yy);} }
+  ctx.textBaseline="alphabetic";
+  if(P.refs){ P.refs.forEach(r=>{ const yy=y(P,r.v); ctx.strokeStyle=css("--ink"); ctx.globalAlpha=.55; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(padL+pw,yy); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1; ctx.fillStyle=ink; ctx.textAlign="left"; ctx.fillText(t(r.l),padL+6,yy-5); }); }
+  ctx.textAlign="center"; ctx.fillStyle=ink;
+  if(day){   // 24-hour axis: whole-day curves from m.dayVals, marker at the current hour
+    const x=h=>padL+(h/24)*pw;
+    for(let h=0;h<=24;h+=6){ ctx.textAlign=h===24?"right":(h===0?"left":"center"); ctx.fillText(String(h%24).padStart(2,"0")+":00",x(h),H-8); }
+    if((m.chart.night||[]).length){ ctx.textAlign="left"; ctx.fillText(t(UI.night),x(m.chart.night[0][0])+4,padT+14); }
+    m.series.forEach(s=>{ ctx.strokeStyle=css(s.c); ctx.lineWidth=s.primary?3:2; ctx.beginPath(); for(let i=0;i<=192;i++){ const h=i/8, v=m.dayVals(h,C)[s.k], xx=x(h), yy=y(s,v); i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy);} ctx.stroke(); });
+    const xh=x(S.h); ctx.strokeStyle=css("--ink"); ctx.lineWidth=1.5; ctx.setLineDash([4,4]); ctx.beginPath(); ctx.moveTo(xh,padT); ctx.lineTo(xh,padT+ph); ctx.stroke(); ctx.setLineDash([]);
+    m.series.forEach(s=>{ ctx.fillStyle=css(s.c); ctx.beginPath(); ctx.arc(xh,y(s,S[s.k]),s.primary?4.5:3.5,0,7); ctx.fill(); });
+    return;
+  }
+  const WIN=winOf(m), stepL=WIN<=20?5:WIN<=40?10:15, t1=Math.max(simT,WIN), t0=t1-WIN, x=tt=>padL+((tt-t0)/WIN)*pw;
+  const every=pw<340?2:1;   // narrow screens: fewer time labels
+  for(let s=0,i=0;s<=WIN;s+=stepL,i++){ if(s!==WIN&&i%every) continue; ctx.textAlign=s===WIN?"right":(s===0?"left":"center"); ctx.fillText((s===WIN?t(UI.nowLbl):"−"+(WIN-s)+" "+t(UI.sec)),padL+(s/WIN)*pw,H-8); } ctx.textAlign="center";
+  m.series.forEach(s=>{
+    ctx.strokeStyle=css(s.c); ctx.lineWidth=s.primary?3:2; ctx.beginPath(); let st=false;
+    for(const p of hist){ if(p.t<t0) continue; const xx=x(p.t), yy=y(s,p[s.k]); st?ctx.lineTo(xx,yy):(ctx.moveTo(xx,yy),st=true); }
+    ctx.stroke();
+    const lp=hist[hist.length-1]; if(lp){ ctx.fillStyle=css(s.c); ctx.beginPath(); ctx.arc(x(lp.t),y(s,lp[s.k]),s.primary?4.5:3.5,0,7); ctx.fill(); }
+  });
+}
+/* ---------------- ÇİZİM ALANI / DRAWING AREA ---------------- */
+const dv=$("#draw"), dctx=dv.getContext("2d");
+function drawPanel(){ if(!cur) return; const m=M[cur]; if(!m.draw) return; const [W,H]=fitCanvas(dv,dctx); dctx.save(); m.draw.fn(dctx,W,H,S,C); dctx.restore(); }
+
+/* ---------------- DÖNGÜ / LOOP ---------------- */
+function loop(ts){
+  const dtReal=last?Math.min(0.1,(ts-last)/1000):0; last=ts;
+  if(cur&&!paused){
+    const m=M[cur]; let dt=dtReal*speed; const n=Math.max(1,Math.ceil(dt/0.05));
+    for(let i=0;i<n;i++){ m.step(S,dt/n,C); simT+=dt/n; }
+    if(!(m.chart&&m.chart.day)){ const p={t:simT}; m.series.forEach(s=>p[s.k]=S[s.k]); hist.push(p); const W=winOf(m); while(hist.length&&hist[0].t<simT-W-2) hist.shift(); }
+    uiAcc+=dtReal; if(uiAcc>0.15){uiAcc=0; uiTick();}
+  }
+  drawChart(); drawPanel();
+  requestAnimationFrame(loop);
+}
+$("#b-pause").onclick=()=>{paused=!paused; $("#b-pause").textContent=paused?t(UI.resume):t(UI.pause);};
+$("#b-reset").onclick=()=>reset();
+document.querySelectorAll("#speed button").forEach(b=>b.onclick=()=>{speed=+b.dataset.s; document.querySelectorAll("#speed button").forEach(x=>x.setAttribute("aria-pressed",x===b));});
+document.querySelectorAll("#lang button").forEach(b=>b.onclick=()=>setLang(b.dataset.l));
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]"); if(!g) return; e.preventDefault(); if(g.dataset.mode&&MODES.includes(g.dataset.mode)){qmode=g.dataset.mode; renderModes();} open(g.dataset.go); window.scrollTo({top:0});});
+window.addEventListener("hashchange",()=>open(location.hash.slice(1)));
+staticText();
+open(location.hash.slice(1)||"giris");
+requestAnimationFrame(loop);
+})();
+
+</script>
+</body></html>
