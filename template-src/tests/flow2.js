@@ -43,7 +43,7 @@ const inOrder=(o,names)=>{ const k=(o.cols||[]).map(x=>x[0]); const ix=names.map
   await p.screenshot({path:shot+'_pre.png',fullPage:false});
   await p.click('#qsend'); await p.waitForTimeout(300);
   const pc=C(posts[0]||{});
-  ok(posts[0]&&posts[0].schema===2&&posts[0].test==='pre'&&pc['Q1 mcq (4)']===0&&pc['Auto total (84)']===31&&pc['Q2 tf (10)']===10&&pc['Q5 fill (15)']===6&&pc['C1 sure']==='E'&&pc['Version']==='2026-11g','pre payload (schema 2): '+JSON.stringify(pc).slice(0,230));
+  ok(posts[0]&&posts[0].schema===2&&posts[0].test==='pre'&&pc['Q1 mcq (4)']===0&&pc['Auto total (84)']===31&&pc['Q2 tf (10)']===10&&pc['Q5 fill (15)']===6&&pc['C1 sure']==='E'&&pc['Version']==='2026-11h','pre payload (schema 2): '+JSON.stringify(pc).slice(0,230));
   ok(pc['A3']==='ABCDE'&&pc['A6']==='ABCDEFG'&&pc['A2']==='DYDYD'&&pc['A5']==='1-a 2-b 3-? 4-? 5-?','answer strings: order '+pc['A3']+' / '+pc['A6']+', fill '+pc['A5']);
   ok(pc['K2 parts']==='11111'&&pc['K3 parts']==='0000'&&pc['K4 parts']==='11111'&&pc['K5 parts']==='11000'&&pc['K6 parts']==='000000'&&!('K1 parts' in pc),'part marks: tf 11111, order pairs 0000, match 11111, fill 11000, 7-step order 000000; none for mcq');
   ok(pc['Confidence points']===-4&&pc['Gift (4)']===4&&pc['Total (100)']===31&&!('Total incl. lecturer' in pc)&&!Object.keys(pc).some(k=>/lecturer/.test(k)),'Confidence points −4, Gift (4) 4, Total (100) 31; no lecturer columns (no open item)');

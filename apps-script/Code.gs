@@ -1,5 +1,5 @@
 /**
- * Course simulations – writes test results to this Google Sheet.            Script version 2026-11g
+ * Course simulations – writes test results to this Google Sheet.            Script version 2026-11h
  * One deployment serves every course: each course writes to its own tab (e.g. "endocrine").
  * Setup: Sheet > Extensions > Apps Script > paste this code > Deploy > New deployment >
  * Type: Web app > Execute as: Me > Who has access: Anyone.
@@ -17,6 +17,11 @@
  *    points of the rows sent after <since> (anonymous codes only; only tabs ending in "-quiz").
  *    Points come from the round's own answers: right = 500 + 500 * (2 - P) * S, wrong = 0
  *    (P = share of the round right on that question, S = speed 0-1 sent by the phone).
+ * New in 2026-11h (test engine 2026-11h; Q8-A of 2026-11-12):
+ *  - Board streak bonus: with &streak=1 (sent by engine 2026-11h boards), a right answer that follows a right answer in
+ *    the same round earns +100 × (streak − 1): 2nd right in a row +100, 3rd +200. The reply says streak:true.
+ *    Without &streak (engines 2026-11e to 11g) the points are as before.
+ *  - Engine 2026-11h sends "M7 stars" and "M7 tries" (missions) with the post-test row; they are stored as text.
  * New in 2026-11g (test engine 2026-11g, mini-quiz rounds; Q134–Q143):
  *  - The mini-quiz sends one row per student and round (Test = mid1, mid2 …; old engines send "mid").
  *  - Board: &test=mid2 counts only the rows of that round. Without &test the board works as before (2026-11e/f).
@@ -42,7 +47,7 @@ const HEADERS = ['Timestamp', 'Alias', 'Test', 'Q1 (20)', 'Q2 (20)', 'Q3 (20)', 
   'Q5 self-score (20)', 'Auto total (80)', 'Total (incl. self-score)',
   'A1 choice', 'A2 order', 'A3 matching', 'A4 T/F (D=true, Y=false)', 'A5 open-ended answer', 'Version', 'Language'];
 const MAX_COLS = 200;
-const TEXT_COLS = /^(K\d+ parts|Item codes|M2 answers)$/;   // stored as text (leading ' ), e.g. part marks "01101"
+const TEXT_COLS = /^(K\d+ parts|Item codes|M2 answers|M7 stars|M7 tries)$/;   // stored as text (leading ' ), e.g. part marks "01101"
 
 function doPost(e) {
   const lock = LockService.getScriptLock();
@@ -145,12 +150,13 @@ function doGet(e) {
   if (p.board) {
     try { return out(board(p)); } catch (err) { return out({ ok: false, error: String(err && err.message || err).slice(0, 200) }); }
   }
-  return ContentService.createTextOutput('Course simulations data endpoint is running (script 2026-11g).');
+  return ContentService.createTextOutput('Course simulations data endpoint is running (script 2026-11h).');
 }
 
 // Mini-quiz points of one round (rows sent after "since"), calculated from the round's own answers:
 //   P = share of the round right on item k, S = speed (1 - time/limit) sent by the phone
 //   right: 500 + 500 * (2 - P) * S, wrong: 0. Equal points share a place, so more than n rows can come back.
+//   &streak=1 (2026-11h): a right answer after a right answer in the same round adds 100 * (streak - 1).
 function board(p) {
   const tab = String(p.board).replace(/[^\w -]/g, '').slice(0, 40);
   const test = /^mid\d{0,2}$/.test(String(p.test || '')) ? String(p.test) : '';   // 2026-11g: one round only (e.g. mid2)
@@ -168,6 +174,7 @@ function board(p) {
   for (let k = 1; k < rc.length; k++) if (rc[k] !== undefined && sc[k] !== undefined) all.push(k);
   if (ia < 0 || it < 0 || !all.length || (test && iq < 0)) return { ok: true, n: 0, items: [], top: [] };
   const since = Number(p.since) || 0, n = Math.min(Math.max(parseInt(p.n, 10) || 5, 1), 20);
+  const streak = String(p.streak || '') === '1';   // 2026-11h
   const rows = v.slice(1).filter(function (r) {
     const t = r[it] instanceof Date ? r[it].getTime() : Date.parse(r[it]);
     return t >= since && (!test || String(r[iq]) === test) && all.some(function (k) { return r[rc[k]] !== ''; });
@@ -183,11 +190,12 @@ function board(p) {
     items.push({ k: k, right: right, n: rows.length });
   });
   const scored = rows.map(function (r) {
-    let pts = 0;
+    let pts = 0, run = 0;
     ks.forEach(function (k) {
-      if (Number(r[rc[k]]) !== 1) return;
+      if (Number(r[rc[k]]) !== 1) { run = 0; return; }
       const s = Math.min(Math.max(Number(r[sc[k]]) || 0, 0), 1);
-      pts += 500 + 500 * (2 - share[k]) * s;
+      run++;
+      pts += 500 + 500 * (2 - share[k]) * s + (streak && run > 1 ? 100 * (run - 1) : 0);
     });
     return { alias: String(r[ia]), points: Math.round(pts) };
   });
@@ -198,7 +206,7 @@ function board(p) {
     if (r.points !== prev) { rank = i + 1; prev = r.points; }
     if (rank <= n) top.push({ rank: rank, alias: r.alias, points: r.points });
   });
-  return { ok: true, n: rows.length, items: items, top: top };
+  return { ok: true, n: rows.length, items: items, top: top, streak: streak };
 }
 
 // ---------------- Item analysis (2026-11f; "-quiz" tabs 2026-11g) ----------------
@@ -293,7 +301,7 @@ function analyse(v, tabName, when) {
   });
   const W = 13, table = [];
   const pad = function (a) { while (a.length < W) a.push(''); return a; };
-  table.push(pad(['Item analysis · ' + tabName + ' · script 2026-11g · ' + fmtWhen(when)]));
+  table.push(pad(['Item analysis · ' + tabName + ' · script 2026-11h · ' + fmtWhen(when)]));
   table.push(pad(['Post-test rows with item codes: ' + rows.post.length + ' · pre-test rows: ' + rows.pre.length +
     ' · groups: upper and lower 27% by total minus the item (ties included) · P = mean score share of both groups × 100 · D = upper − lower · n < 40: P as a count, no D']));
   table.push(pad(['Flags: P 50–60 ideal, 30–70 acceptable, > 70 easy, < 30 hard · D ≥ 0.35 excellent, 0.25–0.34 good, 0.15–0.24 review, < 0.15 low, < 0 check the key']));
@@ -347,7 +355,7 @@ function quizAnalyse(v, tabName, when) {
   if (!keys.length) return { ok: false, message: 'Tab "' + tabName + '" has no mini-quiz rows.' };
   const W = 9, table = [], details = [];
   const pad = function (a) { while (a.length < W) a.push(''); return a; };
-  table.push(pad(['Mini-quiz item analysis · ' + tabName + ' · script 2026-11g · ' + fmtWhen(when)]));
+  table.push(pad(['Mini-quiz item analysis · ' + tabName + ' · script 2026-11h · ' + fmtWhen(when)]));
   table.push(pad(['Rows: ' + nRows + ' · P = share right × 100 (time-out = wrong) · no D (3 items per round) · n < 40: P as a count · pooled by item code']));
   table.push(pad(['Flags: P 50–60 ideal, 30–70 acceptable, > 70 easy, < 30 hard']));
   table.push(pad([]));

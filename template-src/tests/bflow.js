@@ -1,4 +1,4 @@
-// Leaderboard check, one board per round (engine 2026-11g).
+// Leaderboard check, one board per round (engine 2026-11g; story and streak lines 2026-11h).
 // Usage: node bflow.js <base url of a copy with SHEET_URL=example.invalid> <base url of the template (no SHEET_URL)> [base url of one.html]
 const {chromium}=require('playwright'); const [base,plain,one]=process.argv.slice(2);
 const out=[]; const ok=(c,m)=>out.push((c?'PASS ':'FAIL ')+m);
@@ -22,6 +22,11 @@ const out=[]; const ok=(c,m)=>out.push((c?'PASS ':'FAIL ')+m);
   ok(/6 öğrenci|6 students/.test(await p.textContent('#bcount')),'shows how many students sent a result');
   ok(/Soru 1: 6\/6 doğru · Soru 2: 2\/6 doğru · Soru 3: 3\/6 doğru/.test(await p.textContent('#bitems'))&&/500 \+ 500 × \(2 − P\)/.test(await p.textContent('#board')),'shows right answers per question and the formula');
   ok(!(await p.$('#blist b')),'codes are shown as text (no HTML from the Sheet)');
+  // 2026-11h: story line (T1) and streak line (T2)
+  ok(last().get('streak')==='1'&&/Ali sıcak bir günde koşuya çıkıyor/.test(await p.textContent('#board .bstory')),'2026-11h: asks for the streak bonus (&streak=1); round 1 story shown under the title');
+  ok(!/Seri bonusu/.test(await p.textContent('#bformula')),'old script (no streak in the reply): no streak line');
+  reply=Object.assign({},reply,{streak:true}); await p.clock.runFor(5200); await p.waitForTimeout(300);
+  ok(/Seri bonusu: art arda 2\. doğru \+100, 3\. doğru \+200/.test(await p.textContent('#bformula')),'script 2026-11h (streak:true): streak line under the formula');
   await p.screenshot({path:'board.png'});
   // next round
   await p.click('#bnext'); await p.waitForTimeout(300);

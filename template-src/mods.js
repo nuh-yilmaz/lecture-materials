@@ -19,13 +19,25 @@ M.ornek1={
     {type:"range",id:"dist",label:{tr:"Bozucu etki",en:"Disturbance"},min:-1,max:1,step:.05,value:0,ends:[{tr:"Düşürür",en:"Lowers"},{tr:"Yükseltir",en:"Raises"}],help:{tr:"Değişkeni ayar noktasından uzaklaştıran sürekli bir etki.",en:"A lasting effect that moves the variable away from its set point."}},
     {type:"button",id:"kick",label:{tr:"Ani bozulma",en:"Sudden disturbance"},help:{tr:"Kısa süreli bir yükselme; birkaç saniyede kaybolur.",en:"A short rise that fades within a few seconds."},act:s=>{s.pulse=0.6;}},
     {type:"range",id:"gain",label:{tr:"Geri bildirim gücü",en:"Feedback strength"},min:0,max:1,step:.05,value:.5,show:v=>dec(4*v),ends:[{tr:"Zayıf",en:"Weak"},{tr:"Güçlü",en:"Strong"}],help:{tr:"Kazanç: etkileyicinin hata başına düzeltmesi.",en:"Gain: the effector's correction per unit of error."}},
-    {type:"toggle",id:"fb",label:{tr:"Negatif geri bildirim",en:"Negative feedback"},value:true,help:{tr:"Kapatırsanız etkileyici çalışmaz (deney).",en:"If you switch it off, the effector does not work (experiment)."}}
+    {type:"toggle",id:"fb",label:{tr:"Negatif geri bildirim",en:"Negative feedback"},value:true,help:{tr:"Kapatırsanız etkileyici kendiliğinden çalışmaz (deney).",en:"If you switch it off, the effector does not work by itself (experiment)."}},
+    {type:"range",id:"man",label:{tr:"Etkileyici (elle)",en:"Effector (by hand)"},min:-0.6,max:0.6,step:.05,value:0,show:v=>sp(v),ends:[{tr:"Düşürür",en:"Lowers"},{tr:"Yükseltir",en:"Raises"}],help:{tr:"Yalnızca negatif geri bildirim kapalıyken çalışır: kontrol merkezi sizsiniz.",en:"Works only when negative feedback is off: you are the control center."}}
   ],
+  /* M7 mission, kind "organ" (EXAMPLE): the student is the control center and sets the effector every 10 s */
+  mission:{kind:"organ",
+    title:{tr:"[Örnek] Kontrol merkezi sizsiniz",en:"[Example] You are the control center"},
+    story:{tr:"Negatif geri bildirim kapalı. Etkileyiciyi siz yönetiyorsunuz. Ortam değiştikçe düzenlenen değişkeni normal aralıkta tutun.",en:"Negative feedback is off. You direct the effector. Keep the regulated variable in the normal range while the surroundings change."},
+    start:{fb:false,dist:0,man:0,gain:0.5}, lock:["fb","gain","dist","kick"], act:"man", delta:0.3, every:10, turns:6,
+    goal:[{k:"x",lo:0.9,hi:1.1}],
+    events:[{t:0,set:{dist:-0.75},text:{tr:"[Örnek] Ortam birden soğudu: bozucu etki değişkeni düşürüyor.",en:"[Example] The surroundings suddenly turn cold: the disturbance lowers the variable."}},
+            {t:20,set:{dist:0},text:{tr:"[Örnek] Ortam normale döndü: bozucu etki kalmadı.",en:"[Example] The surroundings are normal again: the disturbance is gone."}},
+            {t:40,set:{dist:0.75},text:{tr:"[Örnek] Ortam ısındı: bozucu etki değişkeni yükseltiyor.",en:"[Example] The surroundings turn warm: the disturbance raises the variable."}}],
+    solve:["up","same","down","same","down","same"],
+    why:{tr:"[Örnek] Kontrol merkezi sapmanın tersi yönde yanıt verir: değişken düşünce etkileyici yükseltir, yükselince düşürür. Yanıt gecikirse değişken bir süre normal aralığın dışında kalır.",en:"[Example] The control center responds against the deviation: when the variable falls, the effector raises it; when it rises, the effector lowers it. If the response comes late, the variable stays outside the normal range for a while."}},
   step(s,dt,c){
     const G=4*c.gain;
     s.pulse*=Math.exp(-dt/3);
     s.D=0.4*c.dist+s.pulse;
-    s.e=ap(s.e,c.fb?cl(-G*(s.x-1),-2,2):0,1.2,dt);
+    s.e=ap(s.e,c.fb?cl(-G*(s.x-1),-2,2):(c.man||0),1.2,dt);
     s.x=ap(s.x,1+s.D+s.e,0.8,dt);
     s.err=s.x-1;
   },
@@ -71,6 +83,13 @@ M.ornek2={
   predict:{q:{tr:"Damar yarıçapları normalken basınç farkı iki katına çıkarsa akım ne olur?",en:"If the pressure difference doubles while both radii stay normal, what happens to flow?"},
     set:{dp:2,r1:1,r2:1}, a:"up",
     why:{tr:"Akım = basınç farkı / direnç. Yarıçaplar değişmediği için direnç aynı kalır; basınç farkı iki katına çıkınca akım da iki katına çıkar.",en:"Flow = pressure difference / resistance. The radii do not change, so resistance stays the same; when the pressure difference doubles, flow doubles too."}},
+  /* M7 mission, kind "fix" (EXAMPLE): the module starts disturbed; bring flow back into the normal range */
+  mission:{kind:"fix",
+    title:{tr:"[Örnek] Akımı geri getirin",en:"[Example] Bring the flow back"},
+    story:{tr:"Damar 1 daraldı: yarıçapı normalin %70'i. Akım çok düştü. Damar 1'i değiştiremezsiniz; akımı normal aralığa (%90–110) geri getirin.",en:"Vessel 1 has narrowed: its radius is 70% of normal. Flow has fallen a lot. You cannot change vessel 1; bring flow back into the normal range (90–110%)."},
+    start:{dp:1,r1:0.7,r2:1}, lock:["r1"], goal:[{k:"q",lo:0.9,hi:1.1}],
+    solve:{dp:2,r2:1.5},
+    why:{tr:"[Örnek] Direnç = R1 + R2 ve R ∝ 1/r⁴. Damar 1 daralınca toplam direnç çok artar. Akımı geri getirmek için basınç farkını artırmak ve damar 2'yi genişletmek gerekir: ikisi de tek başına yetmez.",en:"[Example] Resistance = R1 + R2, and R ∝ 1/r⁴. When vessel 1 narrows, the total resistance rises steeply. To bring flow back, the pressure difference must rise and vessel 2 must widen: neither is enough alone."}},
   controls:[
     {type:"preset",id:"scen",label:{tr:"Hazır durum",en:"Preset"},value:0,options:[
       {label:{tr:"Normal",en:"Normal"},set:{dp:1,r1:1,r2:1}},

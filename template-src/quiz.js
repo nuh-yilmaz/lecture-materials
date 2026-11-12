@@ -54,7 +54,9 @@ const QUIZ=[
 /* M6 MINI-QUIZ ROUNDS (Kahoot style; used when TESTS.mid is true). Rule 2.12: one round every 18–20 minutes of
    lecture time (e.g. about 8 rounds in 160 minutes). The number of rounds is free (1–10, Q126-A); each round has
    exactly 3 items (Q127-A, Q128-A). One try per round, timed on the phone.
-   Format: QUIZ_MID = [ {items:[item, item, item]}, … ]  (round 1 first). The rounds give the QR links:
+   Format: QUIZ_MID = [ {story*:{tr,en}, items:[item, item, item]}, … ]  (round 1 first).
+     story (optional, 2026-11h): one line that ties the 3 items to one person or situation (e.g. "Ayşe climbs a
+     mountain."); shown on the phone above each question and on the round's board. Physiology focus (rule 2.10). The rounds give the QR links:
      #mid1, #mid2 … open that round on the phone (#mid = round 1); #board1, #board2 … show that round's
      leaderboard on the projector (#board = round 1).
    Types: mcq · tf (1 statement) · match (2 pairs, 1 option left over) · fill (1 blank).
@@ -62,9 +64,11 @@ const QUIZ=[
    Points (calculated on the board, from the round's own answers; Q84-A):
      P = share who answered right (time-out = wrong), S = 1 − time/limit
      right: 500 + 500 × (2 − P) × S   (easy for the group: up to 1000; hard: up to 1500)   wrong: 0
+     streak bonus: 2nd right answer in a row +100, 3rd +200 (inside one round; Apps Script 2026-11h)
    The example has 2 short rounds only to show the format; a lecture has one round per 18–20 minutes. */
 const QUIZ_MID=[
- {items:[   // round 1
+ {story:{tr:"[Örnek] Ali sıcak bir günde koşuya çıkıyor.",en:"[Example] Ali goes for a run on a hot day."},
+  items:[   // round 1
   {type:"tf",mod:"ornek1",
    q:{tr:"Doğru mu, yanlış mı?",en:"True or false?"},
    o:{tr:["Algılayıcı düzeltici yanıtı oluşturur."],en:["The sensor produces the corrective response."]},a:[false],

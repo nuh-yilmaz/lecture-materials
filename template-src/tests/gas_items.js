@@ -81,5 +81,5 @@ const tc='text'; post(msg(tc,'PHY-T1','post',ITEMS.map(it=>it.type==='mcq'?[1]:[
 ok(cell(tc,1,'K2 parts')==="'01111"&&cell(tc,1,'Item codes').startsWith("'ornek1:"),'part marks and item codes are stored as text ("01111" keeps its 0)');
 book[tc].rows[1][H(tc).indexOf('K3 parts')]='0111';   // as read back from a real Sheet (no apostrophe)
 post({schema:2,course:tc,alias:'PHY-T1',test:'post',cols:[['Version','2026-11f']]}); ok(cell(tc,1,'K3 parts')==="'0111",'a row update keeps digit-only part marks as text');
-ok(/2026-11g/.test(ctx.doGet({parameter:{}}).t),'web app page says "(script 2026-11g)"');
+ok(/2026-11h/.test(ctx.doGet({parameter:{}}).t),'web app page says "(script 2026-11h)"');
 console.log(out.join('\n'));

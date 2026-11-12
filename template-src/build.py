@@ -96,6 +96,23 @@ body.boardon{overflow:hidden}
 .pbtns{display:flex;flex-wrap:wrap;gap:8px}
 .predict .pnote{color:var(--muted)}
 .predict .pres{margin:0} .predict .pwhy{margin:0;color:var(--ink)}
+/* M7 missions, story rounds (2026-11h) */
+.mission{border-color:var(--ok)}
+.mission .m7story{margin:0}
+.mission .m7rule{margin:0;font-size:15px;color:var(--muted)}
+.mission .m7news{margin:0;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--warn) 14%,var(--surface));font-weight:600}
+.mission .m7live{font-family:var(--f-mono);font-size:14px;display:grid;gap:6px}
+.m7chip{display:inline-block;padding:3px 10px;border-radius:999px;border:1px solid var(--line);font-weight:700}
+.m7chip.ok{border-color:var(--ok);color:var(--ok)} .m7chip.bad{border-color:var(--signal);color:var(--signal)}
+.mission .m7ask{padding:10px 12px;border-radius:10px;background:var(--surface-2);display:grid;gap:8px}
+.mission .m7ask p{margin:0;font-weight:700}
+.mission .mres{display:grid;gap:6px} .mission .mres p{margin:0}
+.mission .m7big{font-size:18px;font-weight:700}
+.m7stars{color:var(--warn);letter-spacing:2px;font-size:20px;white-space:nowrap}
+.mission .m7meta{margin:0}
+.ctl.m7lock{opacity:.55}
+.kstory{margin:0 0 6px;font-style:italic;color:var(--muted)}
+#board .bstory{font-size:20px;font-style:italic;margin:4px 0 10px}
 /* Test 2026-11f: scoring box, total line */
 .scorebox{border:2px solid var(--navy);background:color-mix(in srgb,var(--navy) 9%,var(--surface));font-weight:600;font-size:15px;line-height:1.5}
 .score .tparts{color:var(--muted);font-size:15px;font-weight:600;white-space:nowrap}

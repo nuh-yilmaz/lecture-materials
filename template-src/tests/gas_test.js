@@ -41,6 +41,7 @@ ok(cell(tab,2,'Feedback: helped (1-5)')===5&&cell(tab,2,'Learned most')==='Geri 
 post(P[0]); ok(book[tab].rows.length===3,'schema 2: resend updates the same row');
 const hx=H(tab), ix=n=>hx.indexOf(n);
 ok(ix('K2 parts')===ix('A2')+1&&ix('Confidence points')===ix('Auto total (84)')+1&&ix('Gift (4)')===ix('Auto total (84)')+2&&ix('Total (100)')===ix('Auto total (84)')+3&&ix('Item codes')===ix('Version')-1&&ix('M2 answers')===ix('Still unclear')+1&&ix('M2 right')===ix('Still unclear')+2&&cell(tab,2,'M2 answers')==="'-",'engine 2026-11f columns in the tab: K<n> parts after A<n>, Confidence points, Gift (4), Total (100) after Auto total (84), Item codes before Version');
+ok(ix('M7 stars')===ix('M2 right')+1&&ix('M7 tries')===ix('M2 right')+2&&cell(tab,2,'M7 stars')==="'x-x"&&cell(tab,2,'M7 tries')==="'0-0",'2026-11h: "M7 stars" and "M7 tries" after the M2 columns, stored as text (a Sheet would read "3-2-0" as a date)');
 ok(!hx.some(h=>/lecturer/.test(h))&&cell(tab,1,'Total (100)')===31&&cell(tab,2,'Total (100)')===80&&/^'ornek1:/.test(cell(tab,1,'Item codes'))&&/^'[01]+$/.test(cell(tab,1,'K2 parts')),'no lecturer columns without an open item; totals 31 and 80; item codes and part marks stored as text');
 post(P[2]); ok(book[tab].rows.length===4&&cell(tab,3,'Test')==='late'&&cell(tab,3,'Q3 order (16)')===12&&cell(tab,3,'Q6 order (24)')===16,'schema 2: delayed test row (pair scores 12 and 16)');
 // open item (special case): lecturer columns are created empty and never overwritten
@@ -68,7 +69,7 @@ ok(get({board:'template-quiz',since:'0',n:'1'}).top.length===1,'board: n limits 
 ok(get({board:'template-quiz',since:String(Date.now()+60000)}).n===0,'board: rows before "since" are left out (new round)');
 ok(get({board:'template'}).ok===false,'board: only tabs ending in -quiz');
 ok(get({board:'nothere-quiz'}).n===0,'board: missing tab gives an empty board');
-ok(/2026-11g/.test(ctx.doGet({parameter:{}}).t)&&/2026-11g/.test(ctx.doGet().t),'plain URL still shows the connection text (2026-11g)');
+ok(/2026-11h/.test(ctx.doGet({parameter:{}}).t)&&/2026-11h/.test(ctx.doGet().t),'plain URL still shows the connection text (2026-11h)');
 post(kq('PHY-BBBB',1,0.8,1,1)); const B2=get({board:'template-quiz',since:'0'});
 ok(B2.n===4&&B2.items[1].right===2&&B2.top[0].alias==='PHY-BBBB','board: a resend updates the same row; P is recalculated (Q2 now 2/4)');
 console.log(out.join('\n'));

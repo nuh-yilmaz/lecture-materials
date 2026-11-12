@@ -1,6 +1,6 @@
 /* =====================================================================
    SİMÜLATÖR ŞABLONU / SIMULATOR TEMPLATE
-   Template 2026-11 · test engine 2026-11g · guide: claude/simulator_template.md
+   Template 2026-11 · test engine 2026-11h · guide: claude/simulator_template.md
    ---------------------------------------------------------------------
    HOW TO MAKE A NEW SIMULATOR
    1. Copy this file. Name it "<Konu> Simülatörü.html" (one file per lecture).
@@ -53,6 +53,23 @@
                                       applies set (like a preset) and runs the module. Use the same
                                       mechanism as one test item of the module in another situation,
                                       with no shared stem (no cue). Book pages go in the module note.
+     mission*:{kind:"fix"|"organ", title, story, why  {tr,en}
+               start:{controlId:value,…}, lock:[controlId,…], goal:[{k,lo,hi,n*,fmt*},…],
+               fix:   hold*:5, limit*:120, stars*:[3,6], warm*:20, solve:{controlId:value,…}
+               organ: act:controlId (a range), delta*, every*:10, turns*:6, stars*:[0.8,0.6,0.4],
+                      events*:[{t,set:{…},text:{tr,en}}], warm*:10, solve:["up"|"down"|"same",…]}
+                                      M7 mission box under the prediction box (MISSIONS switch; engine
+                                      2026-11h). 2–3 missions per simulator, one per main module; 0 points;
+                                      MISSION_TRIES tries. fix: the module starts disturbed (start, run for
+                                      warm s); the student moves the free controls until every goal value
+                                      (k = key in s) stays in its zone for hold s; stars by moves (≤3 → 3★,
+                                      ≤6 → 2★, more → 1★; time out → 0★). organ: the student is one organ;
+                                      every `every` s the module stops and the student chooses ↑ / ↓ / no
+                                      change for control act (step delta, default 1/4 of its range); events
+                                      change the body at t s (an event at a turn time comes before that
+                                      choice); stars by the share of time with all goals in zone. Presets,
+                                      lock controls, act and event controls are locked during a try.
+                                      solve = one correct answer: the tests check that it gets 3★.
    }
    CONTROLS
      {type:"range",id,label,min,max,step,value,ends:[a,b],show*:v=>"…",help}
@@ -84,17 +101,19 @@
    SCORING: Total = items + confidence points (M3) + 4-point gift; never below 0, at most 100.
      A coloured box at the top of every test (pre, post, delayed) tells the students the rule.
    SWITCHES (below): TESTS.pre/mid/post/late, LATE_DAYS, CONFIDENCE (M3),
-     FEEDBACK (M4, 1–5 form after the post-test), MINUTE (M5, one-minute paper), PREDICT (M2), PROGRAMS.
+     FEEDBACK (M4, 1–5 form after the post-test), MINUTE (M5, one-minute paper), PREDICT (M2),
+     MISSIONS and MISSION_TRIES (M7), PROGRAMS.
    MINI-QUIZ (TESTS.mid): QUIZ_MID = list of rounds, 3 items each, Kahoot style; format at QUIZ_MID in the quiz part.
    QR LINKS: <simulator link>#pre, #post open that test; #mid1, #mid2 … open that mini-quiz round (#mid = round 1).
    LEADERBOARD: <simulator link>#board1, #board2 … on the projector, one per round (#board = round 1; lecturer only;
-     needs SHEET_URL and Apps Script 2026-11g).
+     needs SHEET_URL and Apps Script 2026-11g; the streak bonus needs Apps Script 2026-11h).
+   MISSION LINKS: <simulator link>#mission-<module key> opens that module at its mission (projector or QR).
    ===================================================================== */
 
 /* ---------------- AYARLAR / CONFIG ---------------- */
 const COURSE="template";   // Sheet tab name (English, lower case), e.g. "respiration"
 const PFX="tpl";           // browser storage prefix, 2–5 letters, unique per simulator
-const SURUM="2026-11g";    // version sent with each result; change it when the test changes
+const SURUM="2026-11h";    // version sent with each result; change it when the test changes
 const SHEET_URL="";        // Apps Script web app URL (…/exec); "" = results are not sent
 const ORDER=["ornek1","ornek2","ornek3","ornek4"];   // module keys, in tab order
 /* assessment switches (true = on) */
@@ -104,6 +123,8 @@ const CONFIDENCE=true;     // M3: "Are you sure?" under each automatic item; "su
 const FEEDBACK=true;       // M4: four 1–5 statements after the post-test
 const MINUTE=true;         // M5: one-minute paper after the post-test
 const PREDICT=true;        // M2: "predict first" box in modules that have predict:{…} (2–3 tasks per simulator, one per main module)
+const MISSIONS=true;       // M7: mission box in modules that have mission:{…} (2–3 missions per simulator, one per main module; 0 points)
+const MISSION_TRIES=3;     // M7: tries per mission and browser; the best stars are sent with the post-test (Q7-A: 3 tries)
 /* programs (faculty / language) asked once per browser and sent as the "Program" column; [] = do not ask.
    PLACEHOLDER list: replace it with the user's list. */
 const PROGRAMS=[{k:"tip-tr",tr:"Tıp (Türkçe)",en:"Medicine (Turkish)"},{k:"tip-en",tr:"Tıp (İngilizce)",en:"Medicine (English)"},{k:"diger",tr:"Diğer",en:"Other"}];

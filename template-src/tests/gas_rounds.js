@@ -27,6 +27,14 @@ const B2=get({board:T,test:'mid2',since:'0'});
 // round 2: P1 = 1/3, P2 = 2/3, P3 = 3/3. A: 500+500*(4/3)*1=1166.7 + 500+500*1*.5=750 → 1917 · B: 500+500*(5/3)*.5=916.7 + 500+500*(4/3)*.5=833.3 + 750 = 2500 · E: 500+500*1*1 = 1000
 ok(B2.n===3&&B2.top.map(r=>r.alias+':'+r.points).join()==='PHY-BBBB:2500,PHY-AAAA:1917,PHY-EEEE:1000'&&B2.items.map(x=>x.right).join()==='1,2,3','board &test=mid2: only round 2 rows and its own P per item');
 ok(get({board:T,since:'0'}).n===7,'board without &test: all rows, as in script 2026-11e/f');
+// ---- 2b. streak bonus (script 2026-11h, &streak=1): 2nd right in a row +100, 3rd +200, inside one round
+const S1=get({board:T,test:'mid1',since:'0',streak:'1'});
+// A: 2938 + 100 + 200 = 3238 · B (right, right, wrong): 2000 + 100 = 2100 · C, D: one right answer, no bonus
+ok(S1.streak===true&&S1.top.map(r=>r.alias+':'+r.points).join()==='PHY-AAAA:3238,PHY-BBBB:2100,PHY-CCCC:900,PHY-DDDD:600','streak: round 1 points with +100 / +200 for right answers in a row');
+const S2=get({board:T,test:'mid2',since:'0',streak:'1'});
+// B (3 right): 2500 + 300 = 2800 · A (wrong, right, right): 1917 + 100 = 2017 · E (wrong, wrong, right): 1000; a wrong answer ends the streak
+ok(S2.top.map(r=>r.alias+':'+r.points).join()==='PHY-BBBB:2800,PHY-AAAA:2017,PHY-EEEE:1000','streak: a wrong answer ends the streak (round 2)');
+ok(B1.streak===false&&get({board:T,test:'mid1',since:'0',streak:'yes'}).top[0].points===2938,'no streak without &streak=1 (engines 2026-11e to 11g get the same points as before)');
 ok(get({board:T,test:'mid3',since:'0'}).n===0,'board of a round without rows: empty');
 ok(get({board:T,test:'mid1;x',since:'0'}).n===7&&get({board:T,test:'=SUM(1)',since:'0'}).ok===true,'a bad &test value is ignored (no crash)');
 ok(get({board:T,test:'mid1',since:String(Date.now()+60000)}).n===0,'board per round still uses the time window ("Reset (new group)")');
@@ -40,7 +48,7 @@ const S='small-quiz';
 for(let i=0;i<10;i++){ post(qm(S,'PHY-S'+i,'mid1',[[i<7?1:0,.5,i<7?4:20],[1,.5,2],[i<3?1:0,.5,6]],C1)); post(qm(S,'PHY-S'+i,'mid2',[[1,.5,3],[i<5?1:0,.5,5],[0,0,10]],C2)); }
 const r=ctx.itemAnalysis(S), st=book[S+'-items'];
 ok(r.ok&&r.quiz&&r.nRows===20&&r.nRounds===2&&r.nItems===6,'"-quiz" tab: 20 rows, 2 rounds, 6 items');
-ok(st.rows[4].join('|')==='Round|Item|Code|Module|n|Right|P|Mean time right (s)|Flag'&&st.rows.length===5+6&&/script 2026-11g/.test(st.rows[0][0]),'tab "small-quiz-items": 5 header lines + one row per round and item');
+ok(st.rows[4].join('|')==='Round|Item|Code|Module|n|Right|P|Mean time right (s)|Flag'&&st.rows.length===5+6&&/script 2026-11h/.test(st.rows[0][0]),'tab "small-quiz-items": 5 header lines + one row per round and item');
 const row=(rd,k)=>st.rows.slice(5).find(x=>x[0]===rd&&x[1]==='K'+k);
 ok(row(1,1).join('|')==="1|K1|AAAAA1|ornek1|10|7|'7/10|4|few data",'round 1 item 1: n 10, 7 right, P as a count "7/10", mean time of right answers 4 s, "few data"');
 ok(row(2,2)[6]==="'5/10"&&row(2,3)[5]===0&&row(2,3)[7]===''&&row(2,3)[2]==='BBBBB3','round 2: P counts per item; an item nobody got right has no mean time');
@@ -66,5 +74,5 @@ env.setActive(S); ctx.itemAnalysisMenu();
 ok(/Mini-quiz item analysis written to tab "small-quiz-items": 20 rows, 2 rounds, 6 items/.test(ui.alerts.pop()),'menu on a "-quiz" tab writes "<tab>-items"');
 post({schema:2,course:'empty-quiz',alias:'PHY-X',test:'pre',cols:[['Version','2026-11g']]}); env.setActive('empty-quiz'); ctx.itemAnalysisMenu();
 ok(/no mini-quiz rows/.test(ui.alerts.pop())&&!book['empty-quiz-items'],'"-quiz" tab without mini-quiz rows: message, no new tab');
-ok(/2026-11g/.test(ctx.doGet({parameter:{}}).t),'web app page says "(script 2026-11g)"');
+ok(/2026-11h/.test(ctx.doGet({parameter:{}}).t),'web app page says "(script 2026-11h)"');
 console.log(out.join('\n'));

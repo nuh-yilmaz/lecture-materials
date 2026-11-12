@@ -17,6 +17,7 @@ run gas_test node "$T/tests/gas_test.js" "$T/../apps-script/Code.gs" "$OUT/posts
 run nosheet  node "$T/tests/nosheet.js" "$OUT/plain.html"
 run mob      node "$T/tests/mob.js" "$OUT/midon.html"
 run midcheck node "$T/tests/midcheck.js" "$OUT/plain.html" "$OUT/mid4.html" "$OUT/flat.html"
+run m7       node "$T/tests/m7.js" "$H"
 for x in tap conf cols m2 gas_items gas_rounds; do [ -f "$T/tests/$x.js" ] || continue
   case $x in gas_items|gas_rounds) run $x node "$T/tests/$x.js" "$T/../apps-script/Code.gs";; *) run $x node "$T/tests/$x.js" "$H";; esac; done
 kill $SRV 2>/dev/null

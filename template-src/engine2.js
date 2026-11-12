@@ -1,4 +1,5 @@
-/* ---------------- TEST ENGINE 2026-11g ----------------
+/* ---------------- TEST ENGINE 2026-11h ----------------
+   2026-11h: M7 missions (fix the body, you are the organ); mini-quiz story rounds; streak bonus on the board.
    2026-11g: mini-quiz rounds (QUIZ_MID = list of rounds of 3 items; links #mid1… and #board1…; Q126–Q143).
    Any number of items, any order. Item types: mcq, tf, order, match, fill, open.
    Default test: 6 automatic items, 84 points (see QUIZ). Points rule: all item points + 2 per automatic item + 4 = 100.
@@ -49,7 +50,7 @@ const QT={
   kT:{tr:"Mini quiz",en:"Mini-quiz"}, kRound:{tr:"Tur {r}/{n}",en:"Round {r}/{n}"}, kList:{tr:"Mini quiz turları",en:"Mini-quiz rounds"},
   kListHint:{tr:"Eğitimcinin gösterdiği turu açın (QR kod ya da aşağıdaki liste). Her tur 3 kısa sorudur.",en:"Open the round the lecturer shows (QR code or the list below). Each round has 3 short questions."},
   kAll:{tr:"‹ Tüm turlar",en:"‹ All rounds"}, kClosed:{tr:"kapalı",en:"closed"}, kPill:{tr:"{r}/{n} doğru ({k} tur)",en:"{r}/{n} right ({k} rounds)"},
-  kIntro:{tr:"{n} kısa soru. Her sorunun süresi var (10–30 saniye). Doğru ve hızlı cevap daha çok puan alır; grubun zorlandığı sorular daha çok puan verir. Süre telefonunuzda ölçülür; internet hızı puanınızı etkilemez. Puanlar herkes bitirince tahtada hesaplanır. Her tur bir kez çözülür.",en:"{n} short questions. Each question has a time limit (10–30 seconds). Right and fast answers earn more points; questions the group finds hard give more points. Time is measured on your phone, so your internet speed does not change your score. Points are calculated on the board when everyone has finished. Each round can be taken once."},
+  kIntro:{tr:"{n} kısa soru. Her sorunun süresi var (10–30 saniye). Doğru ve hızlı cevap daha çok puan alır; grubun zorlandığı sorular daha çok puan verir. Art arda doğru cevaplar seri bonusu kazandırır. Süre telefonunuzda ölçülür; internet hızı puanınızı etkilemez. Puanlar herkes bitirince tahtada hesaplanır. Her tur bir kez çözülür.",en:"{n} short questions. Each question has a time limit (10–30 seconds). Right and fast answers earn more points; questions the group finds hard give more points. Right answers in a row earn a streak bonus. Time is measured on your phone, so your internet speed does not change your score. Points are calculated on the board when everyone has finished. Each round can be taken once."},
   kStart:{tr:"Başla",en:"Start"}, kNext:{tr:"Sonraki soru",en:"Next question"}, kSee:{tr:"Sonucumu gör",en:"See my result"}, kSubmit:{tr:"Cevapla",en:"Answer"},
   kQ:{tr:"Soru {i}/{n}",en:"Question {i}/{n}"}, kSoFar:{tr:"{r}/{n} doğru",en:"{r}/{n} right"},
   kRight:{tr:"Doğru! ({s} sn)",en:"Correct! ({s} s)"}, kWrong:{tr:"Yanlış.",en:"Wrong."}, kTimeout:{tr:"Süre doldu.",en:"Time is up."},
@@ -91,7 +92,8 @@ const qt=(k,o)=>{let s=(QT[k][LANG]||QT[k].tr); if(o) for(const p in o) s=s.spli
 const LU="ABCDEFGH", ll="abcdefgh", r2=v=>Math.round(v*100)/100, nf=v=>dec(r2(v),Number.isInteger(r2(v))?0:(Number.isInteger(r2(v)*10)?1:2));
 const MODES=["pre","mid","post","late"].filter(m=>TESTS[m]);
 /* mini-quiz rounds (2026-11g): a 2026-11f flat list of items is read as one round (checkMid reports it) */
-const ROUNDS=(Array.isArray(QUIZ_MID)&&QUIZ_MID.length&&QUIZ_MID[0]&&QUIZ_MID[0].type)?[{items:QUIZ_MID}]:(QUIZ_MID||[]).map(r=>({items:(r&&r.items)||[]}));
+const ROUNDS=(Array.isArray(QUIZ_MID)&&QUIZ_MID.length&&QUIZ_MID[0]&&QUIZ_MID[0].type)?[{items:QUIZ_MID}]:(QUIZ_MID||[]).map(r=>({items:(r&&r.items)||[],story:(r&&r.story)||null}));   // story (2026-11h, T1): one line that ties the 3 items to one person or situation
+const RS=()=>(ROUNDS[kr-1]||{}).story, rsHtml=()=>RS()?`<p class="kstory">${tx(RS())}</p>`:"";
 const NR=ROUNDS.length, MIDS=ROUNDS.flatMap(r=>r.items);
 let kr=1;   // round shown on the test tab (1…NR); 0 = list of rounds
 const mk=r=>"mid"+r, RQ=()=>(ROUNDS[kr-1]||{items:[]}).items;
@@ -362,6 +364,7 @@ $("#quiz").addEventListener("input",e=>{ const el=e.target;
    board (#board) when the group has answered (Q84-A):
      P = share of the round who answered right (time-out = wrong); S = 1 − time/limit
      right: 500 + 500 × (2 − P) × S      wrong: 0
+     streak bonus (2026-11h, Apps Script 2026-11h): 2nd right answer in a row +100, 3rd +200 (inside one round)
    One run per browser; progress is saved after every step, so a reload continues the same question with the
    time that is left. ----- */
 const KRUN=KST+"-mid", KLIM={tf:10,mcq:20,fill:20,match:30};
@@ -400,7 +403,7 @@ function renderKahoot(){
   const g=gateHtml(); if(g&&!rec){ f.innerHTML=`<div class="q qnote">${g}</div>${NR>1?`<div class="score">${kBack()}</div>`:""}`; kBackOn(); testNote(); renderCodeBox(); return; }
   renderCodeBox(); testNote();
   if(rec) return kDone();
-  if(!run){ f.innerHTML=`<div class="q kq"><h3 class="kh">${kHead()}</h3><p>${qt("kIntro",{n})}</p>`+
+  if(!run){ f.innerHTML=`<div class="q kq"><h3 class="kh">${kHead()}</h3>${rsHtml()}<p>${qt("kIntro",{n})}</p>`+
       `<div class="score"><button class="btn" type="button" id="kstart" ${progOK()?"":"disabled"}>${qt("kStart")}</button>${kBack()}${progOK()?"":`<span class="testmode">${qt("progNeed")}</span>`}</div></div>`;
     kBackOn(); $("#kstart").onclick=()=>{ store.set(KRUN,{r:kr,i:0,ans:[],ms:[],ok:[],ph:"q",t0:null}); renderKahoot(); }; return; }
   if(run.i>=n) return kFinish(run);
@@ -417,7 +420,7 @@ function kQuestion(run){
   if(q.type==="fill"){ const sg=tx(q.segs); body=`<p class="kstmt">${sg[0]}<span class="kblank">____</span>${sg[1]||""}</p><div class="kopts">${tx(q.blanks[0].o).map((x,k)=>`<button type="button" class="kopt" data-k="${k}">${x}</button>`).join("")}</div>`; }
   if(q.type==="match") body=`<div class="match">${tx(q.left).map((h,j)=>`<div class="mrow"><label for="ksel-${j}"><b>${j+1}.</b> ${h}</label><select id="ksel-${j}"><option value="">${qt("choose")}</option>${o.map((x,k)=>`<option value="${k}">${ll[k]}) ${x}</option>`).join("")}</select></div>`).join("")}</div><div class="score"><button class="btn" type="button" id="kgo">${qt("kSubmit")}</button></div>`;
   f.innerHTML=`<div class="q kq"><div class="khead"><span>${NR>1?qt("kRound",{r:kr,n:NR})+" · ":""}${qt("kQ",{i:run.i+1,n})} · ${kSec(q)} ${L("sn","s")}</span><span class="ktime" id="ktime"></span></div>`+
-    `<div class="kbar"><i id="kbar"></i></div><p class="kstem">${tx(q.q)}</p>${body}</div>`;
+    `<div class="kbar"><i id="kbar"></i></div>${rsHtml()}<p class="kstem">${tx(q.q)}</p>${body}</div>`;
   kFocus();
   f.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>kAnswer(q.type==="fill"?[+b.dataset.k]:+b.dataset.k));
   f.querySelectorAll("[data-tf]").forEach(b=>b.onclick=()=>kAnswer([b.dataset.tf==="1"]));
@@ -471,6 +474,7 @@ function kPayload(rec,alias){   // one row per student and round (Q134-A): Test 
 function checkMid(){   // 2026-11g: 1–10 rounds, exactly 3 items per round (Q126-A, Q127-A, Q128-A)
   if(Array.isArray(QUIZ_MID)&&QUIZ_MID.length&&QUIZ_MID[0]&&QUIZ_MID[0].type) console.error("QUIZ_MID: write rounds: [ {items:[3 items]}, {items:[…]}, … ] (engine 2026-11g); this flat list is read as one round");
   if(NR<1||NR>10) console.error(`QUIZ_MID: use 1–10 rounds (this file has ${NR})`);
+  ROUNDS.forEach((R,ri)=>{ if(R.story&&(!R.story.tr||!R.story.en)) console.error(`QUIZ_MID round ${ri+1}: story needs tr and en`); });
   ROUNDS.forEach((R,ri)=>{
     if(R.items.length!==3) console.error(`QUIZ_MID round ${ri+1}: use exactly 3 items (this round has ${R.items.length})`);
     R.items.forEach((q,i)=>{ const err=m=>console.error(`QUIZ_MID round ${ri+1}, item ${i+1} (${q.type}): ${m}`); const L=x=>(tx(x)||[]).length;
@@ -485,9 +489,9 @@ function checkMid(){   // 2026-11g: 1–10 rounds, exactly 3 items per round (Q1
    every 5 s; only the rows of that round (Test = mid1, mid2 …; Apps Script 2026-11g). "Reset (new group)" restarts the time
    window of this round only (e.g. a second class section); the default window is the last 20 minutes (Q136–Q138, Q143-A). ----- */
 const BT={tr:{t:"Mini quiz · Liderlik tablosu",tr_:"Mini quiz {r}/{n} · Liderlik tablosu",prev:"‹ Önceki tur",next:"Sonraki tur ›",n:"{n} öğrenci gönderdi",none:"Henüz sonuç yok. Öğrenciler mini quizi bitirince burada görünür.",
-    reset:"Sıfırla (yeni grup)",close:"Kapat",q:"Soru {k}: {r}/{n} doğru",formula:"Doğru cevap = 500 + 500 × (2 − P) × hız · P = soruyu doğru yapanların oranı",off:"SHEET_URL boş: tablo yalnızca sonuç gönderen bir simülatörde çalışır.",err:"Bağlantı yok, tekrar deneniyor…",pts:"puan",upd:"Son güncelleme"},
+    reset:"Sıfırla (yeni grup)",close:"Kapat",q:"Soru {k}: {r}/{n} doğru",formula:"Doğru cevap = 500 + 500 × (2 − P) × hız · P = soruyu doğru yapanların oranı",streak:" · Seri bonusu: art arda 2. doğru +100, 3. doğru +200",off:"SHEET_URL boş: tablo yalnızca sonuç gönderen bir simülatörde çalışır.",err:"Bağlantı yok, tekrar deneniyor…",pts:"puan",upd:"Son güncelleme"},
   en:{t:"Mini-quiz · Leaderboard",tr_:"Mini-quiz {r}/{n} · Leaderboard",prev:"‹ Previous round",next:"Next round ›",n:"{n} students sent a result",none:"No results yet. Students appear here when they finish the mini-quiz.",
-    reset:"Reset (new group)",close:"Close",q:"Question {k}: {r}/{n} right",formula:"Right answer = 500 + 500 × (2 − P) × speed · P = share who got the question right",off:"SHEET_URL is empty: the board only works in a simulator that sends results.",err:"No connection, trying again…",pts:"points",upd:"Last update"}};
+    reset:"Reset (new group)",close:"Close",q:"Question {k}: {r}/{n} right",formula:"Right answer = 500 + 500 × (2 − P) × speed · P = share who got the question right",streak:" · Streak bonus: 2nd right in a row +100, 3rd +200",off:"SHEET_URL is empty: the board only works in a simulator that sends results.",err:"No connection, trying again…",pts:"points",upd:"Last update"}};
 let bTimer=null, bR=1;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const bt=(k,v)=>{ let s=BT[LANG][k]; if(v) Object.keys(v).forEach(x=>s=s.replace("{"+x+"}",v[x])); return s; };
@@ -500,7 +504,8 @@ function showBoard(r){
   el.setAttribute("aria-label",bTitle()); el.hidden=false; document.body.classList.add("boardon");
   const nav=NR>1?`<button class="btn ghost" type="button" id="bprev" ${bR>1?"":"disabled"}>${bt("prev")}</button><button class="btn" type="button" id="bnext" ${bR<NR?"":"disabled"}>${bt("next")}</button>`:"";
   el.innerHTML=`<div class="bwrap"><div class="bhead"><h2>${bTitle()}</h2><div class="bbtn">${nav}<button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
-    `<p class="bcount" id="bcount"></p><ol class="blist" id="blist"></ol><p class="bitems" id="bitems"></p><p class="bnote">${bt("formula")}</p><p class="bnote" id="bnote" role="status"></p></div>`;
+    ((ROUNDS[bR-1]||{}).story?`<p class="bstory">${tx(ROUNDS[bR-1].story)}</p>`:"")+
+    `<p class="bcount" id="bcount"></p><ol class="blist" id="blist"></ol><p class="bitems" id="bitems"></p><p class="bnote" id="bformula">${bt("formula")}</p><p class="bnote" id="bnote" role="status"></p></div>`;
   $("#breset").onclick=()=>{ store.set(KST+"-board"+bR,Date.now()); boardLoad(); };
   if(NR>1){ $("#bprev").onclick=()=>showBoard(bR-1); $("#bnext").onclick=()=>showBoard(bR+1); }
   $("#bclose").onclick=()=>{ clearInterval(bTimer); el.hidden=true; document.body.classList.remove("boardon"); open("giris"); };
@@ -509,10 +514,10 @@ function showBoard(r){
   boardLoad(); bTimer=setInterval(boardLoad,5000);
 }
 function boardLoad(){
-  const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"board="+encodeURIComponent(COURSE+"-quiz")+"&test="+mk(bR)+"&since="+boardSince()+"&n="+BOARD_TOP;
+  const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"board="+encodeURIComponent(COURSE+"-quiz")+"&test="+mk(bR)+"&since="+boardSince()+"&n="+BOARD_TOP+"&streak=1";   // streak bonus (Apps Script 2026-11h; an older script ignores it)
   fetch(u,{cache:"no-store"}).then(r=>r.json()).then(d=>{
     if(!d||!d.ok) throw new Error(d&&d.error||"bad");
-    $("#bcount").textContent=bt("n",{n:d.n});
+    $("#bcount").textContent=bt("n",{n:d.n}); $("#bformula").textContent=bt("formula")+(d.streak?bt("streak"):"");   // the bonus line only when the script gives the bonus
     $("#blist").innerHTML=d.top.length?d.top.map(r=>`<li class="r${Math.min(r.rank,4)}"><span class="brank">${r.rank}</span><span class="balias">${esc(r.alias)}</span><span class="bpts">${r.points} ${bt("pts")}</span></li>`).join(""):`<li class="bempty">${bt("none")}</li>`;
     $("#bitems").textContent=(d.items||[]).map(x=>bt("q",{k:x.k,r:x.right,n:x.n})).join(" · ");
     $("#bnote").textContent=bt("upd")+": "+new Date().toLocaleTimeString(LANG==="tr"?"tr-TR":"en-US");
@@ -553,10 +558,174 @@ function m2Done(p){
 }
 const m2Answers=()=>M2_TASKS.map(k=>{ const r=M2[k]; return r&&r.p?{up:"U",down:"D",same:"S"}[r.p]:"-"; }).join("");
 const m2Right=()=>M2_TASKS.filter(k=>M2[k]&&M2[k].p===M[k].predict.a).length;
+/* ----- M7 missions (engine 2026-11h; CP1 S1–S6, Q3-A, Q4-A, Q5-B, Q7-A). A module with mission:{…} shows a box under the
+   prediction box. 0 points. MISSION_TRIES tries per mission and browser; a started try counts (also after a reload or when
+   the student leaves the module); the best stars are kept.
+   fix    start values (start), run warm s, locked controls (lock). The student moves the free controls until every goal
+          value stays in its zone for hold s. Moves = control changes (changes of the same control within 1.5 s are one
+          move). Stars: moves ≤ stars[0] → 3, ≤ stars[1] → 2, more → 1; limit s without success → 0.
+   organ  the student is one organ. Every `every` s the module stops; the student chooses ↑ / ↓ / no change for the
+          control `act` (step delta). Events change the body at t s; an event at a turn time comes before that choice.
+          Stars: share of the run time with all goals in zone ≥ stars[0] → 3, ≥ stars[1] → 2, ≥ stars[2] → 1, else 0.
+   Times are simulation seconds (pause stops the clock; speed 2×–4× runs it faster).
+   The post-test row sends "M7 stars" (best stars per mission in module order, x = not tried, e.g. 3-2-x) and "M7 tries"
+   (e.g. 1-3-0). #mission-<module key> opens the module and shows its mission box (for the projector or a QR code). ----- */
+const KM7=PFX+"-m7";
+const M7_TASKS=MISSIONS?ORDER.filter(k=>M[k]&&M[k].mission):[];
+let M7=store.get(KM7); if(!M7||typeof M7!=="object") M7={};
+let MR=null, m7Acc=0;   // MR = the try that is running (one at a time)
+const M7T={
+  fix:{tr:"Görev · Vücudu düzeltin",en:"Mission · Fix the body"}, organ:{tr:"Görev · Organ sizsiniz",en:"Mission · You are the organ"},
+  noPts:{tr:"(puan yok)",en:"(no points)"},
+  ruleFix:{tr:"{g} yeşil bölgeye getirin ve {h} saniye orada tutun. Süre: {l} saniye. Daha az hamle, daha çok yıldız (3★: en çok {s} hamle).",en:"Bring {g} into the green zone and keep it there for {h} seconds. Time: {l} seconds. Fewer moves, more stars (3★: {s} moves or fewer)."},
+  ruleOrgan:{tr:"Her {e} saniyede simülasyon durur ve {a} için seçim yaparsınız: ↑ artır, ↓ azalt ya da değiştirme. {n} seçim. {g} ne kadar uzun süre yeşil bölgede kalırsa o kadar çok yıldız (3★: sürenin en az %{s}'i).",en:"Every {e} seconds the simulation stops and you choose for {a}: ↑ raise, ↓ lower, or no change. {n} choices. The longer {g} stays in the green zone, the more stars (3★: at least {s}% of the time)."},
+  locked:{tr:"Kilitli kontroller görev boyunca değiştirilemez.",en:"Locked controls cannot be changed during the mission."},
+  tries:{tr:"Kalan deneme: {n}/{m}",en:"Tries left: {n}/{m}"}, best:{tr:"En iyi sonucunuz",en:"Your best result"},
+  start:{tr:"Göreve başla",en:"Start the mission"}, again:{tr:"Tekrar dene",en:"Try again"}, stop:{tr:"Görevi bırak",en:"Stop the mission"},
+  counts:{tr:"Başlattığınız deneme sayılır.",en:"A try counts once you start it."},
+  noTries:{tr:"Deneme hakkınız bitti.",en:"No tries left."},
+  time:{tr:"Süre",en:"Time"}, moves:{tr:"Hamle",en:"Moves"}, inZone:{tr:"Yeşil bölgede",en:"In the green zone"},
+  choice:{tr:"Seçim {i}/{n}",en:"Choice {i}/{n}"}, zoneShare:{tr:"Yeşil bölgede geçen süre: %{p}",en:"Time in the green zone: {p}%"},
+  ask:{tr:"{a} için seçiminiz:",en:"Your choice for {a}:"}, up:{tr:"↑ Artır",en:"↑ Raise"}, down:{tr:"↓ Azalt",en:"↓ Lower"}, same:{tr:"= Değiştirme",en:"= No change"},
+  won:{tr:"Görev tamamlandı!",en:"Mission complete!"}, timeout:{tr:"Süre doldu.",en:"Time is up."}, ended:{tr:"Görev bitti.",en:"Mission over."},
+  stopped:{tr:"Görevi bıraktınız. Bu deneme 0★ sayıldı.",en:"You stopped the mission. This try counts as 0★."},
+  resFix:{tr:"{m} hamle, {s} saniye.",en:"{m} moves, {s} seconds."},
+  zone:{tr:"yeşil bölge",en:"green zone"}, and:{tr:" ve ",en:" and "}, stars:{tr:"yıldız",en:"stars"}};
+const m7t=(k,o)=>{ let s=t(M7T[k]); if(o) for(const p in o) s=s.split("{"+p+"}").join(o[p]); return s; };
+const m7Def=X=>X.kind==="organ"?{every:10,turns:6,warm:10,stars:[0.8,0.6,0.4]}:{hold:5,limit:120,warm:20,stars:[3,6]};
+const m7Cfg=k=>Object.assign(m7Def(M[k].mission),M[k].mission);
+const m7Rec=k=>M7[k]||{tries:0,best:0,last:null};
+const m7Left=k=>Math.max(0,MISSION_TRIES-m7Rec(k).tries);
+const m7Star=n=>"★".repeat(n)+"☆".repeat(3-n);
+function m7Ser(m,g){ return m.series.find(x=>x.k===g.k); }
+function m7Name(m,g){ const s=m7Ser(m,g); return t(g.n)||(s?t(s.n):g.k); }
+function m7Fmt(m,g,v){ const s=m7Ser(m,g); return g.fmt?g.fmt(v):s&&s.fmt?s.fmt(v):s&&s.axis?s.axis(v):pct(v); }
+const m7In=(g,v)=>typeof v==="number"&&v>=g.lo&&v<=g.hi;
+const m7Goals=(m,X)=>X.goal.map(g=>`<b>${m7Name(m,g)}</b> (${m7Fmt(m,g,g.lo)}–${m7Fmt(m,g,g.hi)})`).join(m7t("and"));
+const m7Ctl=(m,id)=>m.controls.find(c=>c.id===id);
+function m7Locked(m,X){   // controls that cannot be moved during a try
+  const ids=new Set(X.lock||[]); m.controls.forEach(c=>{ if(c.type==="preset") ids.add(c.id); });
+  (X.events||[]).forEach(e=>Object.keys(e.set||{}).forEach(id=>ids.add(id))); if(X.kind==="organ") ids.add(X.act);
+  return ids; }
+function missionLockUI(){   // called by buildControls
+  if(!MR||MR.k!==cur) return; const m=M[cur], ids=m7Locked(m,MR.X);
+  ids.forEach(id=>{ const el=document.getElementById("c-"+id); if(!el) return; const box=el.closest(".ctl");
+    if(el.matches("[role=group]")) el.querySelectorAll("button").forEach(b=>b.disabled=true); else el.disabled=true;
+    if(box) box.classList.add("m7lock"); });
+}
+function missionMove(id){   // called by buildControls when the student changes a control
+  if(!MR||MR.k!==cur||MR.X.kind!=="fix"||MR.done) return;
+  const now=Date.now(); if(id===MR.lastId&&now-MR.lastAt<1500){ MR.lastAt=now; return; }
+  MR.moves++; MR.lastId=id; MR.lastAt=now; m7Live();
+}
+function missionStart(){
+  const k=cur, m=M[k], X=m7Cfg(k); if(!m7Left(k)||MR) return;
+  const r=m7Rec(k); r.tries++; r.last=0; M7[k]=r; store.set(KM7,M7);   // a started try counts
+  S=m.init(); C=ctlDefaults(m); Object.assign(C,X.start||{}); m.controls.forEach(c=>{ if(c.type==="preset") C[c.id]=-1; });
+  for(let i=0,n=Math.round((X.warm||0)/0.05);i<n;i++) m.step(S,0.05,C);
+  hist=[]; simT=0;
+  MR={k,X,t:0,moves:0,lastId:null,lastAt:0,inT:0,zT:0,turn:0,fired:[],news:null,wait:false,done:null,choices:[]};
+  m7Events(); if(X.kind==="organ") MR.wait=true;
+  if(paused){ paused=false; $("#b-pause").textContent=t(UI.pause); }
+  buildControls(m); uiTick(true); renderMission(); const b=$("#m-mission"); if(b){ b.tabIndex=-1; b.focus(); }
+}
+function m7Events(){   // apply the events whose time has come
+  let ch=false; (MR.X.events||[]).forEach((e,i)=>{ if(MR.fired[i]||MR.t<e.t-1e-9) return; MR.fired[i]=true; Object.assign(C,e.set||{}); MR.news=e.text; ch=true; });
+  return ch;
+}
+function missionTick(dt){   // called by the loop after the model steps (dt = simulation seconds)
+  if(!MR||MR.done||MR.wait||MR.k!==cur) return; const m=M[cur], X=MR.X;
+  MR.t+=dt; if(m7Events()){ buildControls(m); renderMission(); }
+  const inz=X.goal.every(g=>m7In(g,S[g.k]));
+  if(X.kind==="fix"){
+    MR.inT=inz?MR.inT+dt:0;
+    if(MR.inT>=X.hold) return missionEnd(MR.moves<=X.stars[0]?3:MR.moves<=X.stars[1]?2:1,"won");
+    if(MR.t>=X.limit) return missionEnd(0,"timeout");
+  } else {
+    if(inz) MR.zT+=dt;
+    if(MR.t>=(MR.turn)*X.every-1e-9){
+      if(MR.turn>=X.turns){ const sh=MR.zT/(X.turns*X.every); return missionEnd(sh>=X.stars[0]?3:sh>=X.stars[1]?2:sh>=X.stars[2]?1:0,"ended"); }
+      if(m7Events()) buildControls(m);
+      MR.wait=true; renderMission(); return;
+    }
+  }
+  m7Acc+=dt; if(m7Acc>0.2){ m7Acc=0; m7Live(); }
+}
+function missionChoose(a){
+  if(!MR||!MR.wait) return; const m=M[cur], X=MR.X, ctl=m7Ctl(m,X.act), d=X.delta||(ctl.max-ctl.min)/4;
+  const v=cl(C[X.act]+(a==="up"?d:a==="down"?-d:0),ctl.min,ctl.max); C[X.act]=Math.round(v/ctl.step)*ctl.step;
+  MR.choices.push(a); MR.turn++; MR.wait=false; buildControls(m); uiTick(true); renderMission();
+}
+function missionEnd(stars,why){
+  const k=MR.k, r=m7Rec(k); r.last=stars; r.best=Math.max(r.best||0,stars); M7[k]=r; store.set(KM7,M7);
+  MR.done={stars,why}; const res=MR; MR=null; m7Last=res;
+  if(cur===k){ buildControls(M[k]); renderMission(); const p=$("#m-mission .mres"); if(p){ p.tabIndex=-1; p.focus(); } }
+}
+let m7Last=null;   // the last finished try, shown in the box until the student leaves the module
+function missionStop(){ if(MR) missionEnd(0,"stopped"); }
+function missionLeave(){ if(MR) missionEnd(0,"stopped"); m7Last=null; }   // open() and reset() call this
+function m7Zones(m){ return MR&&MR.k===cur?MR.X.goal.map(g=>({s:m7Ser(m,g),lo:g.lo,hi:g.hi})).filter(z=>z.s):[]; }
+function m7Live(){
+  const el=$("#m7live"); if(!el||!MR) return; const m=M[MR.k], X=MR.X;
+  const chips=X.goal.map(g=>{ const v=S[g.k], ok=m7In(g,v); return `<span class="m7chip ${ok?"ok":"bad"}">${m7Name(m,g)}: ${m7Fmt(m,g,v)} ${ok?"✓":"✗"}</span>`; }).join(" ");
+  el.innerHTML=X.kind==="fix"
+    ?`<div>${m7t("time")}: ${Math.floor(MR.t)}/${X.limit} ${t(UI.sec)} · ${m7t("moves")}: ${MR.moves} · ${m7t("inZone")}: ${dec(Math.min(MR.inT,X.hold),1)}/${X.hold} ${t(UI.sec)}</div><div>${chips}</div>`
+    :`<div>${m7t("time")}: ${Math.floor(MR.t)}/${X.turns*X.every} ${t(UI.sec)} · ${m7t("zoneShare",{p:MR.t>0?Math.round(100*MR.zT/MR.t):0})}</div><div>${chips}</div>`;
+}
+function renderMission(){
+  const box=$("#m-mission"); if(!box) return; const m=M[cur]; const on=!!(m&&M7_TASKS.includes(cur));
+  box.hidden=!on; if(!on){ box.innerHTML=""; return; }
+  const X=m7Cfg(cur), r=m7Rec(cur), left=m7Left(cur), run=MR&&MR.k===cur?MR:null, fin=!run&&m7Last&&m7Last.k===cur?m7Last:null;
+  const ctl=X.kind==="organ"?m7Ctl(m,X.act):null;
+  const rule=X.kind==="fix"?m7t("ruleFix",{g:m7Goals(m,X),h:X.hold,l:X.limit,s:X.stars[0]})
+    :m7t("ruleOrgan",{e:X.every,a:`<b>${t(ctl.label)}</b>`,n:X.turns,g:m7Goals(m,X),s:Math.round(100*X.stars[0])});
+  let h=`<div class="phead"><b>${m7t(X.kind)}</b> <small>${m7t("noPts")}</small></div><p class="pq">${t(X.title)}</p><p class="m7story">${t(X.story)}</p>`;
+  if(run){
+    h+=`<p class="m7rule">${rule}</p>`+(run.news?`<p class="m7news" role="status">${t(run.news)}</p>`:"")+`<div class="m7live" id="m7live" aria-live="off"></div>`;
+    if(X.kind==="organ"&&run.wait) h+=`<div class="m7ask"><p>${m7t("choice",{i:run.turn+1,n:X.turns})} · ${m7t("ask",{a:t(ctl.label)})}</p><div class="pbtns">`+
+      ["up","down","same"].map(a=>`<button type="button" class="btn${a==="same"?" ghost":""}" data-m7="${a}">${m7t(a)}</button>`).join("")+`</div></div>`;
+    h+=`<div class="pbtns"><button type="button" class="btn ghost" id="m7stop">${m7t("stop")}</button></div><small class="pnote">${m7t("locked")}</small>`;
+  } else {
+    if(fin){ const d=fin.done;
+      h+=`<div class="mres" role="status"><p class="m7big">${d.why==="won"?m7t("won"):d.why==="timeout"?m7t("timeout"):d.why==="ended"?m7t("ended"):m7t("stopped")} <span class="m7stars" aria-label="${d.stars} ${m7t("stars")}">${m7Star(d.stars)}</span></p>`+
+        (X.kind==="fix"&&d.why==="won"?`<p>${m7t("resFix",{m:fin.moves,s:Math.round(fin.t)})}</p>`:"")+
+        (X.kind==="organ"&&d.why!=="stopped"?`<p>${m7t("zoneShare",{p:Math.round(100*fin.zT/(X.turns*X.every))})}</p>`:"")+
+        (d.why!=="stopped"?`<p class="pwhy">${t(X.why)}</p>`:"")+`</div>`; }
+    else h+=`<p class="m7rule">${rule}</p>`;
+    h+=`<p class="m7meta">${m7t("tries",{n:left,m:MISSION_TRIES})}`+(r.tries?` · ${m7t("best")}: <span class="m7stars" aria-label="${r.best||0} ${m7t("stars")}">${m7Star(r.best||0)}</span>`:"")+`</p>`;
+    h+=left?`<div class="pbtns"><button type="button" class="btn" id="m7start">${r.tries?m7t("again"):m7t("start")}</button></div><small class="pnote">${m7t("counts")}</small>`:`<p class="pnote">${m7t("noTries")}</p>`;
+  }
+  box.innerHTML=h; m7Live();
+  const st=$("#m7start"); if(st) st.onclick=missionStart;
+  const sp_=$("#m7stop"); if(sp_) sp_.onclick=missionStop;
+  box.querySelectorAll("[data-m7]").forEach(b=>b.onclick=()=>missionChoose(b.dataset.m7));
+}
+const m7StarsStr=()=>M7_TASKS.map(k=>{ const r=M7[k]; return r&&r.tries?String(r.best||0):"x"; }).join("-");
+const m7TriesStr=()=>M7_TASKS.map(k=>String((M7[k]&&M7[k].tries)||0)).join("-");
+function checkMission(){   // M7 author check (console)
+  M7_TASKS.forEach(k=>{ const m=M[k], X=m7Cfg(k), err=x=>console.error(`M.${k}.mission: ${x}`), ids=m.controls.map(c=>c.id), s0=m.init();
+    if(!["fix","organ"].includes(X.kind)) err('kind must be "fix" or "organ"');
+    ["title","story","why"].forEach(f=>{ if(!X[f]||!X[f].tr||!X[f].en) err(f+" needs tr and en"); });
+    Object.keys(X.start||{}).forEach(id=>{ if(!ids.includes(id)) err("start: unknown control id "+id); });
+    (X.lock||[]).forEach(id=>{ if(!ids.includes(id)) err("lock: unknown control id "+id); });
+    if(!Array.isArray(X.goal)||X.goal.length<1||X.goal.length>3) err("goal: 1–3 values");
+    (X.goal||[]).forEach(g=>{ if(!(g.k in s0)) err("goal: "+g.k+" is not a key of the state (init)"); if(!(g.lo<g.hi)) err("goal "+g.k+": lo must be below hi"); });
+    (X.events||[]).forEach((e,i)=>{ if(!(e.t>=0)) err(`events[${i}]: t missing`); if(!e.text||!e.text.tr||!e.text.en) err(`events[${i}]: text needs tr and en`);
+      Object.keys(e.set||{}).forEach(id=>{ if(!ids.includes(id)) err(`events[${i}]: unknown control id `+id); }); });
+    if(X.kind==="fix"){ if(!X.solve||typeof X.solve!=="object"||Array.isArray(X.solve)) err("fix: solve = {controlId:value,…}");
+      else Object.keys(X.solve).forEach(id=>{ if(!ids.includes(id)) err("solve: unknown control id "+id); if(m7Locked(m,X).has(id)) err("solve uses a locked control: "+id); });
+      if(!(X.stars[0]<X.stars[1])) err("fix: stars = [moves for 3★, moves for 2★]"); }
+    if(X.kind==="organ"){ const a=m7Ctl(m,X.act); if(!a||a.type!=="range") err("organ: act must be the id of a range control");
+      if(!Array.isArray(X.solve)||X.solve.length!==X.turns||X.solve.some(v=>!["up","down","same"].includes(v))) err(`organ: solve = ${X.turns} choices ("up", "down", "same")`);
+      if(!(X.stars[0]>X.stars[1]&&X.stars[1]>X.stars[2])) err("organ: stars = [share for 3★, 2★, 1★], falling"); } });
+  if(M7_TASKS.length&&(M7_TASKS.length<2||M7_TASKS.length>3)) console.warn(`M7: the design is 2–3 missions per simulator (one per main module); this file has ${M7_TASKS.length}.`);
+  if(!(MISSION_TRIES>=1)) console.error("MISSION_TRIES must be 1 or more");
+}
 /* ----- sending (schema 2: [column name, value] pairs; null = create the column, write nothing) -----
    Column order (engine 2026-11f): per item Q<n> <type> (<pts>), A<n>, K<n> parts (tf, match, fill, order), C<n> sure
    (open item: Q<n> open: lecturer, notes, self-check, words, answer) → Auto total (84) → Confidence points → Gift (4) →
    Total (100) → [Total incl. lecturer: only with an open item] → Topics → form answers → [M2 answers, M2 right] →
+   [M7 stars, M7 tries (2026-11h)] →
    Program → Item codes → Version → Language. */
 function answerStr(q,r){
   if(q.type==="mcq") return r>=0?LU[r]:"-";
@@ -603,6 +772,7 @@ function payloadOf(mode,rec,alias){
   if(FEEDBACK) FB.forEach(x=>cols.push([`Feedback: ${x.k} (1-5)`,isPost?((rec.fb||{})[x.k]??""):null]));
   if(MINUTE) MP.forEach(x=>cols.push([x.k==="learned"?"Learned most":"Still unclear",isPost?((rec.mp||{})[x.k]||""):null]));
   if(M2_TASKS.length) cols.push(["M2 answers",isPost?m2Answers():null],["M2 right",isPost?m2Right():null]);   // sent with the post-test row
+  if(M7_TASKS.length) cols.push(["M7 stars",isPost?m7StarsStr():null],["M7 tries",isPost?m7TriesStr():null]);   // engine 2026-11h, post-test row
   if(PROGRAMS.length>1) cols.push(["Program",prog()]);
   cols.push(["Item codes",itemCodes(set)],["Version",SURUM],["Language",LANG]);
   return {schema:2, course:COURSE, alias, test:mode, cols};
@@ -617,7 +787,7 @@ async function sendResult(){
     document.querySelectorAll("[data-rb],[data-fb]").forEach(x=>x.disabled=true); document.querySelectorAll("[data-mp]").forEach(x=>x.readOnly=true);
   }catch(err){ btn.disabled=false; $("#sendmsg").textContent=qt("sendFail"); }
 }
-function resetCheck(){ if(location.hash!=="#test-sifirla") return; if(confirm(qt("resetQ"))){ ST={pre:null,post:null,late:null}; ROUNDS.forEach((_,i)=>{ ST[mk(i+1)]=null; }); saveST(); store.set(KRUN,null); kr=1; M2={}; store.set(KM2,null); qmode=MODES[0]; renderModes(); } try{history.replaceState(null,"","#test");}catch(e){} }
+function resetCheck(){ if(location.hash!=="#test-sifirla") return; if(confirm(qt("resetQ"))){ ST={pre:null,post:null,late:null}; ROUNDS.forEach((_,i)=>{ ST[mk(i+1)]=null; }); saveST(); store.set(KRUN,null); kr=1; M2={}; store.set(KM2,null); M7={}; store.set(KM7,null); MR=null; m7Last=null; qmode=MODES[0]; renderModes(); } try{history.replaceState(null,"","#test");}catch(e){} }
 resetCheck(); window.addEventListener("hashchange",resetCheck);
 /* ----- format check for template authors: problems are listed in the browser console -----
    Rules (engine 2026-11f): all item points + 2 per automatic item (confidence) + 4 (gift) = 100;
@@ -647,5 +817,5 @@ function checkPredict(){   // M2 tasks: q and why in tr and en, a = up | down | 
     Object.keys(P.set||{}).forEach(id=>{ if(!ids.includes(id)) err("set: unknown control id "+id); }); });
   if(M2_TASKS.length&&(M2_TASKS.length<2||M2_TASKS.length>3)) console.warn(`M2: the design is 2–3 prediction tasks per simulator (one per main module); this file has ${M2_TASKS.length}.`);
 }
-checkQuiz(QUIZ,"QUIZ"); if(TESTS.mid) checkMid(); checkPredict();
+checkQuiz(QUIZ,"QUIZ"); if(TESTS.mid) checkMid(); checkPredict(); checkMission();
 renderModes(); renderCodeBox(); testNote();
