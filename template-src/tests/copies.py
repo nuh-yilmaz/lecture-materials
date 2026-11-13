@@ -12,6 +12,7 @@ mid4.html    as midon, round 2 has 4 items (the author check must report it)
 flat.html    as midon, QUIZ_MID as the old 2026-11f flat list (3 items; read as one round, reported)
 nomission.html as midoff, MISSIONS=false
 tries1.html  as midoff, MISSION_TRIES=1
+lateoff.html as midoff, TESTS.late=false (F1 plan without step 4)
 """
 import os, sys
 src, out = sys.argv[1], sys.argv[2]
@@ -62,3 +63,4 @@ save("flat.html", flat[:fi] + "const QUIZ_MID=[\n" + flat[fj:])
 save("nomission.html", sub(off, "const MISSIONS=true;", "const MISSIONS=false;"))
 save("tries1.html", sub(off, "const MISSION_TRIES=3;", "const MISSION_TRIES=1;"))
 print("copies in", out)
+save("lateoff.html", sub(off, "late:true", "late:false"))

@@ -13,6 +13,7 @@ css += """
 /* Bloklar / blocks (template 2026-11) */
 .ctl.wide{grid-column:1/-1}
 .ctl .seg{width:max-content;max-width:100%;flex-wrap:wrap}
+.ctl{min-width:0} .ctl.wide .seg{width:auto}   /* long preset rows wrap on a 390 px phone (as in the Unit I simulator) */
 .drawbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
 .drawbox canvas{width:100%;height:260px;display:block}
 .blocks{display:grid;gap:16px}
@@ -39,6 +40,8 @@ css += """
 .topics small{color:var(--muted)}
 .tm{display:inline-block;width:1.6em;text-align:center;font-weight:700}
 .tm.ok{color:var(--ok)} .tm.mid{color:var(--warn)} .tm.bad{color:var(--signal)}
+.remplan{margin-top:12px;padding:12px;border-radius:10px;border:1px solid var(--line)}
+.remplan p{margin:6px 0} .remplan ol{margin:6px 0 0;padding-left:1.4em;display:grid;gap:4px}
 .surewrong{margin-top:10px;font-weight:700;color:var(--signal)}
 .selfpts{margin:8px 0 0;font-weight:700;color:var(--muted)}
 .fbform{margin-top:14px;padding:12px;border-radius:10px;border:1px solid var(--line);display:grid;gap:10px}

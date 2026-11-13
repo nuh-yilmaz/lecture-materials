@@ -1,4 +1,5 @@
-/* ---------------- TEST ENGINE 2026-11h ----------------
+/* ---------------- TEST ENGINE 2026-11i ----------------
+   2026-11i: F1 remediation plan on the post-test key screen (no Sheet or Apps Script change; Apps Script 2026-11h).
    2026-11h: M7 missions (fix the body, you are the organ); mini-quiz story rounds; streak bonus on the board.
    2026-11g: mini-quiz rounds (QUIZ_MID = list of rounds of 3 items; links #mid1… and #board1…; Q126–Q143).
    Any number of items, any order. Item types: mcq, tf, order, match, fill, open.
@@ -28,6 +29,11 @@ const QT={
   totT:{tr:"Toplam",en:"Total"}, totItems:{tr:"sorular",en:"items"}, totConf:{tr:"güven",en:"confidence"}, totGift:{tr:"hediye",en:"gift"},
   sureWrong:{tr:"Emin olduğunuz hâlde yanlış: {list}. Bu soruların konularını tekrar edin.",en:"Sure but wrong: {list}. Review the topics of these questions."},
   topicsT:{tr:"Konulara göre sonucunuz",en:"Your result by topic"}, topicHint:{tr:"✓ iyi (en az %75) · ~ kısmen (%50–74) · ✗ tekrar edin (%50'nin altında)",en:"✓ good (75% or more) · ~ partly (50–74%) · ✗ review (below 50%)"},
+  // F1 remediation plan (post-test only; Adaptive guide p. 8 without the video step). Step 4 only when the delayed test is on.
+  remT:{tr:"Gözden Geçirme Planı",en:"Review plan"}, remFor:{tr:"Gözden Geçirilecek Konular:",en:"Topics to review:"},
+  remSteps:{tr:["Simülatörde konunun modülünü aç; tahmin ve görevi yeniden dene.","Modül notundaki kitap sayfalarından 1–2 temel cümleyi işaretle.","Kendi sözcüklerinle 3 kısa not kartı yaz (önde soru, arkada yanıt)."],
+            en:["Open the topic's module in the simulator; try the prediction and mission again.","Mark 1–2 key sentences in the book pages listed in the module note.","Write 3 short note cards in your own words (question on front, answer on back)."]},
+  remLate:{tr:"{n} gün sonra açılan gecikmeli testte kendini yokla.",en:"Test yourself in the delayed test, which opens after {n} days."},
   send:{tr:"Sonucumu eğitimciye gönder",en:"Send my result to the lecturer"},
   sent:{tr:"Gönderildi. Teşekkürler! Kodunuz: {a}",en:"Sent. Thank you! Your code: {a}"}, sending:{tr:"Gönderiliyor…",en:"Sending…"},
   sentBefore:{tr:"Bu test için sonucunuz gönderildi.",en:"Your result for this test has been sent."},
@@ -217,7 +223,7 @@ function renderQuiz(){
   const note=noteHtml();
   f.innerHTML=(note?`<div class="q qnote" id="qnote">${note}</div>`:"")+`<div class="q scorebox" id="qscorebox" role="note">${qt(CONFIDENCE?"scoreBox":"scoreBoxGift")}</div>`+set.map((q,i)=>itemHtml(q,i,done)).join("")+
     `<div class="q"><div class="blankwarn" id="qwarn" role="alert" hidden></div><div class="score">${done?"":`<button class="btn" type="submit" id="qsubmit">${qt("check")}</button><button class="btn ghost" type="button" id="qclear">${qt("clear")}</button>`}<span id="qres"></span></div>`+
-    `<div class="topics" id="qtopics" hidden></div><div class="surewrong" id="qsure" hidden></div><div class="compare" id="qcmp" style="margin-top:12px"></div>`+
+    `<div class="topics" id="qtopics" hidden></div><div class="remplan" id="qrem" hidden></div><div class="surewrong" id="qsure" hidden></div><div class="compare" id="qcmp" style="margin-top:12px"></div>`+
     `<div class="fbform" id="fbform" hidden></div><div class="sendbox" id="sendbox" hidden><button class="btn" type="button" id="qsend">${qt("send")}</button><span id="sendmsg" role="status"></span></div></div>`;
   set.forEach((q,i)=>{ if(q.type==="order") renderOrder(i,done); });
   if(done) showResult(set,rec); else $("#qclear").onclick=()=>renderQuiz();
@@ -263,6 +269,10 @@ function showResult(set,rec){
   // topic feedback (all modes)
   const tp=topics(set,rec), tb=$("#qtopics");
   if(tp.length){ tb.hidden=false; tb.innerHTML=`<b>${qt("topicsT")}</b><ul>${tp.map(x=>`<li><span class="tm ${x.mark==="✓"?"ok":x.mark==="~"?"mid":"bad"}">${x.mark}</span> ${x.label}</li>`).join("")}</ul><small>${qt("topicHint")}</small>`; }
+  // F1 remediation plan: post-test key screen, only topics marked ✗ or ~ (none → no block)
+  const weak=tp.filter(x=>x.mark!=="✓"), rb=$("#qrem");
+  if(qmode==="post"&&weak.length){ const steps=QT.remSteps[LANG].concat(TESTS.late?[qt("remLate",{n:LATE_DAYS})]:[]);
+    rb.hidden=false; rb.innerHTML=`<b>${qt("remT")}</b><p>${qt("remFor")} ${weak.map(x=>`<a href="#${x.m}" data-go="${x.m}"><span class="tm ${x.mark==="~"?"mid":"bad"}">${x.mark}</span>${x.label}</a>`).join(" · ")}</p><ol>${steps.map(x=>`<li>${x}</li>`).join("")}</ol>`; }
   // confidence: sure but wrong (keyed modes only; in the pre-test it would hint at the key)
   if(CONFIDENCE&&keyed){ const sw=set.map((q,i)=>isAuto(q)&&rec.raw.conf[i]===1&&rec.qs[i]<q.pts?i+1:null).filter(Boolean);
     if(sw.length){ const el=$("#qsure"); el.hidden=false; el.textContent=qt("sureWrong",{list:sw.join(", ")}); } }
