@@ -25,7 +25,7 @@ Run everything: `bash tests/run_all.sh [out dir]`. It builds the template, makes
 - `tests/langsw.js` (25): TR | EN buttons inside the `#summary` and `#board` box (engines 2026-11m and -11n): the last reply is shown at once with a slow script, also in the default window, not after "Reset"; the box covers the page switch, a switch redraws title, buttons and rows at once, one request, window start kept, one timer, Close, 390 px.
 - `tests/now.js` (28): "Şimdi / Now" page (engine 2026-11k): next step order, round chips, started round first, delayed test, EN, 390 px, lecturer link, old links.
 - `tests/laterem.js` (22): delayed-test reminder: calendar file and Google link (no code), e-mail checks and consent, message without code or scores, browser keeps only the date, test mode, late:false.
-- `tests/gas_rem.js` (29): Apps Script 2026-11k reminders tab: storage without code, sorting, refused addresses, daily sending, quota, deletion, trigger, menu.
+- `tests/gas_rem.js` (33): Apps Script 2026-11k reminders tab: storage without code, sorting, refused addresses, daily sending, quota, deletion, trigger, menu.
 - `tests/cols.js` (8): item codes and part marks. `tests/m2.js` (24): M2 "predict first" box.
 - `tests/m7.js` (42): M7 missions (engine 2026-11h): fix and organ kinds, locks, moves, stars, 3 tries, #mission- links, Sheet columns, switches, 390 px.
 - `tests/gas_test.js` (33) with `posts.json`: runs `../apps-script/Code.gs` against a simulated Sheet (`tests/gasmock.js`).

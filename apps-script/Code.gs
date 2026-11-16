@@ -17,6 +17,7 @@
  *    points of the rows sent after <since> (anonymous codes only; only tabs ending in "-quiz").
  *    Points come from the round's own answers: right = 500 + 500 * (2 - P) * S, wrong = 0
  *    (P = share of the round right on that question, S = speed 0-1 sent by the phone).
+   2026-11o (fix): the Sheet turns the Send on text into a date; remRows reads it back as yyyy-mm-dd, so due reminders are sent.
  * New in 2026-11k (test engine 2026-11k; Q28-C of 2026-11-16): optional e-mail reminder for the delayed test.
  *  - Message {schema:'rem', course, email, days, lang} from the post-test screen. It is stored in the tab "reminders"
  *    with only: Course, Send on (date, no time), E-mail, Language. No code, no scores, so results stay anonymous.
@@ -59,7 +60,7 @@
 const HEADERS = ['Timestamp', 'Alias', 'Test', 'Q1 (20)', 'Q2 (20)', 'Q3 (20)', 'Q4 (20)',
   'Q5 self-score (20)', 'Auto total (80)', 'Total (incl. self-score)',
   'A1 choice', 'A2 order', 'A3 matching', 'A4 T/F (D=true, Y=false)', 'A5 open-ended answer', 'Version', 'Language'];
-const SCRIPT_VER = '2026-11k';   // shown on the web app page and in the item analysis tabs
+const SCRIPT_VER = '2026-11o';   // shown on the web app page and in the item analysis tabs
 const MAX_COLS = 200;
 const TEXT_COLS = /^(K\d+ parts|Item codes|M2 answers|M7 stars|M7 tries)$/;   // stored as text (leading ' ), e.g. part marks "01101"
 
@@ -283,7 +284,7 @@ const REM_TAB = 'reminders', REM_HEAD = ['Course', 'Send on', 'E-mail', 'Languag
 const ymd = d => d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
 function remRows(sh) {
   const n = sh.getLastRow();
-  return n < 2 ? [] : sh.getRange(2, 1, n - 1, 4).getValues().filter(r => r[2]).map(r => r.map(String));
+  return n < 2 ? [] : sh.getRange(2, 1, n - 1, 4).getValues().filter(r => r[2]).map(r => r.map((v, i) => v instanceof Date ? (i === 1 ? ymd(v) : String(v)) : String(v)));   // the Sheet turns "2026-11-30" into a date: read it back as yyyy-mm-dd
 }
 function remWrite(sh, rows) {
   const n = sh.getLastRow(); if (n > 1) sh.getRange(2, 1, n - 1, 4).setValues(Array.from({ length: n - 1 }, () => ['', '', '', '']));

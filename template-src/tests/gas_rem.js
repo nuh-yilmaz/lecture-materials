@@ -39,12 +39,20 @@ book.reminders.rows.push(['introduction',day(-2),'wait@x.com','tr'],['introducti
 res=ctx.sendReminders();
 ok(res.sent===0&&!mails.length&&R().some(x=>x[2]==='wait@x.com')&&!R().some(x=>x[2]==='drop@x.com'),'no quota: 2-day-old row waits, 8-day-old row deleted unsent');
 quota=10; res=ctx.sendReminders(); ok(res.sent===1&&!R().some(x=>x[2]==='wait@x.com'),'next day: waiting row sent');
+// ---- Send on cell stored as a real date (the Sheet converts "yyyy-mm-dd" text to a date)
+{ const d=n=>{ const t=new Date(); return new Date(t.getFullYear(),t.getMonth(),t.getDate()+n); };
+  book.reminders.rows.push(['introduction',d(0),'datedue@x.com','tr'],['introduction',d(-2),'datelate@x.com','en'],['introduction',d(5),'datefuture@x.com','tr']); mails.length=0;
+  ctx.reminderStatus(); ok(/due today or earlier: 2\)/.test(G.ui.alerts.slice(-1)[0]),'status counts date cells due today or earlier');
+  res=ctx.sendReminders();
+  ok(res.sent===2&&mails.map(m=>m.to).sort().join()==='datedue@x.com,datelate@x.com','date cells due today and 2 days ago are sent');
+  ok(R().some(x=>x[2]==='datefuture@x.com'&&x[1]===day(5))&&!R().some(x=>/^datedue|^datelate/.test(x[2])),'future date cell kept as yyyy-mm-dd; sent rows deleted');
+  R().filter(x=>x[2]==='datefuture@x.com').forEach(x=>book.reminders.rows.splice(book.reminders.rows.indexOf(x),1)); }
 // ---- menu, status, trigger, version
 ctx.reminderTrigger(); ctx.reminderTrigger();
 ok(trig.length===1&&trig[0].getHandlerFunction()==='sendReminders','daily trigger installed once');
 ctx.reminderStatus(); ok(/Waiting reminders: 3/.test(G.ui.alerts.slice(-1)[0])&&/E-mails left today/.test(G.ui.alerts.slice(-1)[0])&&/Daily sending: on/.test(G.ui.alerts.slice(-1)[0]),'status: queue, quota, trigger');
 ctx.onOpen(); ok(G.ui.menus.slice(-1)[0].items.map(x=>x[0]).join('|')==='Item analysis|Reminders: status|Reminders: start daily sending','menu has the 2 reminder items');
-ok(/script 2026-11k/.test(ctx.doGet({parameter:{}}).t),'web app page says (script 2026-11k)');
+ok(/script 2026-11o/.test(ctx.doGet({parameter:{}}).t),'web app page says (script 2026-11o)');
 // ---- results still work
 r=post({schema:2,course:'introduction',alias:'PHY-AAAA',test:'post',cols:[['Total (100)',80]]});
 ok(r.ok&&book.introduction&&!book.reminders.rows.some(x=>x.includes('PHY-AAAA')),'schema 2 results go to the course tab, never to "reminders"');

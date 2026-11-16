@@ -43,6 +43,6 @@ ok(r.n===5&&r.items.length===6&&!r.items.some(x=>x.q===7),'open-item lecturer co
 const js=ctx.doGet({parameter:{summary:T,since:'0',ver:'2026-11h'}}).t;
 ok(!/PHY-|Alias|tip-tr|ornek1:/.test(js),'the reply has no codes, programs or item codes (class totals only)');
 // ---- 7. other requests unchanged
-ok(/script 2026-11k/.test(ctx.doGet({parameter:{}}).t),'web app page says "(script 2026-11k)"');
+ok(/script 2026-11o/.test(ctx.doGet({parameter:{}}).t),'web app page says "(script 2026-11o)"');
 ok(get({board:T,since:'0'}).ok===false&&book[T].rows.length===9,'the board still refuses a test tab; the summary wrote nothing');
 console.log(out.join('\n'));
