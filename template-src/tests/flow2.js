@@ -16,7 +16,7 @@ const inOrder=(o,names)=>{ const k=(o.cols||[]).map(x=>x[0]); const ix=names.map
   await ctx.route(/fonts\./,r=>r.abort());
   const url=urlOf(file);
   await p.goto(url+'#test'); await p.waitForTimeout(400);
-  const modes=await p.$$eval('#qmode button',e=>e.map(x=>x.dataset.m)); ok(modes.join()==='pre,post,late','mode buttons: '+modes.join());
+  const modes=await p.$$eval('#qmode button',e=>e.map(x=>x.dataset.m)); ok(modes.join()==='now,pre,post,late','mode buttons: '+modes.join());
   ok(/^PHY-[A-Z2-9]{4}$/.test(await p.textContent('#mycode')),'random PHY code shown');
   await p.selectOption('#prog','tip-tr');
   ok(/^Akım,/.test((await p.innerText('#q4 .filltext')).trim()),'fill text starts correctly: '+(await p.innerText('#q4 .filltext')).replace(/\s+/g,' ').slice(0,60));
@@ -104,7 +104,7 @@ const inOrder=(o,names)=>{ const k=(o.cols||[]).map(x=>x[0]); const ix=names.map
   // ---- mid-lecture check switched on
   if(midFile){ const q=await ctx.newPage(); const e2=[]; q.on('pageerror',e=>e2.push(e.message));
     await q.goto(urlOf(midFile)+'#test'); await q.waitForTimeout(300);
-    ok((await q.$$eval('#qmode button',e=>e.map(x=>x.dataset.m))).join()==='pre,mid,post,late','mid switch adds the Mini-quiz tab');
+    ok((await q.$$eval('#qmode button',e=>e.map(x=>x.dataset.m))).join()==='now,pre,mid,post,late','mid switch adds the Mini-quiz tab');
     await q.click('#qmode button[data-m="mid"]'); await q.waitForTimeout(200);
     ok((await q.$$('.kround [data-kr]')).length===2,'mini-quiz button: list of the 2 example rounds');
     await q.click('[data-kr="1"]'); await q.waitForTimeout(100); await q.click('#kstart'); await q.click('[data-tf="0"]'); await q.waitForTimeout(100);

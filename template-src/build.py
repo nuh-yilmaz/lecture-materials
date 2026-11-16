@@ -26,6 +26,28 @@ css += """
 .eqbox .eqn{font-family:var(--f-mono);font-size:15px}
 .eqbox small{color:var(--muted);font-size:13px}
 """
+css += """
+/* Şimdi / Now page (engine 2026-11j) */
+.nowpage .nownext{display:block;width:100%;font-size:20px;min-height:60px;margin:10px 0 4px}
+.nowlist{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:10px}
+.nowlist li{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.nowlist li>.btn{min-width:9.5em}
+.nowlab{font-weight:700;min-width:9.5em}
+.nowrounds{display:flex;flex-wrap:wrap;gap:6px}
+.nowrounds .btn{min-width:46px;min-height:44px;padding:6px 8px}
+.nowrounds .done{color:var(--ok);border-color:var(--ok)}
+.nowrounds .closed{opacity:.5}
+.nowpage .next{outline:3px solid var(--navy);outline-offset:1px}
+.nowall{font-weight:700;color:var(--ok)}
+.nowlect{margin:16px 0 0;font-size:14px}
+.latebox{margin-top:12px;padding:12px;border-radius:10px;border:1px solid var(--line);display:grid;gap:8px}
+.latebox p{margin:0} .latebox .score{flex-wrap:wrap} .latebox a.btn{text-decoration:none}
+.mailrem{display:grid;gap:8px;margin-top:4px}
+.mailrem input[type=email]{font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%;max-width:22em}
+.mailrem .consent{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--muted)}
+.mailrem .consent input{margin-top:3px}
+.mailok{font-weight:700;color:var(--ok)}
+"""
 eng = rd("engine2.js")
 css += """
 /* Test 2026-11d */

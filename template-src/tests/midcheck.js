@@ -5,7 +5,7 @@ async function load(b,file){ const p=await (await b.newContext()).newPage(); con
   await p.route(/fonts\./,r=>r.abort()); await p.goto('file://'+file+'#test'); await p.waitForTimeout(400); return {p,errs,cons}; }
 (async()=>{const b=await chromium.launch();
 const A=await load(b,plain);
-const tabs=(await A.p.$$eval('#qmode button',e=>e.map(x=>x.dataset.m))).join(); ok(tabs==='pre,mid,post,late','default tabs: '+tabs);
+const tabs=(await A.p.$$eval('#qmode button',e=>e.map(x=>x.dataset.m))).join(); ok(tabs==='now,pre,mid,post,late','default tabs: '+tabs);
 ok(A.errs.length===0&&A.cons.length===0,'no script or checkQuiz errors (template: 2 rounds of 3 items) '+JSON.stringify(A.errs.concat(A.cons)));
 if(mid4){ const B=await load(b,mid4);
   ok(B.cons.some(m=>/QUIZ_MID round 2: use exactly 3 items \(this round has 4\)/.test(m))&&!B.cons.some(m=>/round 1:/.test(m)),'round with 4 items: author check names round 2 and the count '+JSON.stringify(B.cons));

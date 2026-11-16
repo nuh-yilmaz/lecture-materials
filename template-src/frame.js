@@ -51,6 +51,7 @@ function open(key){
   const bm=/^board(\d*)$/.exec(key); if(bm){ showBoard(bm[1]?+bm[1]:1); return; }   // leaderboard for the projector: #board1, #board2 … (#board = round 1)
   const km=/^mid(\d*)$/.exec(key);
   if(MODES.includes("mid")&&(km||key==="mini")){ qmode="mid"; kr=key==="mini"?(NR===1?1:0):km[1]?+km[1]:1; if(kr>NR) kr=0; renderModes(); key="test"; }   // #mid1, #mid2 … (#mid = round 1); #mini = list of rounds
+  else if(key==="now"&&MODES.length){ qmode="now"; renderModes(); key="test"; }   // #now: one QR per lecture (2026-11j)
   else if(MODES.includes(key)){ qmode=key; renderModes(); key="test"; }   // QR links: #pre, #post, #late
   if(!M[key]&&key!=="giris"&&key!=="test") key="giris";
   view=key;
@@ -144,7 +145,7 @@ $("#b-pause").onclick=()=>{paused=!paused; $("#b-pause").textContent=paused?t(UI
 $("#b-reset").onclick=()=>reset();
 document.querySelectorAll("#speed button").forEach(b=>b.onclick=()=>{speed=+b.dataset.s; document.querySelectorAll("#speed button").forEach(x=>x.setAttribute("aria-pressed",x===b));});
 document.querySelectorAll("#lang button").forEach(b=>b.onclick=()=>setLang(b.dataset.l));
-document.addEventListener("click",e=>{const g=e.target.closest("[data-go]"); if(!g) return; e.preventDefault(); if(g.dataset.mode&&MODES.includes(g.dataset.mode)){qmode=g.dataset.mode; renderModes();} open(g.dataset.go); window.scrollTo({top:0});});
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]"); if(!g) return; e.preventDefault(); if(g.dataset.mode&&(MODES.includes(g.dataset.mode)||(g.dataset.mode==="now"&&MODES.length))){qmode=g.dataset.mode; renderModes();} open(g.dataset.go); window.scrollTo({top:0});});
 window.addEventListener("hashchange",()=>open(location.hash.slice(1)));
 staticText();
 open(location.hash.slice(1)||"giris");

@@ -1,5 +1,5 @@
 /**
- * Course simulations – writes test results to this Google Sheet.            Script version 2026-11j
+ * Course simulations – writes test results to this Google Sheet.            Script version 2026-11k
  * One deployment serves every course: each course writes to its own tab (e.g. "endocrine").
  * Setup: Sheet > Extensions > Apps Script > paste this code > Deploy > New deployment >
  * Type: Web app > Execute as: Me > Who has access: Anyone.
@@ -17,6 +17,15 @@
  *    points of the rows sent after <since> (anonymous codes only; only tabs ending in "-quiz").
  *    Points come from the round's own answers: right = 500 + 500 * (2 - P) * S, wrong = 0
  *    (P = share of the round right on that question, S = speed 0-1 sent by the phone).
+ * New in 2026-11k (test engine 2026-11k; Q28-C of 2026-11-16): optional e-mail reminder for the delayed test.
+ *  - Message {schema:'rem', course, email, days, lang} from the post-test screen. It is stored in the tab "reminders"
+ *    with only: Course, Send on (date, no time), E-mail, Language. No code, no scores, so results stay anonymous.
+ *    Rows are kept sorted by e-mail, so the row order does not show who sent when.
+ *  - Only courses listed in REM_LINKS are accepted; the e-mail link is built here (the page cannot choose it).
+ *    The same e-mail and course is stored once. At most REM_MAX_DAY new requests per course and day.
+ *  - sendReminders() sends the e-mails whose date has come and deletes those rows (also rows older than 7 days).
+ *    Run "Physiology → Reminders: start daily sending" once: it installs a daily trigger (about 09:00).
+ *    "Physiology → Reminders: status" shows the waiting e-mails and the daily e-mail quota left.
  * New in 2026-11j (test engine 2026-11j; pre-test class summary, review_ai_in_education.md, 2026-11-14):
  *  - <web app URL>?summary=<course>&test=pre&since=<ms>&ver=<Version> returns the class totals of the pre-test: n and
  *    the mean score share per automatic item. Read only; no codes, answers or rows; no items below 5 students.
@@ -50,7 +59,7 @@
 const HEADERS = ['Timestamp', 'Alias', 'Test', 'Q1 (20)', 'Q2 (20)', 'Q3 (20)', 'Q4 (20)',
   'Q5 self-score (20)', 'Auto total (80)', 'Total (incl. self-score)',
   'A1 choice', 'A2 order', 'A3 matching', 'A4 T/F (D=true, Y=false)', 'A5 open-ended answer', 'Version', 'Language'];
-const SCRIPT_VER = '2026-11j';   // shown on the web app page and in the item analysis tabs
+const SCRIPT_VER = '2026-11k';   // shown on the web app page and in the item analysis tabs
 const MAX_COLS = 200;
 const TEXT_COLS = /^(K\d+ parts|Item codes|M2 answers|M7 stars|M7 tries)$/;   // stored as text (leading ' ), e.g. part marks "01101"
 
@@ -59,6 +68,7 @@ function doPost(e) {
   lock.waitLock(10000);
   try {
     const d = JSON.parse(e.postData.contents);
+    if (d.schema === 'rem') return out(addReminder(d));
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const tab = clean(d.course).replace(/[^\w -]/g, '').slice(0, 40) || 'results';
     const sheet = ss.getSheetByName(tab) || ss.insertSheet(tab);
@@ -260,7 +270,78 @@ function board(p) {
 // ---------------- Item analysis (2026-11f; "-quiz" tabs 2026-11g) ----------------
 // Sheet menu. A simple trigger: it runs when the Sheet opens (this script is bound to the Sheet).
 function onOpen() {
-  SpreadsheetApp.getUi().createMenu('Physiology').addItem('Item analysis', 'itemAnalysisMenu').addToUi();
+  SpreadsheetApp.getUi().createMenu('Physiology').addItem('Item analysis', 'itemAnalysisMenu')
+    .addItem('Reminders: status', 'reminderStatus').addItem('Reminders: start daily sending', 'reminderTrigger').addToUi();
+}
+
+// ---------- Delayed-test e-mail reminders (2026-11k) ----------
+// Add one line per simulator that offers e-mail reminders: course (Sheet tab name) → page link and title.
+const REM_LINKS = {
+  introduction: { url: 'https://nuh-yilmaz.github.io/lecture-materials/introduction/', tr: 'Fizyolojiye Giriş', en: 'Introduction to Physiology' }
+};
+const REM_TAB = 'reminders', REM_HEAD = ['Course', 'Send on', 'E-mail', 'Language'], REM_MAX_DAY = 600, REM_KEEP_DAYS = 7;
+const ymd = d => d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+function remRows(sh) {
+  const n = sh.getLastRow();
+  return n < 2 ? [] : sh.getRange(2, 1, n - 1, 4).getValues().filter(r => r[2]).map(r => r.map(String));
+}
+function remWrite(sh, rows) {
+  const n = sh.getLastRow(); if (n > 1) sh.getRange(2, 1, n - 1, 4).setValues(Array.from({ length: n - 1 }, () => ['', '', '', '']));
+  rows.sort((a, b) => a[2] < b[2] ? -1 : a[2] > b[2] ? 1 : 0);   // sorted by e-mail: the order shows nothing
+  if (rows.length) sh.getRange(2, 1, rows.length, 4).setValues(rows);
+}
+function addReminder(d) {
+  const course = String(d.course || ''), link = REM_LINKS[course];
+  if (!link) return { ok: false, error: 'course' };
+  const email = String(d.email || '').trim().toLowerCase();
+  if (email.length > 120 || !/^[a-z0-9][^\s@<>",;=]*@[^\s@<>",;=]+\.[a-z]{2,}$/.test(email)) return { ok: false, error: 'email' };
+  const days = Math.min(60, Math.max(1, Math.round(Number(d.days) || 14)));
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(REM_TAB);
+  if (!sh) { sh = ss.insertSheet(REM_TAB); sh.appendRow(REM_HEAD); sh.setFrozenRows(1); }
+  const rows = remRows(sh), today = new Date(), on = new Date(today.getFullYear(), today.getMonth(), today.getDate() + days);
+  if (rows.some(r => r[0] === course && r[2] === email)) return { ok: true, dup: true };
+  const sendOn = ymd(on);
+  if (rows.filter(r => r[0] === course && r[1] === sendOn).length >= REM_MAX_DAY) return { ok: false, error: 'full' };
+  rows.push([course, sendOn, email, d.lang === 'en' ? 'en' : 'tr']);
+  remWrite(sh, rows);
+  return { ok: true };
+}
+function remMail(r) {
+  const L = REM_LINKS[r[0]], en = r[3] === 'en', url = L.url + '#late';
+  return en ? { subject: 'Delayed test is open: ' + L.en,
+    body: 'Hello,\n\nThe delayed test of "' + L.en + '" is open now:\n' + url + '\n\nOpen it on the same device and browser as your post-test, so your results match.\n\nYour e-mail address was deleted after this message. This is an automatic message.' }
+  : { subject: 'Gecikmeli test açıldı: ' + L.tr,
+    body: 'Merhaba,\n\n"' + L.tr + '" dersinin gecikmeli testi şimdi açık:\n' + url + '\n\nTesti son testi çözdüğünüz cihaz ve tarayıcıda açın; böylece sonuçlarınız eşleşir.\n\nE-posta adresiniz bu mesajdan sonra silindi. Bu otomatik bir mesajdır.' };
+}
+// Daily trigger: sends the reminders whose date has come, then deletes their rows.
+function sendReminders() {
+  const lock = LockService.getScriptLock(); lock.waitLock(30000);
+  try {
+    const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(REM_TAB); if (!sh) return { sent: 0, left: 0 };
+    const now = new Date(), today = ymd(now), old = ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() - REM_KEEP_DAYS));
+    let quota = MailApp.getRemainingDailyQuota(), sent = 0;
+    const keep = [];
+    remRows(sh).forEach(r => {
+      if (r[1] > today || !REM_LINKS[r[0]]) { if (REM_LINKS[r[0]]) keep.push(r); return; }
+      if (quota > 0) { const m = remMail(r); MailApp.sendEmail(r[2], m.subject, m.body); quota--; sent++; return; }
+      if (r[1] >= old) keep.push(r);   // quota used up: try again tomorrow; after 7 days the row is deleted unsent
+    });
+    remWrite(sh, keep);
+    return { sent: sent, left: keep.length };
+  } finally { lock.releaseLock(); }
+}
+function reminderStatus() {
+  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(REM_TAB), rows = sh ? remRows(sh) : [];
+  const today = ymd(new Date()), due = rows.filter(r => r[1] <= today).length;
+  const trig = ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'sendReminders');
+  SpreadsheetApp.getUi().alert('Waiting reminders: ' + rows.length + ' (due today or earlier: ' + due + ')\n' +
+    'E-mails left today (your account): ' + MailApp.getRemainingDailyQuota() + '\nDaily sending: ' + (trig ? 'on' : 'OFF – run "Reminders: start daily sending"'));
+}
+function reminderTrigger() {
+  if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'sendReminders'))
+    ScriptApp.newTrigger('sendReminders').timeBased().everyDays(1).atHour(9).create();
+  SpreadsheetApp.getUi().alert('Daily sending is on (about 09:00). Reminders: status shows the queue.');
 }
 
 // Menu action: analyses the tab that is open (Q116-A) and writes "<tab>-items".

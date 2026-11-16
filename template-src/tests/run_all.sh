@@ -18,6 +18,6 @@ run nosheet  node "$T/tests/nosheet.js" "$OUT/plain.html"
 run mob      node "$T/tests/mob.js" "$OUT/midon.html"
 run midcheck node "$T/tests/midcheck.js" "$OUT/plain.html" "$OUT/mid4.html" "$OUT/flat.html"
 run m7       node "$T/tests/m7.js" "$H"
-for x in tap conf cols m2 rem csum gas_items gas_rounds gas_sum; do [ -f "$T/tests/$x.js" ] || continue
-  case $x in gas_items|gas_rounds|gas_sum) run $x node "$T/tests/$x.js" "$T/../apps-script/Code.gs";; *) run $x node "$T/tests/$x.js" "$H";; esac; done
+for x in tap conf cols m2 rem csum now laterem gas_items gas_rounds gas_sum gas_rem; do [ -f "$T/tests/$x.js" ] || continue
+  case $x in gas_items|gas_rounds|gas_sum|gas_rem) run $x node "$T/tests/$x.js" "$T/../apps-script/Code.gs";; *) run $x node "$T/tests/$x.js" "$H";; esac; done
 kill $SRV 2>/dev/null

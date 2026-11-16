@@ -1,4 +1,7 @@
-/* ---------------- TEST ENGINE 2026-11j ----------------
+/* ---------------- TEST ENGINE 2026-11k ----------------
+   2026-11k: "Şimdi / Now" page (#now): one QR per lecture; the phone shows the next step (pre-test, mini-quiz round, post-test).
+             Delayed-test reminder (optional): calendar file / Google Calendar link (no data sent), or e-mail kept apart
+             from the results (Apps Script 2026-11k, tab "reminders": no code, no scores; deleted after sending).
    2026-11j: pre-test class summary for the projector (#summary; Apps Script 2026-11j; no new Sheet column).
    2026-11i: F1 remediation plan on the post-test key screen (no Sheet or Apps Script change; Apps Script 2026-11h).
    2026-11h: M7 missions (fix the body, you are the organ); mini-quiz story rounds; streak bonus on the board.
@@ -54,6 +57,24 @@ const QT={
   lockPre:{tr:"Doğru cevaplar son testten sonra açılacak.",en:"The correct answers will open after the post-test."},
   preClosed:{tr:"Son testi çözdüğünüz için ön test kapandı.",en:"The pre-test is closed because you have already taken the post-test."},
   midClosed:{tr:"Son testi çözdüğünüz için mini quiz turları kapandı.",en:"The mini-quiz rounds are closed because you have already taken the post-test."},
+  nowT:{tr:"Şimdi ne yapacağım?",en:"What do I do now?"},
+  nowHint:{tr:"Eğitimcinin söylediği adımı açın. Önerilen adım en üstte.",en:"Open the step the lecturer names. The suggested step is at the top."},
+  nowNext:{tr:"▶ Sıradaki: {s}",en:"▶ Next: {s}"}, nowDone:{tr:"yapıldı",en:"done"}, nowLate:{tr:"{d} tarihinde açılır",en:"opens on {d}"}, nowLateN:{tr:"son testten {n} gün sonra açılır",en:"opens {n} days after the post-test"}, nowOpen:{tr:"açık",en:"open"},
+  nowAll:{tr:"Bu dersin bütün adımları tamamlandı. Teşekkürler!",en:"All steps of this lecture are done. Thank you!"},
+  nowWait:{tr:"Şimdilik yapılacak adım yok. Gecikmeli test {d} tarihinde açılır.",en:"Nothing to do for now. The delayed test opens on {d}."},
+  nowBoard:{tr:"Eğitimci: sıralama tablosu",en:"Lecturer: leaderboard"},
+  lrT:{tr:"Gecikmeli test hatırlatıcısı (isteğe bağlı)",en:"Delayed-test reminder (optional)"},
+  lrP:{tr:"Gecikmeli test {d} tarihinde açılır. Unutmamak için bir hatırlatıcı ekleyin.",en:"The delayed test opens on {d}. Add a reminder so you do not forget it."},
+  calIcs:{tr:"Takvime ekle",en:"Add to calendar"}, calG:{tr:"Google Takvim",en:"Google Calendar"},
+  calTitle:{tr:"Gecikmeli test: {t}",en:"Delayed test: {t}"},
+  calDesc:{tr:"Gecikmeli testi son testi çözdüğünüz cihaz ve tarayıcıda açın: {u}",en:"Open the delayed test on the same device and browser as your post-test: {u}"},
+  mailL:{tr:"Ya da e-posta ile hatırlatılsın:",en:"Or get an e-mail reminder:"},
+  mailConsent:{tr:"E-posta adresimin yalnızca bu hatırlatma için kullanılmasına, test sonuçlarımdan ayrı (kodum ve puanlarım olmadan) saklanmasına ve e-posta gönderildikten sonra silinmesine onay veriyorum.",en:"I agree that my e-mail address is used only for this reminder, is stored apart from my test results (without my code and scores) and is deleted after the e-mail is sent."},
+  mailBtn:{tr:"E-posta hatırlatması iste",en:"Request an e-mail reminder"},
+  mailBad:{tr:"Geçerli bir e-posta adresi yazın.",en:"Enter a valid e-mail address."},
+  mailNeed:{tr:"Önce onay kutusunu işaretleyin.",en:"Tick the consent box first."},
+  mailOK:{tr:"Kaydedildi. {d} tarihinde bir e-posta alacaksınız; adresiniz sonra silinir.",en:"Saved. You will get an e-mail on {d}; your address is deleted afterwards."},
+  mailDone:{tr:"E-posta hatırlatması istendi ({d}).",en:"E-mail reminder requested ({d})."},
   kT:{tr:"Mini quiz",en:"Mini-quiz"}, kRound:{tr:"Tur {r}/{n}",en:"Round {r}/{n}"}, kList:{tr:"Mini quiz turları",en:"Mini-quiz rounds"},
   kListHint:{tr:"Eğitimcinin gösterdiği turu açın (QR kod ya da aşağıdaki liste). Her tur 3 kısa sorudur.",en:"Open the round the lecturer shows (QR code or the list below). Each round has 3 short questions."},
   kAll:{tr:"‹ Tüm turlar",en:"‹ All rounds"}, kClosed:{tr:"kapalı",en:"closed"}, kPill:{tr:"{r}/{n} doğru ({k} tur)",en:"{r}/{n} right ({k} rounds)"},
@@ -114,12 +135,12 @@ if("mid" in ST){ if(ST.mid&&!ST.mid1) ST.mid1=ST.mid; delete ST.mid; store.set(K
 ["pre","post","late"].concat(ROUNDS.map((_,i)=>mk(i+1))).forEach(m=>{if(!(m in ST)) ST[m]=null;});
 const saveST=()=>store.set(KST,ST);
 const curKey=()=>qmode==="mid"?mk(kr):qmode;
-const hashOf=()=>qmode==="mid"?(kr?mk(kr):"mini"):qmode;   // #mid1… for a round, #mini for the list of rounds
+const hashOf=()=>qmode==="now"?"now":qmode==="mid"?(kr?mk(kr):"mini"):qmode;   // #mid1… for a round, #mini for the list of rounds
 const hashSync=()=>{ try{ if(location.hash.slice(1)!==hashOf()) history.replaceState(null,"","#"+hashOf()); }catch(e){} };
 let qmode=MODES[0], seq={}, warned=false, devMem=null;   // seq[i] = rows of order item i in the order they were tapped
 const ordAns=(q,i)=>{ const s=seq[i]||[]; return s.concat(tx(q.o).map((_,k)=>k).filter(k=>!s.includes(k))); };   // steps without a number go to the end
 UI.testP={tr:QT.testP_base.tr+(HAS_OPEN?QT.testP_open.tr:"")+(TESTS.mid?QT.testP_mid.tr:"")+(TESTS.late?QT.testP_late.tr.replace("{n}",LATE_DAYS):""),en:QT.testP_base.en+(HAS_OPEN?QT.testP_open.en:"")+(TESTS.mid?QT.testP_mid.en:"")+(TESTS.late?QT.testP_late.en.replace("{n}",LATE_DAYS):"")};
-UI.mode_pre=UI.pre; UI.mode_post=UI.post; UI.mode_mid={tr:"Mini quiz",en:"Mini-quiz"}; UI.mode_late={tr:"Gecikmeli test",en:"Delayed test"};
+UI.mode_now={tr:"Şimdi",en:"Now"}; UI.mode_pre=UI.pre; UI.mode_post=UI.post; UI.mode_mid={tr:"Mini quiz",en:"Mini-quiz"}; UI.mode_late={tr:"Gecikmeli test",en:"Delayed test"};
 function countWords(s){return (s||"").split(/[\s,;:.!?()\/\-–—>→←↑↓=+]+/).filter(w=>/\p{L}{2,}|\d/u.test(w)).length;}
 const CODE_RE=/^PHY-[A-Z2-9]{4}$/;
 function myCode(){ let c=store.get("sim-code")||devMem; const old=typeof c==="string"&&c.match(/^NF-([A-Z2-9]{4})$/); if(old){ c="PHY-"+old[1]; store.set("sim-code",c); }
@@ -176,7 +197,7 @@ const totalStr=(set,rec)=>`${nf(totalOf(set,rec))}/${nf(totMax(set))}`;
 /* ----- rendering ----- */
 function renderModes(){
   const box=$("#qmode"); if(!box) return;
-  box.innerHTML=MODES.map(m=>`<button type="button" data-m="${m}" aria-pressed="${m===qmode}">${t(UI["mode_"+m])}</button>`).join("");
+  box.innerHTML=(MODES.length?["now"]:[]).concat(MODES).map(m=>`<button type="button" data-m="${m}" aria-pressed="${m===qmode}">${t(UI["mode_"+m])}</button>`).join("");
   box.querySelectorAll("button").forEach(b=>b.onclick=()=>{qmode=b.dataset.m; if(qmode==="mid") kr=NR===1?1:0; renderModes(); renderQuiz(); hashSync(); });
 }
 function itemHtml(q,i,done){
@@ -217,14 +238,14 @@ function noteHtml(){
   return rec?"":qt("oneTry");
 }
 function renderQuiz(){
-  clearInterval(kTick); if(qmode==="mid") return renderKahoot();
+  clearInterval(kTick); if(qmode==="now") return renderNow(); if(qmode==="mid") return renderKahoot();
   const set=setOf(qmode), rec=ST[qmode], done=!!rec, f=$("#quiz"); warned=false;
   const g=gateHtml(); if(g&&!done){ f.innerHTML=`<div class="q qnote">${g}</div>`; testNote(); renderCodeBox(); return; }
   set.forEach((q,i)=>{ if(q.type==="order") seq[i]=[]; });
   const note=noteHtml();
   f.innerHTML=(note?`<div class="q qnote" id="qnote">${note}</div>`:"")+`<div class="q scorebox" id="qscorebox" role="note">${qt(CONFIDENCE?"scoreBox":"scoreBoxGift")}</div>`+set.map((q,i)=>itemHtml(q,i,done)).join("")+
     `<div class="q"><div class="blankwarn" id="qwarn" role="alert" hidden></div><div class="score">${done?"":`<button class="btn" type="submit" id="qsubmit">${qt("check")}</button><button class="btn ghost" type="button" id="qclear">${qt("clear")}</button>`}<span id="qres"></span></div>`+
-    `<div class="topics" id="qtopics" hidden></div><div class="remplan" id="qrem" hidden></div><div class="surewrong" id="qsure" hidden></div><div class="compare" id="qcmp" style="margin-top:12px"></div>`+
+    `<div class="topics" id="qtopics" hidden></div><div class="remplan" id="qrem" hidden></div><div class="latebox" id="qlate" hidden></div><div class="surewrong" id="qsure" hidden></div><div class="compare" id="qcmp" style="margin-top:12px"></div>`+
     `<div class="fbform" id="fbform" hidden></div><div class="sendbox" id="sendbox" hidden><button class="btn" type="button" id="qsend">${qt("send")}</button><span id="sendmsg" role="status"></span></div></div>`;
   set.forEach((q,i)=>{ if(q.type==="order") renderOrder(i,done); });
   if(done) showResult(set,rec); else $("#qclear").onclick=()=>renderQuiz();
@@ -277,6 +298,7 @@ function showResult(set,rec){
   // confidence: sure but wrong (keyed modes only; in the pre-test it would hint at the key)
   if(CONFIDENCE&&keyed){ const sw=set.map((q,i)=>isAuto(q)&&rec.raw.conf[i]===1&&rec.qs[i]<q.pts?i+1:null).filter(Boolean);
     if(sw.length){ const el=$("#qsure"); el.hidden=false; el.textContent=qt("sureWrong",{list:sw.join(", ")}); } }
+  if(qmode==="post") renderLateBox($("#qlate"));
   if(qmode==="post"&&(FEEDBACK||MINUTE)) renderFb(rec);
   updateTotal();
   $("#sendbox").hidden=false;
@@ -296,6 +318,71 @@ function updateTotal(){
   set.forEach((q,i)=>{ if(q.type!=="open"||qmode==="pre") return; const s=document.getElementById("self"+i); if(s) s.textContent=qt("selfPts",{x:nf(selfOf(set,rec)[i]),m:nf(q.pts)}); });
   const n=$("#qnote"); if(n) n.innerHTML=noteHtml();
   showCompare(); testNote();
+}
+/* ----- "Şimdi / Now" page (2026-11j): one QR per lecture opens #now; the next step is suggested, every step can be opened ----- */
+const stepName=(m,r)=>m==="mid"?(NR>1?`${t(UI.mode_mid)} ${r}`:t(UI.mode_mid)):t(UI["mode_"+m]);
+function nextStep(){
+  const run=store.get(KRUN); if(run&&MODES.includes("mid")) return {m:"mid",r:run.r||1};   // a started round first
+  if(MODES.includes("pre")&&!ST.pre&&!ST.post) return {m:"pre"};
+  if(MODES.includes("mid")&&!ST.post) for(let r=1;r<=NR;r++) if(!ST[mk(r)]) return {m:"mid",r};
+  if(MODES.includes("post")&&!ST.post) return {m:"post"};
+  if(MODES.includes("late")&&!ST.late&&lateOpen()) return {m:"late"};
+  return null;
+}
+function nowStatus(m){
+  const rec=ST[m];
+  if(rec) return `<span class="tm ok">✓</span> ${qt("nowDone")} · ${totalStr(QUIZ,rec)}`;
+  if(m==="pre"&&ST.post) return `<small>${qt("kClosed")}</small>`;
+  if(m==="late"&&!lateOpen()) return `<small>${ST.post?qt("nowLate",{d:fmtDate(lateAt())}):qt("nowLateN",{n:LATE_DAYS})}</small>`;
+  return `<small>${qt("nowOpen")}</small>`;
+}
+function renderNow(){
+  const f=$("#quiz"), nx=nextStep(); renderCodeBox(); testNote();
+  const isNx=(m,r)=>nx&&nx.m===m&&(m!=="mid"||nx.r===r);
+  const row=m=>{ if(m==="mid") return `<li><span class="nowlab">${t(UI.mode_mid)}</span><span class="nowrounds">`+
+      ROUNDS.map((_,i)=>{ const r=i+1, done=!!ST[mk(r)], cl=done?"done":ST.post?"closed":isNx("mid",r)?"next":"";
+        return `<button type="button" class="btn ghost ${cl}" data-step="mid" data-r="${r}" aria-label="${stepName("mid",r)}${done?" ✓":""}">${r}${done?"✓":""}</button>`; }).join("")+`</span></li>`;
+    return `<li><button type="button" class="btn ghost${isNx(m)?" next":""}" data-step="${m}">${t(UI["mode_"+m])}</button> ${nowStatus(m)}</li>`; };
+  f.innerHTML=`<div class="q nowpage"><h3 class="kh">${qt("nowT")}</h3><p>${qt("nowHint")}</p>`+
+    (nx?`<button type="button" class="btn nownext" data-step="${nx.m}" data-r="${nx.r||""}">${qt("nowNext",{s:stepName(nx.m,nx.r)})}</button>`:`<p class="nowall">${TESTS.late&&ST.post&&!ST.late?qt("nowWait",{d:fmtDate(lateAt())}):qt("nowAll")}</p>`)+
+    `<ul class="nowlist">${MODES.map(row).join("")}</ul>`+
+    `<div class="latebox" id="qlate" hidden></div>`+(MODES.includes("mid")?`<p class="nowlect"><a href="#board">${qt("nowBoard")}</a></p>`:"")+`</div><div class="compare" id="qcmp"></div>`;
+  renderLateBox($("#qlate"));
+  f.querySelectorAll("[data-step]").forEach(b=>b.onclick=()=>{ qmode=b.dataset.step; if(qmode==="mid") kr=+b.dataset.r||1; renderModes(); renderQuiz(); hashSync(); window.scrollTo({top:0}); });
+  showCompare();
+  const np=f.querySelector(".nowpage"); if(np&&np.scrollIntoView){ const go=()=>np.scrollIntoView({block:"start"}); requestAnimationFrame(go); setTimeout(go,250); }   // again after the browser restores an old scroll position on reload   // Q26-A: the "next" button is visible on a phone
+}
+/* ----- delayed-test reminder (2026-11j; Q28-C): calendar (nothing sent) or e-mail (Apps Script tab "reminders", apart from the results) ----- */
+const KREM=PFX+"-remreq";   // only the date of a requested e-mail is kept in the browser, never the address
+const pad2=n=>("0"+n).slice(-2), ymdC=d=>`${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}`;
+const lateUrl=()=>location.href.split("#")[0]+"#late";
+const icsEsc=v=>String(v).replace(/\\/g,"\\\\").replace(/;/g,"\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");
+function icsText(){ const d=new Date(lateAt()), e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1), now=new Date().toISOString().replace(/[-:]/g,"").slice(0,15)+"Z";
+  const ti=qt("calTitle",{t:document.title}), de=qt("calDesc",{u:lateUrl()});
+  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Physiology simulators//TR","BEGIN:VEVENT","UID:"+Math.random().toString(36).slice(2)+"-late@sim","DTSTAMP:"+now,
+    "DTSTART;VALUE=DATE:"+ymdC(d),"DTEND;VALUE=DATE:"+ymdC(e),"SUMMARY:"+icsEsc(ti),"DESCRIPTION:"+icsEsc(de),"URL:"+lateUrl(),
+    "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+icsEsc(ti),"TRIGGER:PT9H","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n")+"\r\n"; }
+function gcalUrl(){ const d=new Date(lateAt()), e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1);
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(qt("calTitle",{t:document.title}))+"&dates="+ymdC(d)+"/"+ymdC(e)+"&details="+encodeURIComponent(qt("calDesc",{u:lateUrl()})); }
+function renderLateBox(el){
+  if(!el) return; if(!(TESTS.late&&ST.post&&!ST.late&&!lateOpen())){ el.hidden=true; return; }
+  const dd=fmtDate(lateAt()), req=store.get(KREM);
+  el.hidden=false;
+  el.innerHTML=`<b>${qt("lrT")}</b><p>${qt("lrP",{d:dd})}</p><div class="score">`+
+    `<a class="btn" id="calics" download="gecikmeli-test.ics" href="data:text/calendar;charset=utf-8,${encodeURIComponent(icsText())}">${qt("calIcs")}</a>`+
+    `<a class="btn ghost" id="calg" target="_blank" rel="noopener" href="${gcalUrl()}">${qt("calG")}</a></div>`+
+    (req?`<p class="mailok">${qt("mailDone",{d:dd})}</p>`:
+    `<div class="mailrem"><label for="remmail">${qt("mailL")}</label> <input id="remmail" type="email" maxlength="120" autocomplete="email" placeholder="ad@ornek.com">`+
+    `<label class="consent"><input type="checkbox" id="remok"> <span>${qt("mailConsent")}</span></label>`+
+    `<div class="score"><button class="btn ghost" type="button" id="remsend" ${SHEET_URL?"":"disabled"}>${qt("mailBtn")}</button><span id="remmsg" role="status">${SHEET_URL?"":`<span class="testmode">${qt("testMode")}</span>`}</span></div></div>`);
+  const b=el.querySelector("#remsend"); if(b) b.onclick=async()=>{
+    const v=(el.querySelector("#remmail").value||"").trim(), m=el.querySelector("#remmsg");
+    if(!/^[A-Za-z0-9][^\s@<>",;=]*@[^\s@<>",;=]+\.[A-Za-z]{2,}$/.test(v)||v.length>120){ m.textContent=qt("mailBad"); return; }
+    if(!el.querySelector("#remok").checked){ m.textContent=qt("mailNeed"); return; }
+    b.disabled=true; m.textContent=qt("sending");
+    try{ await fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({schema:"rem",course:COURSE,email:v,days:LATE_DAYS,lang:LANG})});   // no code, no scores
+      store.set(KREM,{d:ymdC(new Date(lateAt()))}); el.querySelector(".mailrem").outerHTML=`<p class="mailok">${qt("mailOK",{d:dd})}</p>`;
+    }catch(err){ b.disabled=false; m.textContent=qt("sendFail"); } };
 }
 function showCompare(){
   const el=$("#qcmp"); if(!el) return; let h="";
@@ -343,7 +430,7 @@ function finish(set,raw){
   const el=$("#qres"); if(el) el.scrollIntoView({block:"center",behavior:"smooth"});
 }
 $("#quiz").addEventListener("submit",e=>{
-  e.preventDefault(); if(qmode==="mid"||ST[qmode]) return; const set=setOf(qmode);
+  e.preventDefault(); if(qmode==="now"||qmode==="mid"||ST[qmode]) return; const set=setOf(qmode);
   const r=readRaw(set), wbox=$("#qwarn");
   if(!progOK()){ wbox.hidden=false; wbox.textContent=qt("progNeed"); $("#rumuzbox").scrollIntoView({block:"center",behavior:"smooth"}); return; }
   if(isEmpty(set,r)){ wbox.hidden=false; wbox.textContent=qt("noneAns"); return; }
@@ -357,7 +444,7 @@ $("#quiz").addEventListener("submit",e=>{
   }
   finish(set,r);
 });
-$("#quiz").addEventListener("click",e=>{ if(qmode==="mid"||ST[qmode]) return;
+$("#quiz").addEventListener("click",e=>{ if(qmode==="now"||qmode==="mid"||ST[qmode]) return;
   const c=e.target.closest("[data-oclear]");
   if(c){ const i=+c.dataset.oclear; seq[i]=[]; renderOrder(i,false); const f=document.querySelector(`#ord${i} [data-tap]`); if(f) f.focus(); return; }
   const b=e.target.closest("[data-tap]"); if(!b) return;
