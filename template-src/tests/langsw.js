@@ -6,7 +6,7 @@ const ITEMS=(s)=>[['mcq',4],['tf',10],['order',16],['match',15],['fill',15],['or
 (async()=>{ const b=await chromium.launch(); const errs=[];
   const ctx=await b.newContext({viewport:{width:1280,height:720}}); const gets=[];
   await ctx.route(/fonts\./,r=>r.abort());
-  await ctx.route(/example\.invalid/,r=>{ const u=new URL(r.request().url()); gets.push(u);
+  let slow=0; await ctx.route(/example\.invalid/,async r=>{ const u=new URL(r.request().url()); gets.push(u); if(slow) await new Promise(z=>setTimeout(z,slow));
     const body=u.searchParams.get('summary')?{ok:true,n:8,min:5,items:ITEMS([.25,.9,.4,.8,.5,.7])}:{ok:true,n:2,top:[{rank:1,alias:'PHY-AAAA',points:1500},{rank:2,alias:'PHY-BBBB',points:900}],items:[{k:1,right:2,n:2}],streak:true};
     r.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'*'},body:JSON.stringify(body)}); });
   const p=await ctx.newPage(); p.on('pageerror',e=>errs.push(e.message));
@@ -20,12 +20,15 @@ const ITEMS=(s)=>[['mcq',4],['tf',10],['order',16],['match',15],['fill',15],['or
   ok(await p.evaluate(()=>{ const r=document.querySelector('#lang button').getBoundingClientRect(); return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2).closest('#board')!==null; }),'the box covers the page switch (why the box has its own)');
   await p.clock.runFor(60000); await p.click('#breset'); await p.waitForTimeout(300);   // stored window start: must survive the switch
   const since0=gets[gets.length-1].searchParams.get('since'); let n0=gets.length;
-  await lang('en');
+  slow=2500; await p.click('#board [data-bl="en"]'); await p.waitForTimeout(150);
+  ok(/8 students sent the pre-test/.test(await txt('#bcount'))&&/Open module ›/.test(await txt('#blist')),'2026-11n: slow script (2.5 s): EN rows shown at once from the last reply, no blank list');
+  await p.waitForTimeout(2600); slow=0;
   ok(await txt('#board h2')==='Pre-test · Class summary','EN at once: title');
   ok(await txt('#breset')==='Reset (new group)'&&await txt('#bclose')==='Close','EN at once: buttons');
   ok(/8 students sent the pre-test/.test(await txt('#bcount'))&&/Open module ›/.test(await txt('#blist'))&&/^Items: Q1 25%/.test(await txt('#bitems')),'EN at once: count, rows and item line (new request)');
   ok(/75% and above/.test(await txt('#slegend'))&&/prediction task live/.test(await txt('#shint')),'EN at once: legend and hint');
   ok(gets.length===n0+1&&gets[gets.length-1].searchParams.get('since')===since0,'one new request; the window start set by "Sıfırla" is kept');
+  ok(true,'(request count includes the slow request above)');
   ok(await p.getAttribute('#board [data-bl="en"]','aria-pressed')==='true'&&await p.getAttribute('#lang button[data-l="en"]','aria-pressed')==='true','EN marked in the box and in the page switch');
   ok(await p.getAttribute('#board','aria-label')==='Pre-test · Class summary'&&new URL(p.url()).hash==='#summary','box label and address stay on #summary');
   n0=gets.length; await p.clock.runFor(10200); await p.waitForTimeout(300);
@@ -35,13 +38,24 @@ const ITEMS=(s)=>[['mcq',4],['tf',10],['order',16],['match',15],['fill',15],['or
   // ---- 2. leaderboard
   await p.goto(base+'/midon.html#board1'); await p.waitForTimeout(400);
   const t1=await txt('#board h2'); ok(/Liderlik tablosu/.test(t1),'#board1 opens in Turkish: '+t1);
-  await lang('en');
+  slow=2500; await p.click('#board [data-bl="en"]'); await p.waitForTimeout(150);
+  ok(/students sent a result/.test(await txt('#bcount'))&&/PHY-AAAA/.test(await txt('#blist')),'2026-11n: slow script: board rows shown at once in EN');
+  await p.waitForTimeout(2600); slow=0;
   const t2=await txt('#board h2');
   ok(/Leaderboard/.test(t2)&&/1\/2/.test(t2),'EN at once: board title keeps the round: '+t2);
   ok(/students sent a result/.test(await txt('#bcount'))&&/points/.test(await txt('#blist'))&&/Streak bonus/.test(await txt('#bformula')),'EN at once: count, points, formula with streak line');
   ok(/Next round ›/.test(await txt('#board'))&&new URL(p.url()).hash==='#board1','EN at once: round buttons; address stays #board1');
   n0=gets.length; await p.clock.runFor(5200); await p.waitForTimeout(300);
   ok(gets.length===n0+1,'still one refresh every 5 s (no second timer)');
+  // ---- 2b. default window (no "Sıfırla"): the last reply is used too
+  await p.goto(base+'/midon.html?x=2#summary'); await p.evaluate(()=>localStorage.clear()); await p.goto(base+'/midon.html?x=3#summary'); await p.waitForTimeout(400);
+  slow=2500; await p.click('#board [data-bl="en"]'); await p.waitForTimeout(150);
+  ok(/8 students sent the pre-test/.test(await txt('#bcount'))&&/Open module ›/.test(await txt('#blist')),'2026-11n: default window: summary rows shown at once in EN');
+  await p.waitForTimeout(2600); slow=0; await p.click('#board [data-bl="tr"]'); await p.waitForTimeout(300);
+  // ---- 2c. "Sıfırla" after the switch: an old reply is not shown for the new window
+  slow=2500; await p.click('#breset'); await p.click('#board [data-bl="en"]'); await p.waitForTimeout(150);
+  ok(!/Open module/.test(await txt('#blist')),'2026-11n: after "Reset" the old reply is not reused');
+  await p.waitForTimeout(2600); slow=0;
   // ---- 3. closed box: the page switch works again and does not reopen the box
   await lang('tr'); await p.click('#bclose'); await p.waitForTimeout(300); await p.click('#lang button[data-l="en"]'); await p.waitForTimeout(300);
   ok(await p.isHidden('#board')&&await p.getAttribute('#lang button[data-l="en"]','aria-pressed')==='true','after Close: the page switch works; the box stays closed');

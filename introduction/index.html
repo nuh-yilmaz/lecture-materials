@@ -474,7 +474,7 @@ body.boardon{overflow:hidden}
 "use strict";
 /* =====================================================================
    SİMÜLATÖR ŞABLONU / SIMULATOR TEMPLATE
-   Template 2026-11 · test engine 2026-11m · guide: claude/simulator_template.md
+   Template 2026-11 · test engine 2026-11n · guide: claude/simulator_template.md
    ---------------------------------------------------------------------
    HOW TO MAKE A NEW SIMULATOR
    1. Copy this file. Name it "<Konu> Simülatörü.html" (one file per lecture).
@@ -1328,7 +1328,8 @@ const QUIZ_MID=[
 ];
 
 
-/* ---------------- TEST ENGINE 2026-11m ----------------
+/* ---------------- TEST ENGINE 2026-11n ----------------
+   2026-11n: an open box redrawn by the TR | EN buttons shows its last reply at once (no blank list while it asks again).
    2026-11m: TR | EN buttons inside the leaderboard (#board) and class summary (#summary) box (the box covers the page switch);
              a switch redraws the open box at once (title, buttons, rows).
    2026-11l: config name SURUM renamed VERSION (same values; Sheet column "Version" and ?ver= unchanged).
@@ -1945,17 +1946,25 @@ function showBoard(r){
   $("#bclose").onclick=()=>{ clearInterval(bTimer); el.hidden=true; document.body.classList.remove("boardon"); open("giris"); };
   clearInterval(bTimer);
   if(!SHEET_URL){ $("#bnote").textContent=bt("off"); return; }
+  if(bLast.board&&bLast.board.k===bKey()) boardDraw(bLast.board.d);   // 2026-11n: last reply at once
   boardLoad(); bTimer=setInterval(boardLoad,5000);
 }
+const bLast={board:null,sum:null};   // last reply of each box (engine 2026-11n); key = round + the stored "Reset" time ("d" = default window)
+const bKey=()=>bR+":"+(store.get(KST+"-board"+bR)||"d"), sKey=()=>String(store.get(KST+"-sum")||"d");
 function boardLoad(){
   const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"board="+encodeURIComponent(COURSE+"-quiz")+"&test="+mk(bR)+"&since="+boardSince()+"&n="+BOARD_TOP+"&streak=1";   // streak bonus (Apps Script 2026-11h; an older script ignores it)
+  const r0=bR, k0=bKey();
   fetch(u,{cache:"no-store"}).then(r=>r.json()).then(d=>{
     if(!d||!d.ok) throw new Error(d&&d.error||"bad");
+    bLast.board={k:k0,d}; if(r0===bR) boardDraw(d);
+  }).catch(()=>{ const n=$("#bnote"); if(n) n.textContent=bt("err"); });
+}
+function boardDraw(d){
+    if(!$("#bcount")) return;
     $("#bcount").textContent=bt("n",{n:d.n}); $("#bformula").textContent=bt("formula")+(d.streak?bt("streak"):"");   // the bonus line only when the script gives the bonus
     $("#blist").innerHTML=d.top.length?d.top.map(r=>`<li class="r${Math.min(r.rank,4)}"><span class="brank">${r.rank}</span><span class="balias">${esc(r.alias)}</span><span class="bpts">${r.points} ${bt("pts")}</span></li>`).join(""):`<li class="bempty">${bt("none")}</li>`;
     $("#bitems").textContent=(d.items||[]).map(x=>bt("q",{k:x.k,r:x.right,n:x.n})).join(" · ");
     $("#bnote").textContent=bt("upd")+": "+new Date().toLocaleTimeString(LANG==="tr"?"tr-TR":"en-US");
-  }).catch(()=>{ const n=$("#bnote"); if(n) n.textContent=bt("err"); });
 }
 /* ----- pre-test class summary for the projector: #summary (engine 2026-11j; review_ai_in_education.md, pre-test focus
    procedure; Q1-A to Q5-A of 2026-11-14). Reads the class totals of the pre-test (Apps Script 2026-11j, ?summary=…): rows of
@@ -1984,6 +1993,7 @@ function showSummary(){
   $("#bclose").onclick=()=>{ clearInterval(bTimer); el.hidden=true; document.body.classList.remove("boardon"); open("giris"); };
   clearInterval(bTimer);
   if(!SHEET_URL){ $("#bnote").textContent=st_("off"); return; }
+  if(bLast.sum&&bLast.sum.k===sKey()) sumDraw(bLast.sum.d);   // 2026-11n: last reply at once
   sumLoad(); bTimer=setInterval(sumLoad,10000);
 }
 /* topic shares from the item shares of the reply; an item counts only when its number, type and points match this version */
@@ -1999,8 +2009,14 @@ function sumOpen(m){ clearInterval(bTimer); const el=$("#board"); if(el) el.hidd
   const b=$("#m-predict"); if(b&&!b.hidden){ b.tabIndex=-1; b.scrollIntoView({block:"start"}); b.focus({preventScroll:true}); } }
 function sumLoad(){
   const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"summary="+encodeURIComponent(COURSE)+"&test=pre&since="+sumSince()+"&ver="+encodeURIComponent(VERSION);
+  const k0=sKey();
   fetch(u,{cache:"no-store"}).then(r=>r.json()).then(d=>{
     if(!d||!d.ok) throw new Error(d&&d.error||"bad");
+    bLast.sum={k:k0,d}; sumDraw(d);
+  }).catch(()=>{ const e=$("#bnote"); if(e) e.textContent=bt("err"); });
+}
+function sumDraw(d){
+    if(!$("#bcount")||!$("#board .csum")) return;
     const n=+d.n||0, min=Math.max(+d.min||0,SUM_MIN);
     $("#bcount").textContent=st_("n",{n});
     if(n<min){ $("#blist").innerHTML=`<li class="bempty">${st_("few",{n,m:min})}</li>`; $("#bitems").textContent=""; }
@@ -2010,7 +2026,6 @@ function sumLoad(){
       document.querySelectorAll("#blist .sopen").forEach(b=>b.onclick=()=>sumOpen(b.dataset.m));
       $("#bitems").textContent=used.length?st_("items")+": "+used.map(x=>st_("q")+x.q+" "+pct(x.s)).join(" · "):""; }
     $("#bnote").textContent=bt("upd")+": "+new Date().toLocaleTimeString(LANG==="tr"?"tr-TR":"en-US");
-  }).catch(()=>{ const e=$("#bnote"); if(e) e.textContent=bt("err"); });
 }
 /* ----- M2 "predict first" (Q100-A, Q122-A, Q123-A). A module with predict:{q,set,a,why} shows a box above its controls:
    the student picks ↑ / ↓ / no change and presses "Lock" (one try). Lock applies the task's settings like a preset and runs
