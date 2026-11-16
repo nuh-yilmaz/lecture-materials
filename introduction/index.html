@@ -228,7 +228,7 @@ textarea[readonly]{background:var(--surface-2)}
 /* Bloklar / blocks (template 2026-11) */
 .ctl.wide{grid-column:1/-1}
 .ctl .seg{width:max-content;max-width:100%;flex-wrap:wrap}
-.ctl{min-width:0} .ctl.wide .seg{width:auto}   /* long preset rows wrap on a 390 px phone (as in the Unit I simulator) */
+.ctl{min-width:0} .ctl.wide .seg{width:auto}   /* intro: long preset rows wrap at 390 px */
 .drawbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
 .drawbox canvas{width:100%;height:260px;display:block}
 .blocks{display:grid;gap:16px}
@@ -474,11 +474,11 @@ body.boardon{overflow:hidden}
 "use strict";
 /* =====================================================================
    SİMÜLATÖR ŞABLONU / SIMULATOR TEMPLATE
-   Template 2026-11 · test engine 2026-11k · guide: claude/simulator_template.md
+   Template 2026-11 · test engine 2026-11l · guide: claude/simulator_template.md
    ---------------------------------------------------------------------
    HOW TO MAKE A NEW SIMULATOR
    1. Copy this file. Name it "<Konu> Simülatörü.html" (one file per lecture).
-   2. CONFIG (below): COURSE, PFX, SURUM, SHEET_URL, ORDER.
+   2. CONFIG (below): COURSE, PFX, VERSION, SHEET_URL, ORDER.
    3. UI (below): change title, eyebrow, lead, path, seeP, seeNote, sample*,
       ph. Every text is a pair {tr:"…", en:"…"}. Keep all other UI texts.
    4. MODULES: delete the example modules M.ornek1–M.ornek4 and write one
@@ -587,7 +587,7 @@ body.boardon{overflow:hidden}
 /* ---------------- AYARLAR / CONFIG ---------------- */
 const COURSE="introduction";   // Sheet tab name (English, lower case), e.g. "respiration"
 const PFX="gir";           // browser storage prefix, 2–5 letters, unique per simulator
-const SURUM="2026-11h-intro1";    // version sent with each result; change it when the test changes
+const VERSION="2026-11h-intro1";    // version sent with each result; change it when the test changes
 const SHEET_URL="https://script.google.com/macros/s/AKfycbzfIUIU-sczvJPGUjR4El7rH4OUNUcMupt07RNCQ1Vok-51ib1nOfsyjZ3tXLDe3RQp/exec";        // Apps Script web app URL (…/exec); "" = results are not sent
 const ORDER=["homeo","feedback","fluids","shift","edema"];   // module keys, in tab order
 /* assessment switches (true = on) */
@@ -1327,7 +1327,9 @@ const QUIZ_MID=[
  ]}
 ];
 
-/* ---------------- TEST ENGINE 2026-11k ----------------
+
+/* ---------------- TEST ENGINE 2026-11l ----------------
+   2026-11l: config name SURUM renamed VERSION (same values; Sheet column "Version" and ?ver= unchanged).
    2026-11k: "Şimdi / Now" page (#now): one QR per lecture; the phone shows the next step (pre-test, mini-quiz round, post-test).
              Delayed-test reminder (optional): calendar file / Google Calendar link (no data sent), or e-mail kept apart
              from the results (Apps Script 2026-11k, tab "reminders": no code, no scores; deleted after sending).
@@ -1895,7 +1897,7 @@ function kPayload(rec,alias){   // one row per student and round (Q134-A): Test 
     cols.push([`R${n}`,ok],[`S${n}`,ok?r2(1-ms/lim):0],[`A${n}`,kAnsStr(q,rec.raw.ans[i])],[`T${n} sec`,r2(ms/1000)]); });
   cols.push(["Mini-quiz right",rec.auto],["Mini-quiz items",set.length]);
   if(PROGRAMS.length>1) cols.push(["Program",prog()]);
-  cols.push(["Item codes",itemCodes(set)],["Version",SURUM],["Language",LANG]);
+  cols.push(["Item codes",itemCodes(set)],["Version",VERSION],["Language",LANG]);
   return {schema:2, course:COURSE+"-quiz", alias, test:mk(kr), cols};
 }
 function checkMid(){   // 2026-11g: 1–10 rounds, exactly 3 items per round (Q126-A, Q127-A, Q128-A)
@@ -1991,7 +1993,7 @@ function sumTopics(items){
 function sumOpen(m){ clearInterval(bTimer); const el=$("#board"); if(el) el.hidden=true; document.body.classList.remove("boardon"); open(m);
   const b=$("#m-predict"); if(b&&!b.hidden){ b.tabIndex=-1; b.scrollIntoView({block:"start"}); b.focus({preventScroll:true}); } }
 function sumLoad(){
-  const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"summary="+encodeURIComponent(COURSE)+"&test=pre&since="+sumSince()+"&ver="+encodeURIComponent(SURUM);
+  const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"summary="+encodeURIComponent(COURSE)+"&test=pre&since="+sumSince()+"&ver="+encodeURIComponent(VERSION);
   fetch(u,{cache:"no-store"}).then(r=>r.json()).then(d=>{
     if(!d||!d.ok) throw new Error(d&&d.error||"bad");
     const n=+d.n||0, min=Math.max(+d.min||0,SUM_MIN);
@@ -2256,7 +2258,7 @@ function payloadOf(mode,rec,alias){
   if(M2_TASKS.length) cols.push(["M2 answers",isPost?m2Answers():null],["M2 right",isPost?m2Right():null]);   // sent with the post-test row
   if(M7_TASKS.length) cols.push(["M7 stars",isPost?m7StarsStr():null],["M7 tries",isPost?m7TriesStr():null]);   // engine 2026-11h, post-test row
   if(PROGRAMS.length>1) cols.push(["Program",prog()]);
-  cols.push(["Item codes",itemCodes(set)],["Version",SURUM],["Language",LANG]);
+  cols.push(["Item codes",itemCodes(set)],["Version",VERSION],["Language",LANG]);
   return {schema:2, course:COURSE, alias, test:mode, cols};
 }
 async function sendResult(){

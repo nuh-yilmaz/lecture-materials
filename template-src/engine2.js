@@ -1,4 +1,5 @@
-/* ---------------- TEST ENGINE 2026-11k ----------------
+/* ---------------- TEST ENGINE 2026-11l ----------------
+   2026-11l: config name SURUM renamed VERSION (same values; Sheet column "Version" and ?ver= unchanged).
    2026-11k: "Şimdi / Now" page (#now): one QR per lecture; the phone shows the next step (pre-test, mini-quiz round, post-test).
              Delayed-test reminder (optional): calendar file / Google Calendar link (no data sent), or e-mail kept apart
              from the results (Apps Script 2026-11k, tab "reminders": no code, no scores; deleted after sending).
@@ -566,7 +567,7 @@ function kPayload(rec,alias){   // one row per student and round (Q134-A): Test 
     cols.push([`R${n}`,ok],[`S${n}`,ok?r2(1-ms/lim):0],[`A${n}`,kAnsStr(q,rec.raw.ans[i])],[`T${n} sec`,r2(ms/1000)]); });
   cols.push(["Mini-quiz right",rec.auto],["Mini-quiz items",set.length]);
   if(PROGRAMS.length>1) cols.push(["Program",prog()]);
-  cols.push(["Item codes",itemCodes(set)],["Version",SURUM],["Language",LANG]);
+  cols.push(["Item codes",itemCodes(set)],["Version",VERSION],["Language",LANG]);
   return {schema:2, course:COURSE+"-quiz", alias, test:mk(kr), cols};
 }
 function checkMid(){   // 2026-11g: 1–10 rounds, exactly 3 items per round (Q126-A, Q127-A, Q128-A)
@@ -662,7 +663,7 @@ function sumTopics(items){
 function sumOpen(m){ clearInterval(bTimer); const el=$("#board"); if(el) el.hidden=true; document.body.classList.remove("boardon"); open(m);
   const b=$("#m-predict"); if(b&&!b.hidden){ b.tabIndex=-1; b.scrollIntoView({block:"start"}); b.focus({preventScroll:true}); } }
 function sumLoad(){
-  const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"summary="+encodeURIComponent(COURSE)+"&test=pre&since="+sumSince()+"&ver="+encodeURIComponent(SURUM);
+  const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"summary="+encodeURIComponent(COURSE)+"&test=pre&since="+sumSince()+"&ver="+encodeURIComponent(VERSION);
   fetch(u,{cache:"no-store"}).then(r=>r.json()).then(d=>{
     if(!d||!d.ok) throw new Error(d&&d.error||"bad");
     const n=+d.n||0, min=Math.max(+d.min||0,SUM_MIN);
@@ -927,7 +928,7 @@ function payloadOf(mode,rec,alias){
   if(M2_TASKS.length) cols.push(["M2 answers",isPost?m2Answers():null],["M2 right",isPost?m2Right():null]);   // sent with the post-test row
   if(M7_TASKS.length) cols.push(["M7 stars",isPost?m7StarsStr():null],["M7 tries",isPost?m7TriesStr():null]);   // engine 2026-11h, post-test row
   if(PROGRAMS.length>1) cols.push(["Program",prog()]);
-  cols.push(["Item codes",itemCodes(set)],["Version",SURUM],["Language",LANG]);
+  cols.push(["Item codes",itemCodes(set)],["Version",VERSION],["Language",LANG]);
   return {schema:2, course:COURSE, alias, test:mode, cols};
 }
 async function sendResult(){

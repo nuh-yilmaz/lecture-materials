@@ -427,7 +427,7 @@ body.boardon{overflow:hidden}
    ---------------------------------------------------------------------
    HOW TO MAKE A NEW SIMULATOR
    1. Copy this file. Name it "<Konu> Simülatörü.html" (one file per lecture).
-   2. CONFIG (below): COURSE, PFX, SURUM, SHEET_URL, ORDER.
+   2. CONFIG (below): COURSE, PFX, VERSION, SHEET_URL, ORDER.
    3. UI (below): change title, eyebrow, lead, path, seeP, seeNote, sample*,
       ph. Every text is a pair {tr:"…", en:"…"}. Keep all other UI texts.
    4. MODULES: delete the example modules M.ornek1–M.ornek4 and write one
@@ -517,7 +517,7 @@ body.boardon{overflow:hidden}
 /* ---------------- AYARLAR / CONFIG ---------------- */
 const COURSE="hemolysis-buffer";   // Sheet tab name (English, lower case), e.g. "respiration"
 const PFX="hmb";           // browser storage prefix, 2–5 letters, unique per simulator
-const SURUM="hmb-2026-11-12c";    // version sent with each result; change it when the test changes
+const VERSION="hmb-2026-11-12c";    // version sent with each result; change it when the test changes
 const SHEET_URL="https://script.google.com/macros/s/AKfycbzfIUIU-sczvJPGUjR4El7rH4OUNUcMupt07RNCQ1Vok-51ib1nOfsyjZ3tXLDe3RQp/exec";        // Apps Script web app URL (…/exec); "" = results are not sent
 const ORDER=["tonisite","frajilite","tampon","ph"];   // module keys, in tab order
 /* assessment switches (true = on) */
@@ -1484,7 +1484,7 @@ function kPayload(rec,alias){   // one row per student and round (Q134-A): Test 
     cols.push([`R${n}`,ok],[`S${n}`,ok?r2(1-ms/lim):0],[`A${n}`,kAnsStr(q,rec.raw.ans[i])],[`T${n} sec`,r2(ms/1000)]); });
   cols.push(["Mini-quiz right",rec.auto],["Mini-quiz items",set.length]);
   if(PROGRAMS.length>1) cols.push(["Program",prog()]);
-  cols.push(["Item codes",itemCodes(set)],["Version",SURUM],["Language",LANG]);
+  cols.push(["Item codes",itemCodes(set)],["Version",VERSION],["Language",LANG]);
   return {schema:2, course:COURSE+"-quiz", alias, test:mk(kr), cols};
 }
 function checkMid(){   // 2026-11g: 1–10 rounds, exactly 3 items per round (Q126-A, Q127-A, Q128-A)
@@ -1623,7 +1623,7 @@ function payloadOf(mode,rec,alias){
   if(MINUTE) MP.forEach(x=>cols.push([x.k==="learned"?"Learned most":"Still unclear",isPost?((rec.mp||{})[x.k]||""):null]));
   if(M2_TASKS.length) cols.push(["M2 answers",isPost?m2Answers():null],["M2 right",isPost?m2Right():null]);   // sent with the post-test row
   if(PROGRAMS.length>1) cols.push(["Program",prog()]);
-  cols.push(["Item codes",itemCodes(set)],["Version",SURUM],["Language",LANG]);
+  cols.push(["Item codes",itemCodes(set)],["Version",VERSION],["Language",LANG]);
   return {schema:2, course:COURSE, alias, test:mode, cols};
 }
 async function sendResult(){

@@ -9,7 +9,7 @@ The built file is not stored here. Guide: project doc `claude/simulator_template
 
 The page head and CSS come from `base/Sindirim_v2_base.html`. The parts are joined in this order:
 `cfg.js`, `mods.js`, `quiz.js`, `engine2.js`, `frame.js` (script) and `body.html` (page body).
-Build of 2026-11-16 (engine 2026-11k: "Şimdi / Now" page `#now`, one QR per lecture; delayed-test reminder by calendar or e-mail; Ganong author order Barrett, Brooks, Barman, Yuan; needs Apps Script 2026-11k): 201,638 bytes, sha256 2b7fa22bb4fa71b941c7da0c134aa61f623e4a8af5b5307b1e9eaa08d837c75e.
+Build of 2026-11-16 (engine 2026-11l: config name SURUM renamed VERSION, same values; before it, engine 2026-11k: "Şimdi / Now" page `#now`, one QR per lecture; delayed-test reminder by calendar or e-mail; Ganong author order Barrett, Brooks, Barman, Yuan; needs Apps Script 2026-11k): 201,754 bytes, sha256 419031d217263be769c80162349aa9bafce6a2be16159d8e748184bf4f8be3b9.
 Previous build (engine 2026-11j: pre-test class summary for the projector, `#summary`; needs Apps Script 2026-11j): 190,670 bytes, sha256 f67c64d561621045297c9843ed23b941362495e387c2d3dc712cbef98ac66de9.
 Previous build (engine 2026-11i: F1 remediation plan on the post-test key screen; CSS rule `.ctl{min-width:0} .ctl.wide .seg{width:auto}`): 184,244 bytes, sha256 3a2634e1ce59c049920f134cbd9d5dce0ca18b116a52789553ca133c14edaaed.
 Older build (engine 2026-11h: M7 missions, story rounds, streak bonus): 182,347 bytes, sha256 0a33ac72c144c4f85394697357f9bfe4a8c6aa0f2147ff8cd254fcf7660f3dee.
