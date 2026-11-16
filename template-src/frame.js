@@ -47,6 +47,7 @@ function modText(){
 function open(key){
   missionLeave();   // M7: leaving or reopening a module ends a running try (it counts as 0★)
   const mm=/^mission-(.+)$/.exec(key); if(mm&&M[mm[1]]){ open(mm[1]); try{ history.replaceState(null,"","#"+key); }catch(e){} const b=$("#m-mission"); if(b&&!b.hidden){ b.tabIndex=-1; b.scrollIntoView({block:"start"}); b.focus({preventScroll:true}); } return; }   // #mission-<module>
+  if(key==="summary"){ showSummary(); return; }   // pre-test class summary for the projector (engine 2026-11j)
   const bm=/^board(\d*)$/.exec(key); if(bm){ showBoard(bm[1]?+bm[1]:1); return; }   // leaderboard for the projector: #board1, #board2 … (#board = round 1)
   const km=/^mid(\d*)$/.exec(key);
   if(MODES.includes("mid")&&(km||key==="mini")){ qmode="mid"; kr=key==="mini"?(NR===1?1:0):km[1]?+km[1]:1; if(kr>NR) kr=0; renderModes(); key="test"; }   // #mid1, #mid2 … (#mid = round 1); #mini = list of rounds

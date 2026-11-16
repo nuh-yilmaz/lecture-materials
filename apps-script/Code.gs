@@ -1,5 +1,5 @@
 /**
- * Course simulations – writes test results to this Google Sheet.            Script version 2026-11h
+ * Course simulations – writes test results to this Google Sheet.            Script version 2026-11j
  * One deployment serves every course: each course writes to its own tab (e.g. "endocrine").
  * Setup: Sheet > Extensions > Apps Script > paste this code > Deploy > New deployment >
  * Type: Web app > Execute as: Me > Who has access: Anyone.
@@ -17,6 +17,10 @@
  *    points of the rows sent after <since> (anonymous codes only; only tabs ending in "-quiz").
  *    Points come from the round's own answers: right = 500 + 500 * (2 - P) * S, wrong = 0
  *    (P = share of the round right on that question, S = speed 0-1 sent by the phone).
+ * New in 2026-11j (test engine 2026-11j; pre-test class summary, review_ai_in_education.md, 2026-11-14):
+ *  - <web app URL>?summary=<course>&test=pre&since=<ms>&ver=<Version> returns the class totals of the pre-test: n and
+ *    the mean score share per automatic item. Read only; no codes, answers or rows; no items below 5 students.
+ *    Other requests and all writing work as in 2026-11h.
  * New in 2026-11h (test engine 2026-11h; Q8-A of 2026-11-12):
  *  - Board streak bonus: with &streak=1 (sent by engine 2026-11h boards), a right answer that follows a right answer in
  *    the same round earns +100 × (streak − 1): 2nd right in a row +100, 3rd +200. The reply says streak:true.
@@ -46,6 +50,7 @@
 const HEADERS = ['Timestamp', 'Alias', 'Test', 'Q1 (20)', 'Q2 (20)', 'Q3 (20)', 'Q4 (20)',
   'Q5 self-score (20)', 'Auto total (80)', 'Total (incl. self-score)',
   'A1 choice', 'A2 order', 'A3 matching', 'A4 T/F (D=true, Y=false)', 'A5 open-ended answer', 'Version', 'Language'];
+const SCRIPT_VER = '2026-11j';   // shown on the web app page and in the item analysis tabs
 const MAX_COLS = 200;
 const TEXT_COLS = /^(K\d+ parts|Item codes|M2 answers|M7 stars|M7 tries)$/;   // stored as text (leading ' ), e.g. part marks "01101"
 
@@ -150,7 +155,50 @@ function doGet(e) {
   if (p.board) {
     try { return out(board(p)); } catch (err) { return out({ ok: false, error: String(err && err.message || err).slice(0, 200) }); }
   }
-  return ContentService.createTextOutput('Course simulations data endpoint is running (script 2026-11h).');
+  if (p.summary) {   // 2026-11j: pre-test class summary
+    try { return out(summary(p)); } catch (err) { return out({ ok: false, error: String(err && err.message || err).slice(0, 200) }); }
+  }
+  return ContentService.createTextOutput('Course simulations data endpoint is running (script ' + SCRIPT_VER + ').');
+}
+
+// Pre-test class summary (2026-11j): <web app URL>?summary=<course>&test=pre&since=<ms>&ver=<Version>
+//   Reads the course tab (not "-quiz" or "-items" tabs), rows with Test = pre, sent after <since> and with that Version.
+//   Returns class totals only: n and, per automatic item column "Q<n> <type> (<pts>)", the mean score share (0–1).
+//   No codes, answers or rows. With fewer than SUMMARY_MIN students it returns n and no items (one student's answers
+//   cannot be read from the totals).
+const SUMMARY_MIN = 5;
+function summary(p) {
+  const tab = String(p.summary).replace(/[^\w -]/g, '').slice(0, 40);
+  if (!tab || /-(quiz|items)$/.test(tab)) return { ok: false, error: 'not a test tab' };
+  const test = String(p.test || 'pre');
+  if (test !== 'pre') return { ok: false, error: 'pre-test only' };
+  const empty = { ok: true, n: 0, min: SUMMARY_MIN, items: [] };
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(tab);
+  if (!sheet || sheet.getLastRow() < 2) return empty;
+  const v = sheet.getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn()).getValues();
+  const h = v[0].map(String), it = h.indexOf('Timestamp'), iq = h.indexOf('Test'), iv = h.indexOf('Version');
+  if (it < 0 || iq < 0) return empty;
+  const qc = [];
+  h.forEach(function (name, j) {
+    const m = /^Q(\d+) (mcq|tf|order|match|fill) \((\d+(?:\.\d+)?)\)$/.exec(name);
+    if (m) qc.push({ q: +m[1], type: m[2], pts: +m[3], j: j });
+  });
+  const since = Number(p.since) || 0, ver = String(p.ver || '');
+  const txt = function (x) { return String(x == null ? '' : x).replace(/^'/, ''); };
+  const rows = v.slice(1).filter(function (r) {
+    const t = r[it] instanceof Date ? r[it].getTime() : Date.parse(r[it]);
+    return t >= since && String(r[iq]) === test && (!ver || (iv >= 0 && txt(r[iv]) === ver));
+  });
+  if (rows.length < SUMMARY_MIN) return { ok: true, n: rows.length, min: SUMMARY_MIN, items: [] };
+  const items = [];
+  qc.forEach(function (c) {
+    const vals = rows.map(function (r) { return r[c.j]; }).filter(function (x) { return x !== '' && x !== null && isFinite(Number(x)); });
+    if (!vals.length) return;
+    const mean = vals.reduce(function (a, x) { return a + Number(x); }, 0) / vals.length;
+    items.push({ q: c.q, type: c.type, pts: c.pts, n: vals.length, share: Math.round(Math.min(Math.max(mean / c.pts, 0), 1) * 1000) / 1000 });
+  });
+  items.sort(function (a, b) { return a.q - b.q; });
+  return { ok: true, n: rows.length, min: SUMMARY_MIN, items: items };
 }
 
 // Mini-quiz points of one round (rows sent after "since"), calculated from the round's own answers:
@@ -301,7 +349,7 @@ function analyse(v, tabName, when) {
   });
   const W = 13, table = [];
   const pad = function (a) { while (a.length < W) a.push(''); return a; };
-  table.push(pad(['Item analysis · ' + tabName + ' · script 2026-11h · ' + fmtWhen(when)]));
+  table.push(pad(['Item analysis · ' + tabName + ' · script ' + SCRIPT_VER + ' · ' + fmtWhen(when)]));
   table.push(pad(['Post-test rows with item codes: ' + rows.post.length + ' · pre-test rows: ' + rows.pre.length +
     ' · groups: upper and lower 27% by total minus the item (ties included) · P = mean score share of both groups × 100 · D = upper − lower · n < 40: P as a count, no D']));
   table.push(pad(['Flags: P 50–60 ideal, 30–70 acceptable, > 70 easy, < 30 hard · D ≥ 0.35 excellent, 0.25–0.34 good, 0.15–0.24 review, < 0.15 low, < 0 check the key']));
@@ -355,7 +403,7 @@ function quizAnalyse(v, tabName, when) {
   if (!keys.length) return { ok: false, message: 'Tab "' + tabName + '" has no mini-quiz rows.' };
   const W = 9, table = [], details = [];
   const pad = function (a) { while (a.length < W) a.push(''); return a; };
-  table.push(pad(['Mini-quiz item analysis · ' + tabName + ' · script 2026-11h · ' + fmtWhen(when)]));
+  table.push(pad(['Mini-quiz item analysis · ' + tabName + ' · script ' + SCRIPT_VER + ' · ' + fmtWhen(when)]));
   table.push(pad(['Rows: ' + nRows + ' · P = share right × 100 (time-out = wrong) · no D (3 items per round) · n < 40: P as a count · pooled by item code']));
   table.push(pad(['Flags: P 50–60 ideal, 30–70 acceptable, > 70 easy, < 30 hard']));
   table.push(pad([]));

@@ -1,4 +1,5 @@
-/* ---------------- TEST ENGINE 2026-11i ----------------
+/* ---------------- TEST ENGINE 2026-11j ----------------
+   2026-11j: pre-test class summary for the projector (#summary; Apps Script 2026-11j; no new Sheet column).
    2026-11i: F1 remediation plan on the post-test key screen (no Sheet or Apps Script change; Apps Script 2026-11h).
    2026-11h: M7 missions (fix the body, you are the organ); mini-quiz story rounds; streak bonus on the board.
    2026-11g: mini-quiz rounds (QUIZ_MID = list of rounds of 3 items; links #mid1… and #board1…; Q126–Q143).
@@ -532,6 +533,61 @@ function boardLoad(){
     $("#bitems").textContent=(d.items||[]).map(x=>bt("q",{k:x.k,r:x.right,n:x.n})).join(" · ");
     $("#bnote").textContent=bt("upd")+": "+new Date().toLocaleTimeString(LANG==="tr"?"tr-TR":"en-US");
   }).catch(()=>{ const n=$("#bnote"); if(n) n.textContent=bt("err"); });
+}
+/* ----- pre-test class summary for the projector: #summary (engine 2026-11j; review_ai_in_education.md, pre-test focus
+   procedure; Q1-A to Q5-A of 2026-11-14). Reads the class totals of the pre-test (Apps Script 2026-11j, ?summary=…): rows of
+   this course with Test = pre, this Version, sent in the last 30 minutes ("Reset (new group)" restarts the window). Shows
+   nothing below 5 students. Topic % = item points weighted by the item's module (q.mod), same marks as the student feedback
+   (✓ 75% and above, ~ 50–74%, ✗ below 50%), weakest first. "Open module" opens the module at its prediction task. Uses the
+   leaderboard box and styles; it refreshes every 10 s. ----- */
+const ST_={tr:{t:"Ön test · Sınıf özeti",n:"{n} öğrenci ön testi gönderdi",few:"Sonuçlar en az {m} öğrenci gönderince görünür ({n}/{m}).",
+    items:"Sorular",q:"S",open:"Modülü aç ›",legend:"✓ %75 ve üzeri · ~ %50–74 · ✗ %50 altı",
+    hint:"✗ ve ~ konular: o modülün slaytlarında yavaşlayın; ✗ konularda tahmin görevini canlı yapın (yaklaşık 3 dk).",
+    off:"SHEET_URL boş: sınıf özeti yalnızca sonuç gönderen bir simülatörde çalışır.",none:"Bu sürümün sorularıyla eşleşen sonuç yok."},
+  en:{t:"Pre-test · Class summary",n:"{n} students sent the pre-test",few:"Results appear when at least {m} students have sent the pre-test ({n}/{m}).",
+    items:"Items",q:"Q",open:"Open module ›",legend:"✓ 75% and above · ~ 50–74% · ✗ below 50%",
+    hint:"✗ and ~ topics: slow down at that module's slides; for ✗ topics, run the prediction task live (about 3 min).",
+    off:"SHEET_URL is empty: the class summary only works in a simulator that sends results.",none:"No results match the items of this version."}};
+const SUM_MIN=5;
+const st_=(k,v)=>{ let s=ST_[LANG][k]; if(v) Object.keys(v).forEach(x=>s=s.split("{"+x+"}").join(v[x])); return s; };
+function sumSince(){ const s=store.get(KST+"-sum"); return (s&&Date.now()-s<3*3600e3)?s:Date.now()-30*60e3; }   // default: the last 30 minutes
+function showSummary(){
+  try{ if(location.hash!=="#summary") history.replaceState(null,"","#summary"); }catch(e){}
+  let el=$("#board"); if(!el){ el=document.createElement("div"); el.id="board"; el.setAttribute("role","dialog"); document.body.appendChild(el); }
+  el.setAttribute("aria-label",st_("t")); el.hidden=false; document.body.classList.add("boardon");
+  el.innerHTML=`<div class="bwrap csum"><div class="bhead"><h2>${st_("t")}</h2><div class="bbtn"><button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
+    `<p class="bcount" id="bcount"></p><ol class="blist slist" id="blist"></ol><p class="bitems" id="bitems"></p><p class="bnote" id="slegend">${st_("legend")}</p><p class="bnote" id="shint">${st_("hint")}</p><p class="bnote" id="bnote" role="status"></p></div>`;
+  $("#breset").onclick=()=>{ store.set(KST+"-sum",Date.now()); sumLoad(); };
+  $("#bclose").onclick=()=>{ clearInterval(bTimer); el.hidden=true; document.body.classList.remove("boardon"); open("giris"); };
+  clearInterval(bTimer);
+  if(!SHEET_URL){ $("#bnote").textContent=st_("off"); return; }
+  sumLoad(); bTimer=setInterval(sumLoad,10000);
+}
+/* topic shares from the item shares of the reply; an item counts only when its number, type and points match this version */
+function sumTopics(items){
+  const T={}, used=[];
+  (items||[]).forEach(x=>{ const q=QUIZ[x.q-1]; if(!q||!isAuto(q)||q.type!==x.type||Math.abs(q.pts-x.pts)>1e-6) return;
+    const s=Math.min(Math.max(Number(x.share)||0,0),1); used.push({q:x.q,s});
+    if(!T[q.mod]) T[q.mod]={e:0,p:0}; T[q.mod].e+=s*q.pts; T[q.mod].p+=q.pts; });
+  const tops=Object.keys(T).map(m=>{ const pc=T[m].e/T[m].p; return {m, label:M[m]?t(M[m].tab):m, pc, mark:pc>=.75?"✓":pc>=.5?"~":"✗"}; }).sort((a,b)=>a.pc-b.pc);
+  return {tops, used};
+}
+function sumOpen(m){ clearInterval(bTimer); const el=$("#board"); if(el) el.hidden=true; document.body.classList.remove("boardon"); open(m);
+  const b=$("#m-predict"); if(b&&!b.hidden){ b.tabIndex=-1; b.scrollIntoView({block:"start"}); b.focus({preventScroll:true}); } }
+function sumLoad(){
+  const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"summary="+encodeURIComponent(COURSE)+"&test=pre&since="+sumSince()+"&ver="+encodeURIComponent(SURUM);
+  fetch(u,{cache:"no-store"}).then(r=>r.json()).then(d=>{
+    if(!d||!d.ok) throw new Error(d&&d.error||"bad");
+    const n=+d.n||0, min=Math.max(+d.min||0,SUM_MIN);
+    $("#bcount").textContent=st_("n",{n});
+    if(n<min){ $("#blist").innerHTML=`<li class="bempty">${st_("few",{n,m:min})}</li>`; $("#bitems").textContent=""; }
+    else { const {tops,used}=sumTopics(d.items);
+      $("#blist").innerHTML=tops.length?tops.map(x=>`<li class="s${x.mark==="✓"?"ok":x.mark==="~"?"mid":"bad"}"><span class="brank">${x.mark}</span><span class="slabel">${esc(x.label)}</span><span class="bpts">${pct(x.pc)}</span>`+
+        (x.mark!=="✓"&&M[x.m]?`<button class="btn ghost sopen" type="button" data-m="${esc(x.m)}">${st_("open")}</button>`:"<span></span>")+`</li>`).join(""):`<li class="bempty">${st_("none")}</li>`;
+      document.querySelectorAll("#blist .sopen").forEach(b=>b.onclick=()=>sumOpen(b.dataset.m));
+      $("#bitems").textContent=used.length?st_("items")+": "+used.map(x=>st_("q")+x.q+" "+pct(x.s)).join(" · "):""; }
+    $("#bnote").textContent=bt("upd")+": "+new Date().toLocaleTimeString(LANG==="tr"?"tr-TR":"en-US");
+  }).catch(()=>{ const e=$("#bnote"); if(e) e.textContent=bt("err"); });
 }
 /* ----- M2 "predict first" (Q100-A, Q122-A, Q123-A). A module with predict:{q,set,a,why} shows a box above its controls:
    the student picks ↑ / ↓ / no change and presses "Lock" (one try). Lock applies the task's settings like a preset and runs

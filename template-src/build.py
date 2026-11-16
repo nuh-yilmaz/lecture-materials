@@ -89,6 +89,14 @@ body.boardon{overflow:hidden}
 #board .bempty{display:block;font-size:20px;color:var(--muted)}
 #board .bnote{color:var(--muted);margin-top:16px}
 #board .bitems{font-size:18px;font-weight:700;margin-top:18px}
+/* pre-test class summary (2026-11j): mark · topic · % · button */
+#board .slist li{grid-template-columns:auto 1fr auto auto}
+#board .slist li.sbad{border-color:var(--signal);border-width:3px}
+#board .slist li.sbad .brank{color:var(--signal)} #board .slist li.smid .brank{color:var(--warn)} #board .slist li.sok .brank{color:var(--ok)}
+#board .slist li.smid{border-color:var(--warn)}
+#board .slabel{font-weight:700;min-width:0;overflow-wrap:anywhere}
+#board .sopen{font-size:16px}
+@media (max-width:520px){#board .slist li{grid-template-columns:auto 1fr auto;gap:10px}#board .slist .sopen{grid-column:1/-1}}
 /* M2 predict first (2026-11f) */
 .predict{background:var(--surface);border:2px solid var(--navy);border-radius:var(--r);padding:14px;display:grid;gap:8px;margin-bottom:12px}
 .predict .phead small{color:var(--muted)}
