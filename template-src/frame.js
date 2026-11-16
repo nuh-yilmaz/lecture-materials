@@ -68,6 +68,7 @@ function setLang(l){
   LANG=l; store.set(PFX+"-lang",l); staticText(); renderModes(); testNote();
   if(cur){ modText(); buildControls(M[cur]); uiTick(true); }
   if(view==="test") renderQuiz();
+  const bx=$("#board"); if(bx&&!bx.hidden){ if(bx.querySelector(".csum")) showSummary(); else showBoard(bR); }   // engine 2026-11m: an open leaderboard or class summary follows the language at once
 }
 
 function nodeHTML(n){

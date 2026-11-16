@@ -100,7 +100,7 @@ body.boardon{overflow:hidden}
 #board .bwrap{max-width:900px;margin:0 auto}
 #board .bhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 #board h2{margin:0;font-size:clamp(24px,4vw,40px);color:var(--navy)}
-#board .bbtn{display:flex;gap:8px}
+#board .bbtn{display:flex;gap:8px;flex-wrap:wrap} #board .blang{display:flex;gap:4px;margin-right:8px} #board .blang [aria-pressed="true"]{background:var(--navy);color:var(--surface);border-color:var(--navy)}
 #board .bcount{font-size:20px;color:var(--muted);margin:10px 0 18px}
 #board .blist{list-style:none;padding:0;margin:0;display:grid;gap:12px}
 #board .blist li{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;padding:14px 20px;border-radius:14px;background:var(--surface);border:2px solid var(--line);font-size:clamp(22px,3.4vw,36px)}

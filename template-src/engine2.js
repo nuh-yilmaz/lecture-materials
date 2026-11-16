@@ -1,4 +1,6 @@
-/* ---------------- TEST ENGINE 2026-11l ----------------
+/* ---------------- TEST ENGINE 2026-11m ----------------
+   2026-11m: TR | EN buttons inside the leaderboard (#board) and class summary (#summary) box (the box covers the page switch);
+             a switch redraws the open box at once (title, buttons, rows).
    2026-11l: config name SURUM renamed VERSION (same values; Sheet column "Version" and ?ver= unchanged).
    2026-11k: "Şimdi / Now" page (#now): one QR per lecture; the phone shows the next step (pre-test, mini-quiz round, post-test).
              Delayed-test reminder (optional): calendar file / Google Calendar link (no data sent), or e-mail kept apart
@@ -595,6 +597,9 @@ let bTimer=null, bR=1;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const bt=(k,v)=>{ let s=BT[LANG][k]; if(v) Object.keys(v).forEach(x=>s=s.replace("{"+x+"}",v[x])); return s; };
 const bTitle=()=>NR>1?bt("tr_",{r:bR,n:NR}):bt("t");
+/* TR | EN inside the box (engine 2026-11m): the box covers the page's own switch */
+const bLangHTML=()=>`<span class="blang" role="group" aria-label="Language">${["tr","en"].map(l=>`<button class="btn ghost" type="button" data-bl="${l}" aria-pressed="${l===LANG}">${l.toUpperCase()}</button>`).join("")}</span>`;
+const bLangBind=el=>el.querySelectorAll("[data-bl]").forEach(b=>b.onclick=()=>{ if(b.dataset.bl!==LANG) setLang(b.dataset.bl); });
 function boardSince(){ const s=store.get(KST+"-board"+bR); return (s&&Date.now()-s<3*3600e3)?s:Date.now()-20*60e3; }   // default: the last 20 minutes
 function showBoard(r){
   bR=Math.min(Math.max(1,r||1),Math.max(1,NR));
@@ -602,10 +607,10 @@ function showBoard(r){
   let el=$("#board"); if(!el){ el=document.createElement("div"); el.id="board"; el.setAttribute("role","dialog"); document.body.appendChild(el); }
   el.setAttribute("aria-label",bTitle()); el.hidden=false; document.body.classList.add("boardon");
   const nav=NR>1?`<button class="btn ghost" type="button" id="bprev" ${bR>1?"":"disabled"}>${bt("prev")}</button><button class="btn" type="button" id="bnext" ${bR<NR?"":"disabled"}>${bt("next")}</button>`:"";
-  el.innerHTML=`<div class="bwrap"><div class="bhead"><h2>${bTitle()}</h2><div class="bbtn">${nav}<button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
+  el.innerHTML=`<div class="bwrap"><div class="bhead"><h2>${bTitle()}</h2><div class="bbtn">${bLangHTML()}${nav}<button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
     ((ROUNDS[bR-1]||{}).story?`<p class="bstory">${tx(ROUNDS[bR-1].story)}</p>`:"")+
     `<p class="bcount" id="bcount"></p><ol class="blist" id="blist"></ol><p class="bitems" id="bitems"></p><p class="bnote" id="bformula">${bt("formula")}</p><p class="bnote" id="bnote" role="status"></p></div>`;
-  $("#breset").onclick=()=>{ store.set(KST+"-board"+bR,Date.now()); boardLoad(); };
+  bLangBind(el); $("#breset").onclick=()=>{ store.set(KST+"-board"+bR,Date.now()); boardLoad(); };
   if(NR>1){ $("#bprev").onclick=()=>showBoard(bR-1); $("#bnext").onclick=()=>showBoard(bR+1); }
   $("#bclose").onclick=()=>{ clearInterval(bTimer); el.hidden=true; document.body.classList.remove("boardon"); open("giris"); };
   clearInterval(bTimer);
@@ -643,9 +648,9 @@ function showSummary(){
   try{ if(location.hash!=="#summary") history.replaceState(null,"","#summary"); }catch(e){}
   let el=$("#board"); if(!el){ el=document.createElement("div"); el.id="board"; el.setAttribute("role","dialog"); document.body.appendChild(el); }
   el.setAttribute("aria-label",st_("t")); el.hidden=false; document.body.classList.add("boardon");
-  el.innerHTML=`<div class="bwrap csum"><div class="bhead"><h2>${st_("t")}</h2><div class="bbtn"><button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
+  el.innerHTML=`<div class="bwrap csum"><div class="bhead"><h2>${st_("t")}</h2><div class="bbtn">${bLangHTML()}<button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
     `<p class="bcount" id="bcount"></p><ol class="blist slist" id="blist"></ol><p class="bitems" id="bitems"></p><p class="bnote" id="slegend">${st_("legend")}</p><p class="bnote" id="shint">${st_("hint")}</p><p class="bnote" id="bnote" role="status"></p></div>`;
-  $("#breset").onclick=()=>{ store.set(KST+"-sum",Date.now()); sumLoad(); };
+  bLangBind(el); $("#breset").onclick=()=>{ store.set(KST+"-sum",Date.now()); sumLoad(); };
   $("#bclose").onclick=()=>{ clearInterval(bTimer); el.hidden=true; document.body.classList.remove("boardon"); open("giris"); };
   clearInterval(bTimer);
   if(!SHEET_URL){ $("#bnote").textContent=st_("off"); return; }
