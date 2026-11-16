@@ -241,6 +241,27 @@ textarea[readonly]{background:var(--surface-2)}
 .eqbox .eqn{font-family:var(--f-mono);font-size:15px}
 .eqbox small{color:var(--muted);font-size:13px}
 
+/* Şimdi / Now page (engine 2026-11j) */
+.nowpage .nownext{display:block;width:100%;font-size:20px;min-height:60px;margin:10px 0 4px}
+.nowlist{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:10px}
+.nowlist li{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.nowlist li>.btn{min-width:9.5em}
+.nowlab{font-weight:700;min-width:9.5em}
+.nowrounds{display:flex;flex-wrap:wrap;gap:6px}
+.nowrounds .btn{min-width:46px;min-height:44px;padding:6px 8px}
+.nowrounds .done{color:var(--ok);border-color:var(--ok)}
+.nowrounds .closed{opacity:.5}
+.nowpage .next{outline:3px solid var(--navy);outline-offset:1px}
+.nowall{font-weight:700;color:var(--ok)}
+.nowlect{margin:16px 0 0;font-size:14px}
+.latebox{margin-top:12px;padding:12px;border-radius:10px;border:1px solid var(--line);display:grid;gap:8px}
+.latebox p{margin:0} .latebox .score{flex-wrap:wrap} .latebox a.btn{text-decoration:none}
+.mailrem{display:grid;gap:8px;margin-top:4px}
+.mailrem input[type=email]{font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%;max-width:22em}
+.mailrem .consent{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--muted)}
+.mailrem .consent input{margin-top:3px}
+.mailok{font-weight:700;color:var(--ok)}
+
 /* Test 2026-11d */
 .filltext{line-height:2.2;margin:4px 0 0}
 .fblank{display:inline-block;margin:0 4px;border-radius:8px;padding:0 2px}
@@ -253,6 +274,8 @@ textarea[readonly]{background:var(--surface-2)}
 .topics small{color:var(--muted)}
 .tm{display:inline-block;width:1.6em;text-align:center;font-weight:700}
 .tm.ok{color:var(--ok)} .tm.mid{color:var(--warn)} .tm.bad{color:var(--signal)}
+.remplan{margin-top:12px;padding:12px;border-radius:10px;border:1px solid var(--line)}
+.remplan p{margin:6px 0} .remplan ol{margin:6px 0 0;padding-left:1.4em;display:grid;gap:4px}
 .surewrong{margin-top:10px;font-weight:700;color:var(--signal)}
 .selfpts{margin:8px 0 0;font-weight:700;color:var(--muted)}
 .fbform{margin-top:14px;padding:12px;border-radius:10px;border:1px solid var(--line);display:grid;gap:10px}
@@ -289,7 +312,7 @@ body.boardon{overflow:hidden}
 #board .bwrap{max-width:900px;margin:0 auto}
 #board .bhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 #board h2{margin:0;font-size:clamp(24px,4vw,40px);color:var(--navy)}
-#board .bbtn{display:flex;gap:8px}
+#board .bbtn{display:flex;gap:8px;flex-wrap:wrap} #board .blang{display:flex;gap:4px;margin-right:8px} #board .blang [aria-pressed="true"]{background:var(--navy);color:var(--surface);border-color:var(--navy)}
 #board .bcount{font-size:20px;color:var(--muted);margin:10px 0 18px}
 #board .blist{list-style:none;padding:0;margin:0;display:grid;gap:12px}
 #board .blist li{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;padding:14px 20px;border-radius:14px;background:var(--surface);border:2px solid var(--line);font-size:clamp(22px,3.4vw,36px)}
@@ -300,6 +323,14 @@ body.boardon{overflow:hidden}
 #board .bempty{display:block;font-size:20px;color:var(--muted)}
 #board .bnote{color:var(--muted);margin-top:16px}
 #board .bitems{font-size:18px;font-weight:700;margin-top:18px}
+/* pre-test class summary (2026-11j): mark · topic · % · button */
+#board .slist li{grid-template-columns:auto 1fr auto auto}
+#board .slist li.sbad{border-color:var(--signal);border-width:3px}
+#board .slist li.sbad .brank{color:var(--signal)} #board .slist li.smid .brank{color:var(--warn)} #board .slist li.sok .brank{color:var(--ok)}
+#board .slist li.smid{border-color:var(--warn)}
+#board .slabel{font-weight:700;min-width:0;overflow-wrap:anywhere}
+#board .sopen{font-size:16px}
+@media (max-width:520px){#board .slist li{grid-template-columns:auto 1fr auto;gap:10px}#board .slist .sopen{grid-column:1/-1}}
 /* M2 predict first (2026-11f) */
 .predict{background:var(--surface);border:2px solid var(--navy);border-radius:var(--r);padding:14px;display:grid;gap:8px;margin-bottom:12px}
 .predict .phead small{color:var(--muted)}
@@ -443,11 +474,11 @@ body.boardon{overflow:hidden}
 "use strict";
 /* =====================================================================
    SİMÜLATÖR ŞABLONU / SIMULATOR TEMPLATE
-   Template 2026-11 · test engine 2026-11h · guide: claude/simulator_template.md
+   Template 2026-11 · test engine 2026-11n · guide: claude/simulator_template.md
    ---------------------------------------------------------------------
    HOW TO MAKE A NEW SIMULATOR
    1. Copy this file. Name it "<Konu> Simülatörü.html" (one file per lecture).
-   2. CONFIG (below): COURSE, PFX, SURUM, SHEET_URL, ORDER.
+   2. CONFIG (below): COURSE, PFX, VERSION, SHEET_URL, ORDER.
    3. UI (below): change title, eyebrow, lead, path, seeP, seeNote, sample*,
       ph. Every text is a pair {tr:"…", en:"…"}. Keep all other UI texts.
    4. MODULES: delete the example modules M.ornek1–M.ornek4 and write one
@@ -556,7 +587,7 @@ body.boardon{overflow:hidden}
 /* ---------------- AYARLAR / CONFIG ---------------- */
 const COURSE="introduction";   // Sheet tab name (English, lower case), e.g. "respiration"
 const PFX="gir";           // browser storage prefix, 2–5 letters, unique per simulator
-const SURUM="2026-11h-intro1";    // version sent with each result; change it when the test changes
+const VERSION="2026-11h-intro1";    // version sent with each result; change it when the test changes
 const SHEET_URL="https://script.google.com/macros/s/AKfycbzfIUIU-sczvJPGUjR4El7rH4OUNUcMupt07RNCQ1Vok-51ib1nOfsyjZ3tXLDe3RQp/exec";        // Apps Script web app URL (…/exec); "" = results are not sent
 const ORDER=["homeo","feedback","fluids","shift","edema"];   // module keys, in tab order
 /* assessment switches (true = on) */
@@ -1297,7 +1328,16 @@ const QUIZ_MID=[
 ];
 
 
-/* ---------------- TEST ENGINE 2026-11h ----------------
+/* ---------------- TEST ENGINE 2026-11n ----------------
+   2026-11n: an open box redrawn by the TR | EN buttons shows its last reply at once (no blank list while it asks again).
+   2026-11m: TR | EN buttons inside the leaderboard (#board) and class summary (#summary) box (the box covers the page switch);
+             a switch redraws the open box at once (title, buttons, rows).
+   2026-11l: config name SURUM renamed VERSION (same values; Sheet column "Version" and ?ver= unchanged).
+   2026-11k: "Şimdi / Now" page (#now): one QR per lecture; the phone shows the next step (pre-test, mini-quiz round, post-test).
+             Delayed-test reminder (optional): calendar file / Google Calendar link (no data sent), or e-mail kept apart
+             from the results (Apps Script 2026-11k, tab "reminders": no code, no scores; deleted after sending).
+   2026-11j: pre-test class summary for the projector (#summary; Apps Script 2026-11j; no new Sheet column).
+   2026-11i: F1 remediation plan on the post-test key screen (no Sheet or Apps Script change; Apps Script 2026-11h).
    2026-11h: M7 missions (fix the body, you are the organ); mini-quiz story rounds; streak bonus on the board.
    2026-11g: mini-quiz rounds (QUIZ_MID = list of rounds of 3 items; links #mid1… and #board1…; Q126–Q143).
    Any number of items, any order. Item types: mcq, tf, order, match, fill, open.
@@ -1327,6 +1367,11 @@ const QT={
   totT:{tr:"Toplam",en:"Total"}, totItems:{tr:"sorular",en:"items"}, totConf:{tr:"güven",en:"confidence"}, totGift:{tr:"hediye",en:"gift"},
   sureWrong:{tr:"Emin olduğunuz hâlde yanlış: {list}. Bu soruların konularını tekrar edin.",en:"Sure but wrong: {list}. Review the topics of these questions."},
   topicsT:{tr:"Konulara göre sonucunuz",en:"Your result by topic"}, topicHint:{tr:"✓ iyi (en az %75) · ~ kısmen (%50–74) · ✗ tekrar edin (%50'nin altında)",en:"✓ good (75% or more) · ~ partly (50–74%) · ✗ review (below 50%)"},
+  // F1 remediation plan (post-test only; Adaptive guide p. 8 without the video step). Step 4 only when the delayed test is on.
+  remT:{tr:"Gözden Geçirme Planı",en:"Review plan"}, remFor:{tr:"Gözden Geçirilecek Konular:",en:"Topics to review:"},
+  remSteps:{tr:["Simülatörde konunun modülünü aç; tahmin ve görevi yeniden dene.","Modül notundaki kitap sayfalarından 1–2 temel cümleyi işaretle.","Kendi sözcüklerinle 3 kısa not kartı yaz (önde soru, arkada yanıt)."],
+            en:["Open the topic's module in the simulator; try the prediction and mission again.","Mark 1–2 key sentences in the book pages listed in the module note.","Write 3 short note cards in your own words (question on front, answer on back)."]},
+  remLate:{tr:"{n} gün sonra açılan gecikmeli testte kendini yokla.",en:"Test yourself in the delayed test, which opens after {n} days."},
   send:{tr:"Sonucumu eğitimciye gönder",en:"Send my result to the lecturer"},
   sent:{tr:"Gönderildi. Teşekkürler! Kodunuz: {a}",en:"Sent. Thank you! Your code: {a}"}, sending:{tr:"Gönderiliyor…",en:"Sending…"},
   sentBefore:{tr:"Bu test için sonucunuz gönderildi.",en:"Your result for this test has been sent."},
@@ -1346,6 +1391,24 @@ const QT={
   lockPre:{tr:"Doğru cevaplar son testten sonra açılacak.",en:"The correct answers will open after the post-test."},
   preClosed:{tr:"Son testi çözdüğünüz için ön test kapandı.",en:"The pre-test is closed because you have already taken the post-test."},
   midClosed:{tr:"Son testi çözdüğünüz için mini quiz turları kapandı.",en:"The mini-quiz rounds are closed because you have already taken the post-test."},
+  nowT:{tr:"Şimdi ne yapacağım?",en:"What do I do now?"},
+  nowHint:{tr:"Eğitimcinin söylediği adımı açın. Önerilen adım en üstte.",en:"Open the step the lecturer names. The suggested step is at the top."},
+  nowNext:{tr:"▶ Sıradaki: {s}",en:"▶ Next: {s}"}, nowDone:{tr:"yapıldı",en:"done"}, nowLate:{tr:"{d} tarihinde açılır",en:"opens on {d}"}, nowLateN:{tr:"son testten {n} gün sonra açılır",en:"opens {n} days after the post-test"}, nowOpen:{tr:"açık",en:"open"},
+  nowAll:{tr:"Bu dersin bütün adımları tamamlandı. Teşekkürler!",en:"All steps of this lecture are done. Thank you!"},
+  nowWait:{tr:"Şimdilik yapılacak adım yok. Gecikmeli test {d} tarihinde açılır.",en:"Nothing to do for now. The delayed test opens on {d}."},
+  nowBoard:{tr:"Eğitimci: sıralama tablosu",en:"Lecturer: leaderboard"},
+  lrT:{tr:"Gecikmeli test hatırlatıcısı (isteğe bağlı)",en:"Delayed-test reminder (optional)"},
+  lrP:{tr:"Gecikmeli test {d} tarihinde açılır. Unutmamak için bir hatırlatıcı ekleyin.",en:"The delayed test opens on {d}. Add a reminder so you do not forget it."},
+  calIcs:{tr:"Takvime ekle",en:"Add to calendar"}, calG:{tr:"Google Takvim",en:"Google Calendar"},
+  calTitle:{tr:"Gecikmeli test: {t}",en:"Delayed test: {t}"},
+  calDesc:{tr:"Gecikmeli testi son testi çözdüğünüz cihaz ve tarayıcıda açın: {u}",en:"Open the delayed test on the same device and browser as your post-test: {u}"},
+  mailL:{tr:"Ya da e-posta ile hatırlatılsın:",en:"Or get an e-mail reminder:"},
+  mailConsent:{tr:"E-posta adresimin yalnızca bu hatırlatma için kullanılmasına, test sonuçlarımdan ayrı (kodum ve puanlarım olmadan) saklanmasına ve e-posta gönderildikten sonra silinmesine onay veriyorum.",en:"I agree that my e-mail address is used only for this reminder, is stored apart from my test results (without my code and scores) and is deleted after the e-mail is sent."},
+  mailBtn:{tr:"E-posta hatırlatması iste",en:"Request an e-mail reminder"},
+  mailBad:{tr:"Geçerli bir e-posta adresi yazın.",en:"Enter a valid e-mail address."},
+  mailNeed:{tr:"Önce onay kutusunu işaretleyin.",en:"Tick the consent box first."},
+  mailOK:{tr:"Kaydedildi. {d} tarihinde bir e-posta alacaksınız; adresiniz sonra silinir.",en:"Saved. You will get an e-mail on {d}; your address is deleted afterwards."},
+  mailDone:{tr:"E-posta hatırlatması istendi ({d}).",en:"E-mail reminder requested ({d})."},
   kT:{tr:"Mini quiz",en:"Mini-quiz"}, kRound:{tr:"Tur {r}/{n}",en:"Round {r}/{n}"}, kList:{tr:"Mini quiz turları",en:"Mini-quiz rounds"},
   kListHint:{tr:"Eğitimcinin gösterdiği turu açın (QR kod ya da aşağıdaki liste). Her tur 3 kısa sorudur.",en:"Open the round the lecturer shows (QR code or the list below). Each round has 3 short questions."},
   kAll:{tr:"‹ Tüm turlar",en:"‹ All rounds"}, kClosed:{tr:"kapalı",en:"closed"}, kPill:{tr:"{r}/{n} doğru ({k} tur)",en:"{r}/{n} right ({k} rounds)"},
@@ -1406,12 +1469,12 @@ if("mid" in ST){ if(ST.mid&&!ST.mid1) ST.mid1=ST.mid; delete ST.mid; store.set(K
 ["pre","post","late"].concat(ROUNDS.map((_,i)=>mk(i+1))).forEach(m=>{if(!(m in ST)) ST[m]=null;});
 const saveST=()=>store.set(KST,ST);
 const curKey=()=>qmode==="mid"?mk(kr):qmode;
-const hashOf=()=>qmode==="mid"?(kr?mk(kr):"mini"):qmode;   // #mid1… for a round, #mini for the list of rounds
+const hashOf=()=>qmode==="now"?"now":qmode==="mid"?(kr?mk(kr):"mini"):qmode;   // #mid1… for a round, #mini for the list of rounds
 const hashSync=()=>{ try{ if(location.hash.slice(1)!==hashOf()) history.replaceState(null,"","#"+hashOf()); }catch(e){} };
 let qmode=MODES[0], seq={}, warned=false, devMem=null;   // seq[i] = rows of order item i in the order they were tapped
 const ordAns=(q,i)=>{ const s=seq[i]||[]; return s.concat(tx(q.o).map((_,k)=>k).filter(k=>!s.includes(k))); };   // steps without a number go to the end
 UI.testP={tr:QT.testP_base.tr+(HAS_OPEN?QT.testP_open.tr:"")+(TESTS.mid?QT.testP_mid.tr:"")+(TESTS.late?QT.testP_late.tr.replace("{n}",LATE_DAYS):""),en:QT.testP_base.en+(HAS_OPEN?QT.testP_open.en:"")+(TESTS.mid?QT.testP_mid.en:"")+(TESTS.late?QT.testP_late.en.replace("{n}",LATE_DAYS):"")};
-UI.mode_pre=UI.pre; UI.mode_post=UI.post; UI.mode_mid={tr:"Mini quiz",en:"Mini-quiz"}; UI.mode_late={tr:"Gecikmeli test",en:"Delayed test"};
+UI.mode_now={tr:"Şimdi",en:"Now"}; UI.mode_pre=UI.pre; UI.mode_post=UI.post; UI.mode_mid={tr:"Mini quiz",en:"Mini-quiz"}; UI.mode_late={tr:"Gecikmeli test",en:"Delayed test"};
 function countWords(s){return (s||"").split(/[\s,;:.!?()\/\-–—>→←↑↓=+]+/).filter(w=>/\p{L}{2,}|\d/u.test(w)).length;}
 const CODE_RE=/^PHY-[A-Z2-9]{4}$/;
 function myCode(){ let c=store.get("sim-code")||devMem; const old=typeof c==="string"&&c.match(/^NF-([A-Z2-9]{4})$/); if(old){ c="PHY-"+old[1]; store.set("sim-code",c); }
@@ -1468,7 +1531,7 @@ const totalStr=(set,rec)=>`${nf(totalOf(set,rec))}/${nf(totMax(set))}`;
 /* ----- rendering ----- */
 function renderModes(){
   const box=$("#qmode"); if(!box) return;
-  box.innerHTML=MODES.map(m=>`<button type="button" data-m="${m}" aria-pressed="${m===qmode}">${t(UI["mode_"+m])}</button>`).join("");
+  box.innerHTML=(MODES.length?["now"]:[]).concat(MODES).map(m=>`<button type="button" data-m="${m}" aria-pressed="${m===qmode}">${t(UI["mode_"+m])}</button>`).join("");
   box.querySelectorAll("button").forEach(b=>b.onclick=()=>{qmode=b.dataset.m; if(qmode==="mid") kr=NR===1?1:0; renderModes(); renderQuiz(); hashSync(); });
 }
 function itemHtml(q,i,done){
@@ -1509,14 +1572,14 @@ function noteHtml(){
   return rec?"":qt("oneTry");
 }
 function renderQuiz(){
-  clearInterval(kTick); if(qmode==="mid") return renderKahoot();
+  clearInterval(kTick); if(qmode==="now") return renderNow(); if(qmode==="mid") return renderKahoot();
   const set=setOf(qmode), rec=ST[qmode], done=!!rec, f=$("#quiz"); warned=false;
   const g=gateHtml(); if(g&&!done){ f.innerHTML=`<div class="q qnote">${g}</div>`; testNote(); renderCodeBox(); return; }
   set.forEach((q,i)=>{ if(q.type==="order") seq[i]=[]; });
   const note=noteHtml();
   f.innerHTML=(note?`<div class="q qnote" id="qnote">${note}</div>`:"")+`<div class="q scorebox" id="qscorebox" role="note">${qt(CONFIDENCE?"scoreBox":"scoreBoxGift")}</div>`+set.map((q,i)=>itemHtml(q,i,done)).join("")+
     `<div class="q"><div class="blankwarn" id="qwarn" role="alert" hidden></div><div class="score">${done?"":`<button class="btn" type="submit" id="qsubmit">${qt("check")}</button><button class="btn ghost" type="button" id="qclear">${qt("clear")}</button>`}<span id="qres"></span></div>`+
-    `<div class="topics" id="qtopics" hidden></div><div class="surewrong" id="qsure" hidden></div><div class="compare" id="qcmp" style="margin-top:12px"></div>`+
+    `<div class="topics" id="qtopics" hidden></div><div class="remplan" id="qrem" hidden></div><div class="latebox" id="qlate" hidden></div><div class="surewrong" id="qsure" hidden></div><div class="compare" id="qcmp" style="margin-top:12px"></div>`+
     `<div class="fbform" id="fbform" hidden></div><div class="sendbox" id="sendbox" hidden><button class="btn" type="button" id="qsend">${qt("send")}</button><span id="sendmsg" role="status"></span></div></div>`;
   set.forEach((q,i)=>{ if(q.type==="order") renderOrder(i,done); });
   if(done) showResult(set,rec); else $("#qclear").onclick=()=>renderQuiz();
@@ -1562,9 +1625,14 @@ function showResult(set,rec){
   // topic feedback (all modes)
   const tp=topics(set,rec), tb=$("#qtopics");
   if(tp.length){ tb.hidden=false; tb.innerHTML=`<b>${qt("topicsT")}</b><ul>${tp.map(x=>`<li><span class="tm ${x.mark==="✓"?"ok":x.mark==="~"?"mid":"bad"}">${x.mark}</span> ${x.label}</li>`).join("")}</ul><small>${qt("topicHint")}</small>`; }
+  // F1 remediation plan: post-test key screen, only topics marked ✗ or ~ (none → no block)
+  const weak=tp.filter(x=>x.mark!=="✓"), rb=$("#qrem");
+  if(qmode==="post"&&weak.length){ const steps=QT.remSteps[LANG].concat(TESTS.late?[qt("remLate",{n:LATE_DAYS})]:[]);
+    rb.hidden=false; rb.innerHTML=`<b>${qt("remT")}</b><p>${qt("remFor")} ${weak.map(x=>`<a href="#${x.m}" data-go="${x.m}"><span class="tm ${x.mark==="~"?"mid":"bad"}">${x.mark}</span>${x.label}</a>`).join(" · ")}</p><ol>${steps.map(x=>`<li>${x}</li>`).join("")}</ol>`; }
   // confidence: sure but wrong (keyed modes only; in the pre-test it would hint at the key)
   if(CONFIDENCE&&keyed){ const sw=set.map((q,i)=>isAuto(q)&&rec.raw.conf[i]===1&&rec.qs[i]<q.pts?i+1:null).filter(Boolean);
     if(sw.length){ const el=$("#qsure"); el.hidden=false; el.textContent=qt("sureWrong",{list:sw.join(", ")}); } }
+  if(qmode==="post") renderLateBox($("#qlate"));
   if(qmode==="post"&&(FEEDBACK||MINUTE)) renderFb(rec);
   updateTotal();
   $("#sendbox").hidden=false;
@@ -1584,6 +1652,71 @@ function updateTotal(){
   set.forEach((q,i)=>{ if(q.type!=="open"||qmode==="pre") return; const s=document.getElementById("self"+i); if(s) s.textContent=qt("selfPts",{x:nf(selfOf(set,rec)[i]),m:nf(q.pts)}); });
   const n=$("#qnote"); if(n) n.innerHTML=noteHtml();
   showCompare(); testNote();
+}
+/* ----- "Şimdi / Now" page (2026-11j): one QR per lecture opens #now; the next step is suggested, every step can be opened ----- */
+const stepName=(m,r)=>m==="mid"?(NR>1?`${t(UI.mode_mid)} ${r}`:t(UI.mode_mid)):t(UI["mode_"+m]);
+function nextStep(){
+  const run=store.get(KRUN); if(run&&MODES.includes("mid")) return {m:"mid",r:run.r||1};   // a started round first
+  if(MODES.includes("pre")&&!ST.pre&&!ST.post) return {m:"pre"};
+  if(MODES.includes("mid")&&!ST.post) for(let r=1;r<=NR;r++) if(!ST[mk(r)]) return {m:"mid",r};
+  if(MODES.includes("post")&&!ST.post) return {m:"post"};
+  if(MODES.includes("late")&&!ST.late&&lateOpen()) return {m:"late"};
+  return null;
+}
+function nowStatus(m){
+  const rec=ST[m];
+  if(rec) return `<span class="tm ok">✓</span> ${qt("nowDone")} · ${totalStr(QUIZ,rec)}`;
+  if(m==="pre"&&ST.post) return `<small>${qt("kClosed")}</small>`;
+  if(m==="late"&&!lateOpen()) return `<small>${ST.post?qt("nowLate",{d:fmtDate(lateAt())}):qt("nowLateN",{n:LATE_DAYS})}</small>`;
+  return `<small>${qt("nowOpen")}</small>`;
+}
+function renderNow(){
+  const f=$("#quiz"), nx=nextStep(); renderCodeBox(); testNote();
+  const isNx=(m,r)=>nx&&nx.m===m&&(m!=="mid"||nx.r===r);
+  const row=m=>{ if(m==="mid") return `<li><span class="nowlab">${t(UI.mode_mid)}</span><span class="nowrounds">`+
+      ROUNDS.map((_,i)=>{ const r=i+1, done=!!ST[mk(r)], cl=done?"done":ST.post?"closed":isNx("mid",r)?"next":"";
+        return `<button type="button" class="btn ghost ${cl}" data-step="mid" data-r="${r}" aria-label="${stepName("mid",r)}${done?" ✓":""}">${r}${done?"✓":""}</button>`; }).join("")+`</span></li>`;
+    return `<li><button type="button" class="btn ghost${isNx(m)?" next":""}" data-step="${m}">${t(UI["mode_"+m])}</button> ${nowStatus(m)}</li>`; };
+  f.innerHTML=`<div class="q nowpage"><h3 class="kh">${qt("nowT")}</h3><p>${qt("nowHint")}</p>`+
+    (nx?`<button type="button" class="btn nownext" data-step="${nx.m}" data-r="${nx.r||""}">${qt("nowNext",{s:stepName(nx.m,nx.r)})}</button>`:`<p class="nowall">${TESTS.late&&ST.post&&!ST.late?qt("nowWait",{d:fmtDate(lateAt())}):qt("nowAll")}</p>`)+
+    `<ul class="nowlist">${MODES.map(row).join("")}</ul>`+
+    `<div class="latebox" id="qlate" hidden></div>`+(MODES.includes("mid")?`<p class="nowlect"><a href="#board">${qt("nowBoard")}</a></p>`:"")+`</div><div class="compare" id="qcmp"></div>`;
+  renderLateBox($("#qlate"));
+  f.querySelectorAll("[data-step]").forEach(b=>b.onclick=()=>{ qmode=b.dataset.step; if(qmode==="mid") kr=+b.dataset.r||1; renderModes(); renderQuiz(); hashSync(); window.scrollTo({top:0}); });
+  showCompare();
+  const np=f.querySelector(".nowpage"); if(np&&np.scrollIntoView){ const go=()=>np.scrollIntoView({block:"start"}); requestAnimationFrame(go); setTimeout(go,250); }   // again after the browser restores an old scroll position on reload   // Q26-A: the "next" button is visible on a phone
+}
+/* ----- delayed-test reminder (2026-11j; Q28-C): calendar (nothing sent) or e-mail (Apps Script tab "reminders", apart from the results) ----- */
+const KREM=PFX+"-remreq";   // only the date of a requested e-mail is kept in the browser, never the address
+const pad2=n=>("0"+n).slice(-2), ymdC=d=>`${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}`;
+const lateUrl=()=>location.href.split("#")[0]+"#late";
+const icsEsc=v=>String(v).replace(/\\/g,"\\\\").replace(/;/g,"\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");
+function icsText(){ const d=new Date(lateAt()), e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1), now=new Date().toISOString().replace(/[-:]/g,"").slice(0,15)+"Z";
+  const ti=qt("calTitle",{t:document.title}), de=qt("calDesc",{u:lateUrl()});
+  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Physiology simulators//TR","BEGIN:VEVENT","UID:"+Math.random().toString(36).slice(2)+"-late@sim","DTSTAMP:"+now,
+    "DTSTART;VALUE=DATE:"+ymdC(d),"DTEND;VALUE=DATE:"+ymdC(e),"SUMMARY:"+icsEsc(ti),"DESCRIPTION:"+icsEsc(de),"URL:"+lateUrl(),
+    "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+icsEsc(ti),"TRIGGER:PT9H","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n")+"\r\n"; }
+function gcalUrl(){ const d=new Date(lateAt()), e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1);
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(qt("calTitle",{t:document.title}))+"&dates="+ymdC(d)+"/"+ymdC(e)+"&details="+encodeURIComponent(qt("calDesc",{u:lateUrl()})); }
+function renderLateBox(el){
+  if(!el) return; if(!(TESTS.late&&ST.post&&!ST.late&&!lateOpen())){ el.hidden=true; return; }
+  const dd=fmtDate(lateAt()), req=store.get(KREM);
+  el.hidden=false;
+  el.innerHTML=`<b>${qt("lrT")}</b><p>${qt("lrP",{d:dd})}</p><div class="score">`+
+    `<a class="btn" id="calics" download="gecikmeli-test.ics" href="data:text/calendar;charset=utf-8,${encodeURIComponent(icsText())}">${qt("calIcs")}</a>`+
+    `<a class="btn ghost" id="calg" target="_blank" rel="noopener" href="${gcalUrl()}">${qt("calG")}</a></div>`+
+    (req?`<p class="mailok">${qt("mailDone",{d:dd})}</p>`:
+    `<div class="mailrem"><label for="remmail">${qt("mailL")}</label> <input id="remmail" type="email" maxlength="120" autocomplete="email" placeholder="ad@ornek.com">`+
+    `<label class="consent"><input type="checkbox" id="remok"> <span>${qt("mailConsent")}</span></label>`+
+    `<div class="score"><button class="btn ghost" type="button" id="remsend" ${SHEET_URL?"":"disabled"}>${qt("mailBtn")}</button><span id="remmsg" role="status">${SHEET_URL?"":`<span class="testmode">${qt("testMode")}</span>`}</span></div></div>`);
+  const b=el.querySelector("#remsend"); if(b) b.onclick=async()=>{
+    const v=(el.querySelector("#remmail").value||"").trim(), m=el.querySelector("#remmsg");
+    if(!/^[A-Za-z0-9][^\s@<>",;=]*@[^\s@<>",;=]+\.[A-Za-z]{2,}$/.test(v)||v.length>120){ m.textContent=qt("mailBad"); return; }
+    if(!el.querySelector("#remok").checked){ m.textContent=qt("mailNeed"); return; }
+    b.disabled=true; m.textContent=qt("sending");
+    try{ await fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({schema:"rem",course:COURSE,email:v,days:LATE_DAYS,lang:LANG})});   // no code, no scores
+      store.set(KREM,{d:ymdC(new Date(lateAt()))}); el.querySelector(".mailrem").outerHTML=`<p class="mailok">${qt("mailOK",{d:dd})}</p>`;
+    }catch(err){ b.disabled=false; m.textContent=qt("sendFail"); } };
 }
 function showCompare(){
   const el=$("#qcmp"); if(!el) return; let h="";
@@ -1631,7 +1764,7 @@ function finish(set,raw){
   const el=$("#qres"); if(el) el.scrollIntoView({block:"center",behavior:"smooth"});
 }
 $("#quiz").addEventListener("submit",e=>{
-  e.preventDefault(); if(qmode==="mid"||ST[qmode]) return; const set=setOf(qmode);
+  e.preventDefault(); if(qmode==="now"||qmode==="mid"||ST[qmode]) return; const set=setOf(qmode);
   const r=readRaw(set), wbox=$("#qwarn");
   if(!progOK()){ wbox.hidden=false; wbox.textContent=qt("progNeed"); $("#rumuzbox").scrollIntoView({block:"center",behavior:"smooth"}); return; }
   if(isEmpty(set,r)){ wbox.hidden=false; wbox.textContent=qt("noneAns"); return; }
@@ -1645,7 +1778,7 @@ $("#quiz").addEventListener("submit",e=>{
   }
   finish(set,r);
 });
-$("#quiz").addEventListener("click",e=>{ if(qmode==="mid"||ST[qmode]) return;
+$("#quiz").addEventListener("click",e=>{ if(qmode==="now"||qmode==="mid"||ST[qmode]) return;
   const c=e.target.closest("[data-oclear]");
   if(c){ const i=+c.dataset.oclear; seq[i]=[]; renderOrder(i,false); const f=document.querySelector(`#ord${i} [data-tap]`); if(f) f.focus(); return; }
   const b=e.target.closest("[data-tap]"); if(!b) return;
@@ -1767,7 +1900,7 @@ function kPayload(rec,alias){   // one row per student and round (Q134-A): Test 
     cols.push([`R${n}`,ok],[`S${n}`,ok?r2(1-ms/lim):0],[`A${n}`,kAnsStr(q,rec.raw.ans[i])],[`T${n} sec`,r2(ms/1000)]); });
   cols.push(["Mini-quiz right",rec.auto],["Mini-quiz items",set.length]);
   if(PROGRAMS.length>1) cols.push(["Program",prog()]);
-  cols.push(["Item codes",itemCodes(set)],["Version",SURUM],["Language",LANG]);
+  cols.push(["Item codes",itemCodes(set)],["Version",VERSION],["Language",LANG]);
   return {schema:2, course:COURSE+"-quiz", alias, test:mk(kr), cols};
 }
 function checkMid(){   // 2026-11g: 1–10 rounds, exactly 3 items per round (Q126-A, Q127-A, Q128-A)
@@ -1795,6 +1928,9 @@ let bTimer=null, bR=1;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const bt=(k,v)=>{ let s=BT[LANG][k]; if(v) Object.keys(v).forEach(x=>s=s.replace("{"+x+"}",v[x])); return s; };
 const bTitle=()=>NR>1?bt("tr_",{r:bR,n:NR}):bt("t");
+/* TR | EN inside the box (engine 2026-11m): the box covers the page's own switch */
+const bLangHTML=()=>`<span class="blang" role="group" aria-label="Language">${["tr","en"].map(l=>`<button class="btn ghost" type="button" data-bl="${l}" aria-pressed="${l===LANG}">${l.toUpperCase()}</button>`).join("")}</span>`;
+const bLangBind=el=>el.querySelectorAll("[data-bl]").forEach(b=>b.onclick=()=>{ if(b.dataset.bl!==LANG) setLang(b.dataset.bl); });
 function boardSince(){ const s=store.get(KST+"-board"+bR); return (s&&Date.now()-s<3*3600e3)?s:Date.now()-20*60e3; }   // default: the last 20 minutes
 function showBoard(r){
   bR=Math.min(Math.max(1,r||1),Math.max(1,NR));
@@ -1802,25 +1938,94 @@ function showBoard(r){
   let el=$("#board"); if(!el){ el=document.createElement("div"); el.id="board"; el.setAttribute("role","dialog"); document.body.appendChild(el); }
   el.setAttribute("aria-label",bTitle()); el.hidden=false; document.body.classList.add("boardon");
   const nav=NR>1?`<button class="btn ghost" type="button" id="bprev" ${bR>1?"":"disabled"}>${bt("prev")}</button><button class="btn" type="button" id="bnext" ${bR<NR?"":"disabled"}>${bt("next")}</button>`:"";
-  el.innerHTML=`<div class="bwrap"><div class="bhead"><h2>${bTitle()}</h2><div class="bbtn">${nav}<button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
+  el.innerHTML=`<div class="bwrap"><div class="bhead"><h2>${bTitle()}</h2><div class="bbtn">${bLangHTML()}${nav}<button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
     ((ROUNDS[bR-1]||{}).story?`<p class="bstory">${tx(ROUNDS[bR-1].story)}</p>`:"")+
     `<p class="bcount" id="bcount"></p><ol class="blist" id="blist"></ol><p class="bitems" id="bitems"></p><p class="bnote" id="bformula">${bt("formula")}</p><p class="bnote" id="bnote" role="status"></p></div>`;
-  $("#breset").onclick=()=>{ store.set(KST+"-board"+bR,Date.now()); boardLoad(); };
+  bLangBind(el); $("#breset").onclick=()=>{ store.set(KST+"-board"+bR,Date.now()); boardLoad(); };
   if(NR>1){ $("#bprev").onclick=()=>showBoard(bR-1); $("#bnext").onclick=()=>showBoard(bR+1); }
   $("#bclose").onclick=()=>{ clearInterval(bTimer); el.hidden=true; document.body.classList.remove("boardon"); open("giris"); };
   clearInterval(bTimer);
   if(!SHEET_URL){ $("#bnote").textContent=bt("off"); return; }
+  if(bLast.board&&bLast.board.k===bKey()) boardDraw(bLast.board.d);   // 2026-11n: last reply at once
   boardLoad(); bTimer=setInterval(boardLoad,5000);
 }
+const bLast={board:null,sum:null};   // last reply of each box (engine 2026-11n); key = round + the stored "Reset" time ("d" = default window)
+const bKey=()=>bR+":"+(store.get(KST+"-board"+bR)||"d"), sKey=()=>String(store.get(KST+"-sum")||"d");
 function boardLoad(){
   const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"board="+encodeURIComponent(COURSE+"-quiz")+"&test="+mk(bR)+"&since="+boardSince()+"&n="+BOARD_TOP+"&streak=1";   // streak bonus (Apps Script 2026-11h; an older script ignores it)
+  const r0=bR, k0=bKey();
   fetch(u,{cache:"no-store"}).then(r=>r.json()).then(d=>{
     if(!d||!d.ok) throw new Error(d&&d.error||"bad");
+    bLast.board={k:k0,d}; if(r0===bR) boardDraw(d);
+  }).catch(()=>{ const n=$("#bnote"); if(n) n.textContent=bt("err"); });
+}
+function boardDraw(d){
+    if(!$("#bcount")) return;
     $("#bcount").textContent=bt("n",{n:d.n}); $("#bformula").textContent=bt("formula")+(d.streak?bt("streak"):"");   // the bonus line only when the script gives the bonus
     $("#blist").innerHTML=d.top.length?d.top.map(r=>`<li class="r${Math.min(r.rank,4)}"><span class="brank">${r.rank}</span><span class="balias">${esc(r.alias)}</span><span class="bpts">${r.points} ${bt("pts")}</span></li>`).join(""):`<li class="bempty">${bt("none")}</li>`;
     $("#bitems").textContent=(d.items||[]).map(x=>bt("q",{k:x.k,r:x.right,n:x.n})).join(" · ");
     $("#bnote").textContent=bt("upd")+": "+new Date().toLocaleTimeString(LANG==="tr"?"tr-TR":"en-US");
-  }).catch(()=>{ const n=$("#bnote"); if(n) n.textContent=bt("err"); });
+}
+/* ----- pre-test class summary for the projector: #summary (engine 2026-11j; review_ai_in_education.md, pre-test focus
+   procedure; Q1-A to Q5-A of 2026-11-14). Reads the class totals of the pre-test (Apps Script 2026-11j, ?summary=…): rows of
+   this course with Test = pre, this Version, sent in the last 30 minutes ("Reset (new group)" restarts the window). Shows
+   nothing below 5 students. Topic % = item points weighted by the item's module (q.mod), same marks as the student feedback
+   (✓ 75% and above, ~ 50–74%, ✗ below 50%), weakest first. "Open module" opens the module at its prediction task. Uses the
+   leaderboard box and styles; it refreshes every 10 s. ----- */
+const ST_={tr:{t:"Ön test · Sınıf özeti",n:"{n} öğrenci ön testi gönderdi",few:"Sonuçlar en az {m} öğrenci gönderince görünür ({n}/{m}).",
+    items:"Sorular",q:"S",open:"Modülü aç ›",legend:"✓ %75 ve üzeri · ~ %50–74 · ✗ %50 altı",
+    hint:"✗ ve ~ konular: o modülün slaytlarında yavaşlayın; ✗ konularda tahmin görevini canlı yapın (yaklaşık 3 dk).",
+    off:"SHEET_URL boş: sınıf özeti yalnızca sonuç gönderen bir simülatörde çalışır.",none:"Bu sürümün sorularıyla eşleşen sonuç yok."},
+  en:{t:"Pre-test · Class summary",n:"{n} students sent the pre-test",few:"Results appear when at least {m} students have sent the pre-test ({n}/{m}).",
+    items:"Items",q:"Q",open:"Open module ›",legend:"✓ 75% and above · ~ 50–74% · ✗ below 50%",
+    hint:"✗ and ~ topics: slow down at that module's slides; for ✗ topics, run the prediction task live (about 3 min).",
+    off:"SHEET_URL is empty: the class summary only works in a simulator that sends results.",none:"No results match the items of this version."}};
+const SUM_MIN=5;
+const st_=(k,v)=>{ let s=ST_[LANG][k]; if(v) Object.keys(v).forEach(x=>s=s.split("{"+x+"}").join(v[x])); return s; };
+function sumSince(){ const s=store.get(KST+"-sum"); return (s&&Date.now()-s<3*3600e3)?s:Date.now()-30*60e3; }   // default: the last 30 minutes
+function showSummary(){
+  try{ if(location.hash!=="#summary") history.replaceState(null,"","#summary"); }catch(e){}
+  let el=$("#board"); if(!el){ el=document.createElement("div"); el.id="board"; el.setAttribute("role","dialog"); document.body.appendChild(el); }
+  el.setAttribute("aria-label",st_("t")); el.hidden=false; document.body.classList.add("boardon");
+  el.innerHTML=`<div class="bwrap csum"><div class="bhead"><h2>${st_("t")}</h2><div class="bbtn">${bLangHTML()}<button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
+    `<p class="bcount" id="bcount"></p><ol class="blist slist" id="blist"></ol><p class="bitems" id="bitems"></p><p class="bnote" id="slegend">${st_("legend")}</p><p class="bnote" id="shint">${st_("hint")}</p><p class="bnote" id="bnote" role="status"></p></div>`;
+  bLangBind(el); $("#breset").onclick=()=>{ store.set(KST+"-sum",Date.now()); sumLoad(); };
+  $("#bclose").onclick=()=>{ clearInterval(bTimer); el.hidden=true; document.body.classList.remove("boardon"); open("giris"); };
+  clearInterval(bTimer);
+  if(!SHEET_URL){ $("#bnote").textContent=st_("off"); return; }
+  if(bLast.sum&&bLast.sum.k===sKey()) sumDraw(bLast.sum.d);   // 2026-11n: last reply at once
+  sumLoad(); bTimer=setInterval(sumLoad,10000);
+}
+/* topic shares from the item shares of the reply; an item counts only when its number, type and points match this version */
+function sumTopics(items){
+  const T={}, used=[];
+  (items||[]).forEach(x=>{ const q=QUIZ[x.q-1]; if(!q||!isAuto(q)||q.type!==x.type||Math.abs(q.pts-x.pts)>1e-6) return;
+    const s=Math.min(Math.max(Number(x.share)||0,0),1); used.push({q:x.q,s});
+    if(!T[q.mod]) T[q.mod]={e:0,p:0}; T[q.mod].e+=s*q.pts; T[q.mod].p+=q.pts; });
+  const tops=Object.keys(T).map(m=>{ const pc=T[m].e/T[m].p; return {m, label:M[m]?t(M[m].tab):m, pc, mark:pc>=.75?"✓":pc>=.5?"~":"✗"}; }).sort((a,b)=>a.pc-b.pc);
+  return {tops, used};
+}
+function sumOpen(m){ clearInterval(bTimer); const el=$("#board"); if(el) el.hidden=true; document.body.classList.remove("boardon"); open(m);
+  const b=$("#m-predict"); if(b&&!b.hidden){ b.tabIndex=-1; b.scrollIntoView({block:"start"}); b.focus({preventScroll:true}); } }
+function sumLoad(){
+  const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"summary="+encodeURIComponent(COURSE)+"&test=pre&since="+sumSince()+"&ver="+encodeURIComponent(VERSION);
+  const k0=sKey();
+  fetch(u,{cache:"no-store"}).then(r=>r.json()).then(d=>{
+    if(!d||!d.ok) throw new Error(d&&d.error||"bad");
+    bLast.sum={k:k0,d}; sumDraw(d);
+  }).catch(()=>{ const e=$("#bnote"); if(e) e.textContent=bt("err"); });
+}
+function sumDraw(d){
+    if(!$("#bcount")||!$("#board .csum")) return;
+    const n=+d.n||0, min=Math.max(+d.min||0,SUM_MIN);
+    $("#bcount").textContent=st_("n",{n});
+    if(n<min){ $("#blist").innerHTML=`<li class="bempty">${st_("few",{n,m:min})}</li>`; $("#bitems").textContent=""; }
+    else { const {tops,used}=sumTopics(d.items);
+      $("#blist").innerHTML=tops.length?tops.map(x=>`<li class="s${x.mark==="✓"?"ok":x.mark==="~"?"mid":"bad"}"><span class="brank">${x.mark}</span><span class="slabel">${esc(x.label)}</span><span class="bpts">${pct(x.pc)}</span>`+
+        (x.mark!=="✓"&&M[x.m]?`<button class="btn ghost sopen" type="button" data-m="${esc(x.m)}">${st_("open")}</button>`:"<span></span>")+`</li>`).join(""):`<li class="bempty">${st_("none")}</li>`;
+      document.querySelectorAll("#blist .sopen").forEach(b=>b.onclick=()=>sumOpen(b.dataset.m));
+      $("#bitems").textContent=used.length?st_("items")+": "+used.map(x=>st_("q")+x.q+" "+pct(x.s)).join(" · "):""; }
+    $("#bnote").textContent=bt("upd")+": "+new Date().toLocaleTimeString(LANG==="tr"?"tr-TR":"en-US");
 }
 /* ----- M2 "predict first" (Q100-A, Q122-A, Q123-A). A module with predict:{q,set,a,why} shows a box above its controls:
    the student picks ↑ / ↓ / no change and presses "Lock" (one try). Lock applies the task's settings like a preset and runs
@@ -2073,7 +2278,7 @@ function payloadOf(mode,rec,alias){
   if(M2_TASKS.length) cols.push(["M2 answers",isPost?m2Answers():null],["M2 right",isPost?m2Right():null]);   // sent with the post-test row
   if(M7_TASKS.length) cols.push(["M7 stars",isPost?m7StarsStr():null],["M7 tries",isPost?m7TriesStr():null]);   // engine 2026-11h, post-test row
   if(PROGRAMS.length>1) cols.push(["Program",prog()]);
-  cols.push(["Item codes",itemCodes(set)],["Version",SURUM],["Language",LANG]);
+  cols.push(["Item codes",itemCodes(set)],["Version",VERSION],["Language",LANG]);
   return {schema:2, course:COURSE, alias, test:mode, cols};
 }
 async function sendResult(){
@@ -2167,9 +2372,11 @@ function modText(){
 function open(key){
   missionLeave();   // M7: leaving or reopening a module ends a running try (it counts as 0★)
   const mm=/^mission-(.+)$/.exec(key); if(mm&&M[mm[1]]){ open(mm[1]); try{ history.replaceState(null,"","#"+key); }catch(e){} const b=$("#m-mission"); if(b&&!b.hidden){ b.tabIndex=-1; b.scrollIntoView({block:"start"}); b.focus({preventScroll:true}); } return; }   // #mission-<module>
+  if(key==="summary"){ showSummary(); return; }   // pre-test class summary for the projector (engine 2026-11j)
   const bm=/^board(\d*)$/.exec(key); if(bm){ showBoard(bm[1]?+bm[1]:1); return; }   // leaderboard for the projector: #board1, #board2 … (#board = round 1)
   const km=/^mid(\d*)$/.exec(key);
   if(MODES.includes("mid")&&(km||key==="mini")){ qmode="mid"; kr=key==="mini"?(NR===1?1:0):km[1]?+km[1]:1; if(kr>NR) kr=0; renderModes(); key="test"; }   // #mid1, #mid2 … (#mid = round 1); #mini = list of rounds
+  else if(key==="now"&&MODES.length){ qmode="now"; renderModes(); key="test"; }   // #now: one QR per lecture (2026-11j)
   else if(MODES.includes(key)){ qmode=key; renderModes(); key="test"; }   // QR links: #pre, #post, #late
   if(!M[key]&&key!=="giris"&&key!=="test") key="giris";
   view=key;
@@ -2186,6 +2393,7 @@ function setLang(l){
   LANG=l; store.set(PFX+"-lang",l); staticText(); renderModes(); testNote();
   if(cur){ modText(); buildControls(M[cur]); uiTick(true); }
   if(view==="test") renderQuiz();
+  const bx=$("#board"); if(bx&&!bx.hidden){ if(bx.querySelector(".csum")) showSummary(); else showBoard(bR); }   // engine 2026-11m: an open leaderboard or class summary follows the language at once
 }
 
 function nodeHTML(n){
@@ -2263,7 +2471,7 @@ $("#b-pause").onclick=()=>{paused=!paused; $("#b-pause").textContent=paused?t(UI
 $("#b-reset").onclick=()=>reset();
 document.querySelectorAll("#speed button").forEach(b=>b.onclick=()=>{speed=+b.dataset.s; document.querySelectorAll("#speed button").forEach(x=>x.setAttribute("aria-pressed",x===b));});
 document.querySelectorAll("#lang button").forEach(b=>b.onclick=()=>setLang(b.dataset.l));
-document.addEventListener("click",e=>{const g=e.target.closest("[data-go]"); if(!g) return; e.preventDefault(); if(g.dataset.mode&&MODES.includes(g.dataset.mode)){qmode=g.dataset.mode; renderModes();} open(g.dataset.go); window.scrollTo({top:0});});
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]"); if(!g) return; e.preventDefault(); if(g.dataset.mode&&(MODES.includes(g.dataset.mode)||(g.dataset.mode==="now"&&MODES.length))){qmode=g.dataset.mode; renderModes();} open(g.dataset.go); window.scrollTo({top:0});});
 window.addEventListener("hashchange",()=>open(location.hash.slice(1)));
 staticText();
 open(location.hash.slice(1)||"giris");

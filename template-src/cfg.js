@@ -1,10 +1,10 @@
 /* =====================================================================
    SİMÜLATÖR ŞABLONU / SIMULATOR TEMPLATE
-   Template 2026-11 · test engine 2026-11k · guide: claude/simulator_template.md
+   Template 2026-11 · test engine 2026-11n · guide: claude/simulator_template.md
    ---------------------------------------------------------------------
    HOW TO MAKE A NEW SIMULATOR
    1. Copy this file. Name it "<Konu> Simülatörü.html" (one file per lecture).
-   2. CONFIG (below): COURSE, PFX, SURUM, SHEET_URL, ORDER.
+   2. CONFIG (below): COURSE, PFX, VERSION, SHEET_URL, ORDER.
    3. UI (below): change title, eyebrow, lead, path, seeP, seeNote, sample*,
       ph. Every text is a pair {tr:"…", en:"…"}. Keep all other UI texts.
    4. MODULES: delete the example modules M.ornek1–M.ornek4 and write one
@@ -113,7 +113,7 @@
 /* ---------------- AYARLAR / CONFIG ---------------- */
 const COURSE="template";   // Sheet tab name (English, lower case), e.g. "respiration"
 const PFX="tpl";           // browser storage prefix, 2–5 letters, unique per simulator
-const SURUM="2026-11h";    // version sent with each result; change it when the test changes
+const VERSION="2026-11h";    // version sent with each result; change it when the test changes
 const SHEET_URL="";        // Apps Script web app URL (…/exec); "" = results are not sent
 const ORDER=["ornek1","ornek2","ornek3","ornek4"];   // module keys, in tab order
 /* assessment switches (true = on) */

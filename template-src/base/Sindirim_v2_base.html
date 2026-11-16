@@ -885,7 +885,7 @@ const QUIZ=[
 
 
 const SHEET_URL="https://script.google.com/macros/s/AKfycbzfIUIU-sczvJPGUjR4El7rH4OUNUcMupt07RNCQ1Vok-51ib1nOfsyjZ3tXLDe3RQp/exec"; // Apps Script web app URL (…/exec); empty = results are not sent
-const COURSE="digestion", PFX="sind", SURUM="2026-11c", MINW=10, KST=PFX+"-t3";
+const COURSE="digestion", PFX="sind", VERSION="2026-11c", MINW=10, KST=PFX+"-t3";
 const tx=v=>(v&&typeof v==="object"&&!Array.isArray(v)&&("tr" in v))?v[LANG]:v;
 const QT={
   up:{tr:"Yukarı taşı",en:"Move up"}, down:{tr:"Aşağı taşı",en:"Move down"}, choose:{tr:"Seçin…",en:"Choose…"},
@@ -1081,7 +1081,7 @@ async function sendResult(){
   const payload={course:COURSE, alias, test:post?"post":"pre", s1:rec.qs[0], s2:rec.qs[1], s3:rec.qs[2], s4:rec.qs[3],
     s5_self:post?r5:undefined, auto_total:rec.auto, total:post?rec.auto+r5:undefined,
     a1:raw.q1>=0?LU[raw.q1]:"-", a2:raw.order.map(k=>LU[k]).join(""), a3:raw.match.map((v,j)=>(j+1)+"-"+(v===null?"?":ll[v])).join(" "),
-    a4:raw.tf.map(v=>v===null?"-":(v?"D":"Y")).join(""), a5:raw.open, version:SURUM, lang:LANG};
+    a4:raw.tf.map(v=>v===null?"-":(v?"D":"Y")).join(""), a5:raw.open, version:VERSION, lang:LANG};
   const btn=$("#qsend"); btn.disabled=true; $("#sendmsg").textContent=qt("sending");
   try{
     await fetch(SHEET_URL,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});

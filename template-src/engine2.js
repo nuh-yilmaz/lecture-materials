@@ -1,4 +1,8 @@
-/* ---------------- TEST ENGINE 2026-11k ----------------
+/* ---------------- TEST ENGINE 2026-11n ----------------
+   2026-11n: an open box redrawn by the TR | EN buttons shows its last reply at once (no blank list while it asks again).
+   2026-11m: TR | EN buttons inside the leaderboard (#board) and class summary (#summary) box (the box covers the page switch);
+             a switch redraws the open box at once (title, buttons, rows).
+   2026-11l: config name SURUM renamed VERSION (same values; Sheet column "Version" and ?ver= unchanged).
    2026-11k: "Şimdi / Now" page (#now): one QR per lecture; the phone shows the next step (pre-test, mini-quiz round, post-test).
              Delayed-test reminder (optional): calendar file / Google Calendar link (no data sent), or e-mail kept apart
              from the results (Apps Script 2026-11k, tab "reminders": no code, no scores; deleted after sending).
@@ -566,7 +570,7 @@ function kPayload(rec,alias){   // one row per student and round (Q134-A): Test 
     cols.push([`R${n}`,ok],[`S${n}`,ok?r2(1-ms/lim):0],[`A${n}`,kAnsStr(q,rec.raw.ans[i])],[`T${n} sec`,r2(ms/1000)]); });
   cols.push(["Mini-quiz right",rec.auto],["Mini-quiz items",set.length]);
   if(PROGRAMS.length>1) cols.push(["Program",prog()]);
-  cols.push(["Item codes",itemCodes(set)],["Version",SURUM],["Language",LANG]);
+  cols.push(["Item codes",itemCodes(set)],["Version",VERSION],["Language",LANG]);
   return {schema:2, course:COURSE+"-quiz", alias, test:mk(kr), cols};
 }
 function checkMid(){   // 2026-11g: 1–10 rounds, exactly 3 items per round (Q126-A, Q127-A, Q128-A)
@@ -594,6 +598,9 @@ let bTimer=null, bR=1;
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const bt=(k,v)=>{ let s=BT[LANG][k]; if(v) Object.keys(v).forEach(x=>s=s.replace("{"+x+"}",v[x])); return s; };
 const bTitle=()=>NR>1?bt("tr_",{r:bR,n:NR}):bt("t");
+/* TR | EN inside the box (engine 2026-11m): the box covers the page's own switch */
+const bLangHTML=()=>`<span class="blang" role="group" aria-label="Language">${["tr","en"].map(l=>`<button class="btn ghost" type="button" data-bl="${l}" aria-pressed="${l===LANG}">${l.toUpperCase()}</button>`).join("")}</span>`;
+const bLangBind=el=>el.querySelectorAll("[data-bl]").forEach(b=>b.onclick=()=>{ if(b.dataset.bl!==LANG) setLang(b.dataset.bl); });
 function boardSince(){ const s=store.get(KST+"-board"+bR); return (s&&Date.now()-s<3*3600e3)?s:Date.now()-20*60e3; }   // default: the last 20 minutes
 function showBoard(r){
   bR=Math.min(Math.max(1,r||1),Math.max(1,NR));
@@ -601,25 +608,33 @@ function showBoard(r){
   let el=$("#board"); if(!el){ el=document.createElement("div"); el.id="board"; el.setAttribute("role","dialog"); document.body.appendChild(el); }
   el.setAttribute("aria-label",bTitle()); el.hidden=false; document.body.classList.add("boardon");
   const nav=NR>1?`<button class="btn ghost" type="button" id="bprev" ${bR>1?"":"disabled"}>${bt("prev")}</button><button class="btn" type="button" id="bnext" ${bR<NR?"":"disabled"}>${bt("next")}</button>`:"";
-  el.innerHTML=`<div class="bwrap"><div class="bhead"><h2>${bTitle()}</h2><div class="bbtn">${nav}<button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
+  el.innerHTML=`<div class="bwrap"><div class="bhead"><h2>${bTitle()}</h2><div class="bbtn">${bLangHTML()}${nav}<button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
     ((ROUNDS[bR-1]||{}).story?`<p class="bstory">${tx(ROUNDS[bR-1].story)}</p>`:"")+
     `<p class="bcount" id="bcount"></p><ol class="blist" id="blist"></ol><p class="bitems" id="bitems"></p><p class="bnote" id="bformula">${bt("formula")}</p><p class="bnote" id="bnote" role="status"></p></div>`;
-  $("#breset").onclick=()=>{ store.set(KST+"-board"+bR,Date.now()); boardLoad(); };
+  bLangBind(el); $("#breset").onclick=()=>{ store.set(KST+"-board"+bR,Date.now()); boardLoad(); };
   if(NR>1){ $("#bprev").onclick=()=>showBoard(bR-1); $("#bnext").onclick=()=>showBoard(bR+1); }
   $("#bclose").onclick=()=>{ clearInterval(bTimer); el.hidden=true; document.body.classList.remove("boardon"); open("giris"); };
   clearInterval(bTimer);
   if(!SHEET_URL){ $("#bnote").textContent=bt("off"); return; }
+  if(bLast.board&&bLast.board.k===bKey()) boardDraw(bLast.board.d);   // 2026-11n: last reply at once
   boardLoad(); bTimer=setInterval(boardLoad,5000);
 }
+const bLast={board:null,sum:null};   // last reply of each box (engine 2026-11n); key = round + the stored "Reset" time ("d" = default window)
+const bKey=()=>bR+":"+(store.get(KST+"-board"+bR)||"d"), sKey=()=>String(store.get(KST+"-sum")||"d");
 function boardLoad(){
   const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"board="+encodeURIComponent(COURSE+"-quiz")+"&test="+mk(bR)+"&since="+boardSince()+"&n="+BOARD_TOP+"&streak=1";   // streak bonus (Apps Script 2026-11h; an older script ignores it)
+  const r0=bR, k0=bKey();
   fetch(u,{cache:"no-store"}).then(r=>r.json()).then(d=>{
     if(!d||!d.ok) throw new Error(d&&d.error||"bad");
+    bLast.board={k:k0,d}; if(r0===bR) boardDraw(d);
+  }).catch(()=>{ const n=$("#bnote"); if(n) n.textContent=bt("err"); });
+}
+function boardDraw(d){
+    if(!$("#bcount")) return;
     $("#bcount").textContent=bt("n",{n:d.n}); $("#bformula").textContent=bt("formula")+(d.streak?bt("streak"):"");   // the bonus line only when the script gives the bonus
     $("#blist").innerHTML=d.top.length?d.top.map(r=>`<li class="r${Math.min(r.rank,4)}"><span class="brank">${r.rank}</span><span class="balias">${esc(r.alias)}</span><span class="bpts">${r.points} ${bt("pts")}</span></li>`).join(""):`<li class="bempty">${bt("none")}</li>`;
     $("#bitems").textContent=(d.items||[]).map(x=>bt("q",{k:x.k,r:x.right,n:x.n})).join(" · ");
     $("#bnote").textContent=bt("upd")+": "+new Date().toLocaleTimeString(LANG==="tr"?"tr-TR":"en-US");
-  }).catch(()=>{ const n=$("#bnote"); if(n) n.textContent=bt("err"); });
 }
 /* ----- pre-test class summary for the projector: #summary (engine 2026-11j; review_ai_in_education.md, pre-test focus
    procedure; Q1-A to Q5-A of 2026-11-14). Reads the class totals of the pre-test (Apps Script 2026-11j, ?summary=…): rows of
@@ -642,12 +657,13 @@ function showSummary(){
   try{ if(location.hash!=="#summary") history.replaceState(null,"","#summary"); }catch(e){}
   let el=$("#board"); if(!el){ el=document.createElement("div"); el.id="board"; el.setAttribute("role","dialog"); document.body.appendChild(el); }
   el.setAttribute("aria-label",st_("t")); el.hidden=false; document.body.classList.add("boardon");
-  el.innerHTML=`<div class="bwrap csum"><div class="bhead"><h2>${st_("t")}</h2><div class="bbtn"><button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
+  el.innerHTML=`<div class="bwrap csum"><div class="bhead"><h2>${st_("t")}</h2><div class="bbtn">${bLangHTML()}<button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
     `<p class="bcount" id="bcount"></p><ol class="blist slist" id="blist"></ol><p class="bitems" id="bitems"></p><p class="bnote" id="slegend">${st_("legend")}</p><p class="bnote" id="shint">${st_("hint")}</p><p class="bnote" id="bnote" role="status"></p></div>`;
-  $("#breset").onclick=()=>{ store.set(KST+"-sum",Date.now()); sumLoad(); };
+  bLangBind(el); $("#breset").onclick=()=>{ store.set(KST+"-sum",Date.now()); sumLoad(); };
   $("#bclose").onclick=()=>{ clearInterval(bTimer); el.hidden=true; document.body.classList.remove("boardon"); open("giris"); };
   clearInterval(bTimer);
   if(!SHEET_URL){ $("#bnote").textContent=st_("off"); return; }
+  if(bLast.sum&&bLast.sum.k===sKey()) sumDraw(bLast.sum.d);   // 2026-11n: last reply at once
   sumLoad(); bTimer=setInterval(sumLoad,10000);
 }
 /* topic shares from the item shares of the reply; an item counts only when its number, type and points match this version */
@@ -662,9 +678,15 @@ function sumTopics(items){
 function sumOpen(m){ clearInterval(bTimer); const el=$("#board"); if(el) el.hidden=true; document.body.classList.remove("boardon"); open(m);
   const b=$("#m-predict"); if(b&&!b.hidden){ b.tabIndex=-1; b.scrollIntoView({block:"start"}); b.focus({preventScroll:true}); } }
 function sumLoad(){
-  const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"summary="+encodeURIComponent(COURSE)+"&test=pre&since="+sumSince()+"&ver="+encodeURIComponent(SURUM);
+  const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"summary="+encodeURIComponent(COURSE)+"&test=pre&since="+sumSince()+"&ver="+encodeURIComponent(VERSION);
+  const k0=sKey();
   fetch(u,{cache:"no-store"}).then(r=>r.json()).then(d=>{
     if(!d||!d.ok) throw new Error(d&&d.error||"bad");
+    bLast.sum={k:k0,d}; sumDraw(d);
+  }).catch(()=>{ const e=$("#bnote"); if(e) e.textContent=bt("err"); });
+}
+function sumDraw(d){
+    if(!$("#bcount")||!$("#board .csum")) return;
     const n=+d.n||0, min=Math.max(+d.min||0,SUM_MIN);
     $("#bcount").textContent=st_("n",{n});
     if(n<min){ $("#blist").innerHTML=`<li class="bempty">${st_("few",{n,m:min})}</li>`; $("#bitems").textContent=""; }
@@ -674,7 +696,6 @@ function sumLoad(){
       document.querySelectorAll("#blist .sopen").forEach(b=>b.onclick=()=>sumOpen(b.dataset.m));
       $("#bitems").textContent=used.length?st_("items")+": "+used.map(x=>st_("q")+x.q+" "+pct(x.s)).join(" · "):""; }
     $("#bnote").textContent=bt("upd")+": "+new Date().toLocaleTimeString(LANG==="tr"?"tr-TR":"en-US");
-  }).catch(()=>{ const e=$("#bnote"); if(e) e.textContent=bt("err"); });
 }
 /* ----- M2 "predict first" (Q100-A, Q122-A, Q123-A). A module with predict:{q,set,a,why} shows a box above its controls:
    the student picks ↑ / ↓ / no change and presses "Lock" (one try). Lock applies the task's settings like a preset and runs
@@ -927,7 +948,7 @@ function payloadOf(mode,rec,alias){
   if(M2_TASKS.length) cols.push(["M2 answers",isPost?m2Answers():null],["M2 right",isPost?m2Right():null]);   // sent with the post-test row
   if(M7_TASKS.length) cols.push(["M7 stars",isPost?m7StarsStr():null],["M7 tries",isPost?m7TriesStr():null]);   // engine 2026-11h, post-test row
   if(PROGRAMS.length>1) cols.push(["Program",prog()]);
-  cols.push(["Item codes",itemCodes(set)],["Version",SURUM],["Language",LANG]);
+  cols.push(["Item codes",itemCodes(set)],["Version",VERSION],["Language",LANG]);
   return {schema:2, course:COURSE, alias, test:mode, cols};
 }
 async function sendResult(){
