@@ -13,6 +13,7 @@ css += """
 /* Bloklar / blocks (template 2026-11) */
 .ctl.wide{grid-column:1/-1}
 .ctl .seg{width:max-content;max-width:100%;flex-wrap:wrap}
+.ctl{min-width:0} .ctl.wide .seg{width:auto}   /* long preset rows wrap on a 390 px phone (as in the Unit I simulator) */
 .drawbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
 .drawbox canvas{width:100%;height:260px;display:block}
 .blocks{display:grid;gap:16px}
@@ -24,6 +25,28 @@ css += """
 .eqbox .eqf{font-family:var(--f-mono);font-size:20px;font-weight:700;color:var(--navy)}
 .eqbox .eqn{font-family:var(--f-mono);font-size:15px}
 .eqbox small{color:var(--muted);font-size:13px}
+"""
+css += """
+/* Şimdi / Now page (engine 2026-11j) */
+.nowpage .nownext{display:block;width:100%;font-size:20px;min-height:60px;margin:10px 0 4px}
+.nowlist{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:10px}
+.nowlist li{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.nowlist li>.btn{min-width:9.5em}
+.nowlab{font-weight:700;min-width:9.5em}
+.nowrounds{display:flex;flex-wrap:wrap;gap:6px}
+.nowrounds .btn{min-width:46px;min-height:44px;padding:6px 8px}
+.nowrounds .done{color:var(--ok);border-color:var(--ok)}
+.nowrounds .closed{opacity:.5}
+.nowpage .next{outline:3px solid var(--navy);outline-offset:1px}
+.nowall{font-weight:700;color:var(--ok)}
+.nowlect{margin:16px 0 0;font-size:14px}
+.latebox{margin-top:12px;padding:12px;border-radius:10px;border:1px solid var(--line);display:grid;gap:8px}
+.latebox p{margin:0} .latebox .score{flex-wrap:wrap} .latebox a.btn{text-decoration:none}
+.mailrem{display:grid;gap:8px;margin-top:4px}
+.mailrem input[type=email]{font:inherit;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);width:100%;max-width:22em}
+.mailrem .consent{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--muted)}
+.mailrem .consent input{margin-top:3px}
+.mailok{font-weight:700;color:var(--ok)}
 """
 eng = rd("engine2.js")
 css += """
@@ -39,6 +62,8 @@ css += """
 .topics small{color:var(--muted)}
 .tm{display:inline-block;width:1.6em;text-align:center;font-weight:700}
 .tm.ok{color:var(--ok)} .tm.mid{color:var(--warn)} .tm.bad{color:var(--signal)}
+.remplan{margin-top:12px;padding:12px;border-radius:10px;border:1px solid var(--line)}
+.remplan p{margin:6px 0} .remplan ol{margin:6px 0 0;padding-left:1.4em;display:grid;gap:4px}
 .surewrong{margin-top:10px;font-weight:700;color:var(--signal)}
 .selfpts{margin:8px 0 0;font-weight:700;color:var(--muted)}
 .fbform{margin-top:14px;padding:12px;border-radius:10px;border:1px solid var(--line);display:grid;gap:10px}
@@ -86,6 +111,56 @@ body.boardon{overflow:hidden}
 #board .bempty{display:block;font-size:20px;color:var(--muted)}
 #board .bnote{color:var(--muted);margin-top:16px}
 #board .bitems{font-size:18px;font-weight:700;margin-top:18px}
+/* pre-test class summary (2026-11j): mark · topic · % · button */
+#board .slist li{grid-template-columns:auto 1fr auto auto}
+#board .slist li.sbad{border-color:var(--signal);border-width:3px}
+#board .slist li.sbad .brank{color:var(--signal)} #board .slist li.smid .brank{color:var(--warn)} #board .slist li.sok .brank{color:var(--ok)}
+#board .slist li.smid{border-color:var(--warn)}
+#board .slabel{font-weight:700;min-width:0;overflow-wrap:anywhere}
+#board .sopen{font-size:16px}
+@media (max-width:520px){#board .slist li{grid-template-columns:auto 1fr auto;gap:10px}#board .slist .sopen{grid-column:1/-1}}
+/* M2 predict first (2026-11f) */
+.predict{background:var(--surface);border:2px solid var(--navy);border-radius:var(--r);padding:14px;display:grid;gap:8px;margin-bottom:12px}
+.predict .phead small{color:var(--muted)}
+.predict .pq{margin:0;font-weight:700}
+.popts{display:flex;flex-wrap:wrap;gap:8px}
+.popts label{display:inline-flex;gap:6px;align-items:center;min-height:44px;padding:8px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);cursor:pointer;font-weight:600}
+.popts label:has(input:checked){border-color:var(--navy);outline:2px solid var(--navy)}
+.pbtns{display:flex;flex-wrap:wrap;gap:8px}
+.predict .pnote{color:var(--muted)}
+.predict .pres{margin:0} .predict .pwhy{margin:0;color:var(--ink)}
+/* M7 missions, story rounds (2026-11h) */
+.mission{border-color:var(--ok)}
+.mission .m7story{margin:0}
+.mission .m7rule{margin:0;font-size:15px;color:var(--muted)}
+.mission .m7news{margin:0;padding:8px 12px;border-radius:10px;background:color-mix(in srgb,var(--warn) 14%,var(--surface));font-weight:600}
+.mission .m7live{font-family:var(--f-mono);font-size:14px;display:grid;gap:6px}
+.m7chip{display:inline-block;padding:3px 10px;border-radius:999px;border:1px solid var(--line);font-weight:700}
+.m7chip.ok{border-color:var(--ok);color:var(--ok)} .m7chip.bad{border-color:var(--signal);color:var(--signal)}
+.mission .m7ask{padding:10px 12px;border-radius:10px;background:var(--surface-2);display:grid;gap:8px}
+.mission .m7ask p{margin:0;font-weight:700}
+.mission .mres{display:grid;gap:6px} .mission .mres p{margin:0}
+.mission .m7big{font-size:18px;font-weight:700}
+.m7stars{color:var(--warn);letter-spacing:2px;font-size:20px;white-space:nowrap}
+.mission .m7meta{margin:0}
+.ctl.m7lock{opacity:.55}
+.kstory{margin:0 0 6px;font-style:italic;color:var(--muted)}
+#board .bstory{font-size:20px;font-style:italic;margin:4px 0 10px}
+/* Test 2026-11f: scoring box, total line */
+.scorebox{border:2px solid var(--navy);background:color-mix(in srgb,var(--navy) 9%,var(--surface));font-weight:600;font-size:15px;line-height:1.5}
+.score .tparts{color:var(--muted);font-size:15px;font-weight:600;white-space:nowrap}
+.score .tnote{color:var(--muted);font-size:14px}
+/* Test 2026-11f: tap ordering */
+.ordhint{margin:2px 0 8px;font-size:14px;color:var(--muted)}
+.tapord{display:grid;gap:8px}
+.tstep{display:grid;grid-template-columns:36px minmax(0,1fr);gap:10px;align-items:center;width:100%;min-height:48px;padding:8px 10px;font:inherit;text-align:left;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:10px;cursor:pointer;touch-action:manipulation}
+.tstep:hover{border-color:var(--navy)}
+.tstep:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.tstep[aria-pressed="true"]{border-color:var(--navy);background:var(--surface-2)}
+.tnum{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;border:2px dashed var(--line);font-family:var(--f-mono);font-weight:700;color:var(--navy)}
+.tstep[aria-pressed="true"] .tnum,.tnum.on{border:2px solid var(--navy);background:var(--navy);color:var(--surface)}
+.ordrow .tnum{width:28px;height:28px}
+.ordbar{margin-top:8px}
 @media (max-width:520px){.kopts{grid-template-columns:1fr}}
 @media (max-width:640px){.likert{grid-template-columns:1fr}}
 """

@@ -26,11 +26,12 @@ function buildControls(m){
   }).join("");
   m.controls.forEach(k=>{
     const el=document.getElementById("c-"+k.id);
-    if(k.type==="range") el.addEventListener("input",()=>{C[k.id]=+el.value; const o=document.getElementById("o-"+k.id); if(o) o.textContent=k.show(C[k.id]); unPreset(m,k.id); uiTick(true);});
-    else if(k.type==="toggle") el.addEventListener("change",()=>{C[k.id]=el.checked; unPreset(m,k.id); uiTick(true);});
+    if(k.type==="range"){ el.addEventListener("input",()=>{C[k.id]=+el.value; const o=document.getElementById("o-"+k.id); if(o) o.textContent=k.show(C[k.id]); unPreset(m,k.id); uiTick(true);}); el.addEventListener("change",()=>missionMove(k.id)); }
+    else if(k.type==="toggle") el.addEventListener("change",()=>{C[k.id]=el.checked; unPreset(m,k.id); missionMove(k.id); uiTick(true);});
     else if(k.type==="preset") el.addEventListener("click",e=>{const b=e.target.closest("[data-pi]"); if(!b) return; const i=+b.dataset.pi, o=k.options[i]; C[k.id]=i; Object.assign(C,o.set||{}); if(o.act) o.act(S,C); buildControls(m); const nb=document.querySelector(`#c-${k.id} [data-pi="${i}"]`); if(nb) nb.focus(); uiTick(true);});
-    else el.addEventListener("click",()=>{k.act(S,C); uiTick(true);});
+    else el.addEventListener("click",()=>{k.act(S,C); missionMove(k.id); uiTick(true);});
   });
+  missionLockUI();   // M7: locked controls during a mission try
 }
 function modText(){
   const m=M[cur];
@@ -41,22 +42,28 @@ function modText(){
   $("#m-legend").innerHTML=m.series.map(s=>`<span><i style="background:var(${s.c})"></i>${t(s.n)}: <span class="v" id="lv-${s.k}">–</span></span>`).join("");
   $("#m-chartbox").hidden=!m.series.length;
   $("#m-drawbox").hidden=!m.draw; if(m.draw) $("#draw").style.height=(m.draw.h||260)+"px";
-  lastNowHTML="";
+  lastNowHTML=""; renderPredict(); renderMission();
 }
 function open(key){
-  if(key==="board"){ showBoard(); return; }                         // leaderboard for the projector
-  if(MODES.includes(key)){ qmode=key; renderModes(); key="test"; }   // QR links: #pre, #mid, #post, #late
+  missionLeave();   // M7: leaving or reopening a module ends a running try (it counts as 0★)
+  const mm=/^mission-(.+)$/.exec(key); if(mm&&M[mm[1]]){ open(mm[1]); try{ history.replaceState(null,"","#"+key); }catch(e){} const b=$("#m-mission"); if(b&&!b.hidden){ b.tabIndex=-1; b.scrollIntoView({block:"start"}); b.focus({preventScroll:true}); } return; }   // #mission-<module>
+  if(key==="summary"){ showSummary(); return; }   // pre-test class summary for the projector (engine 2026-11j)
+  const bm=/^board(\d*)$/.exec(key); if(bm){ showBoard(bm[1]?+bm[1]:1); return; }   // leaderboard for the projector: #board1, #board2 … (#board = round 1)
+  const km=/^mid(\d*)$/.exec(key);
+  if(MODES.includes("mid")&&(km||key==="mini")){ qmode="mid"; kr=key==="mini"?(NR===1?1:0):km[1]?+km[1]:1; if(kr>NR) kr=0; renderModes(); key="test"; }   // #mid1, #mid2 … (#mid = round 1); #mini = list of rounds
+  else if(key==="now"&&MODES.length){ qmode="now"; renderModes(); key="test"; }   // #now: one QR per lecture (2026-11j)
+  else if(MODES.includes(key)){ qmode=key; renderModes(); key="test"; }   // QR links: #pre, #post, #late
   if(!M[key]&&key!=="giris"&&key!=="test") key="giris";
   view=key;
   document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.go===key));
   const tb=document.getElementById("t-"+key); if(tb) tb.scrollIntoView({block:"nearest",inline:"nearest"});
   $("#v-giris").hidden=key!=="giris"; $("#v-test").hidden=key!=="test"; $("#v-mod").hidden=!M[key];
-  try{ const h=key==="test"?qmode:key; if(location.hash.slice(1)!==h) history.replaceState(null,"","#"+h); }catch(e){}   // the test tab keeps its mode in the address (#pre, #mid…), so a reload returns to it
+  try{ const h=key==="test"?hashOf():key; if(location.hash.slice(1)!==h) history.replaceState(null,"","#"+h); }catch(e){}   // the test tab keeps its mode in the address (#pre, #mid2…), so a reload returns to it
   if(key==="test"){ renderQuiz(); } else testNote();
   if(!M[key]){ cur=null; return; }
   cur=key; modText(); reset();
 }
-function reset(){ const m=M[cur]; S=m.init(); C=ctlDefaults(m); hist=[]; simT=0; buildControls(m); for(let i=0;i<3;i++) m.step(S,0.05,C); uiTick(true); }
+function reset(){ if(MR){ missionLeave(); renderMission(); } const m=M[cur]; S=m.init(); C=ctlDefaults(m); hist=[]; simT=0; buildControls(m); for(let i=0;i<3;i++) m.step(S,0.05,C); uiTick(true); }
 function setLang(l){
   LANG=l; store.set(PFX+"-lang",l); staticText(); renderModes(); testNote();
   if(cur){ modText(); buildControls(M[cur]); uiTick(true); }
@@ -92,6 +99,7 @@ function drawChart(){
   const y=(s,v)=>padT+ph-(cl((v-s.min)/(s.max-s.min),0,1))*ph;
   const day=m.chart&&m.chart.day;
   if(day){ const xd=h=>padL+(h/24)*pw; ctx.fillStyle=grid; (m.chart.night||[]).forEach(([a,b])=>ctx.fillRect(xd(a),padT,xd(b)-xd(a),ph)); }
+  m7Zones(m).forEach(z=>{ const y1=y(z.s,z.hi), y0=y(z.s,z.lo); ctx.fillStyle=css("--ok"); ctx.globalAlpha=.16; ctx.fillRect(padL,y1,pw,y0-y1); ctx.globalAlpha=.9; ctx.strokeStyle=css("--ok"); ctx.lineWidth=1.5; ctx.setLineDash([6,4]); [y1,y0].forEach(yy=>{ ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(padL+pw,yy); ctx.stroke(); }); ctx.setLineDash([]); ctx.globalAlpha=1; ctx.lineWidth=1; });   // M7 goal zone
   if(P.band){ ctx.fillStyle=band; const y1=y(P,P.band[1]), y0=y(P,P.band[0]); ctx.fillRect(padL,y1,pw,y0-y1); ctx.fillStyle=ink; ctx.textAlign="right"; ctx.fillText(t(P.bandLabel)||t(UI.normal),padL+pw-4,y1+13); }
   ctx.textAlign="right"; ctx.textBaseline="middle";
   for(let i=0;i<=4;i++){ const v=P.min+(P.max-P.min)*i/4, yy=y(P,v); ctx.strokeStyle=grid; ctx.beginPath(); ctx.moveTo(padL,yy); ctx.lineTo(padL+pw,yy); ctx.stroke(); const lab=P.axis?P.axis(v):""; if(lab!==""){ctx.fillStyle=ink; ctx.fillText(lab,padL-6,yy);} }
@@ -124,9 +132,9 @@ function drawPanel(){ if(!cur) return; const m=M[cur]; if(!m.draw) return; const
 /* ---------------- DÖNGÜ / LOOP ---------------- */
 function loop(ts){
   const dtReal=last?Math.min(0.1,(ts-last)/1000):0; last=ts;
-  if(cur&&!paused){
+  if(cur&&!paused&&!(MR&&MR.wait)){   // an organ mission waits for the student's choice
     const m=M[cur]; let dt=dtReal*speed; const n=Math.max(1,Math.ceil(dt/0.05));
-    for(let i=0;i<n;i++){ m.step(S,dt/n,C); simT+=dt/n; }
+    for(let i=0;i<n;i++){ m.step(S,dt/n,C); simT+=dt/n; if(MR){ missionTick(dt/n); if(!MR||MR.wait) break; } }
     if(!(m.chart&&m.chart.day)){ const p={t:simT}; m.series.forEach(s=>p[s.k]=S[s.k]); hist.push(p); const W=winOf(m); while(hist.length&&hist[0].t<simT-W-2) hist.shift(); }
     uiAcc+=dtReal; if(uiAcc>0.15){uiAcc=0; uiTick();}
   }
@@ -137,7 +145,7 @@ $("#b-pause").onclick=()=>{paused=!paused; $("#b-pause").textContent=paused?t(UI
 $("#b-reset").onclick=()=>reset();
 document.querySelectorAll("#speed button").forEach(b=>b.onclick=()=>{speed=+b.dataset.s; document.querySelectorAll("#speed button").forEach(x=>x.setAttribute("aria-pressed",x===b));});
 document.querySelectorAll("#lang button").forEach(b=>b.onclick=()=>setLang(b.dataset.l));
-document.addEventListener("click",e=>{const g=e.target.closest("[data-go]"); if(!g) return; e.preventDefault(); if(g.dataset.mode&&MODES.includes(g.dataset.mode)){qmode=g.dataset.mode; renderModes();} open(g.dataset.go); window.scrollTo({top:0});});
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]"); if(!g) return; e.preventDefault(); if(g.dataset.mode&&(MODES.includes(g.dataset.mode)||(g.dataset.mode==="now"&&MODES.length))){qmode=g.dataset.mode; renderModes();} open(g.dataset.go); window.scrollTo({top:0});});
 window.addEventListener("hashchange",()=>open(location.hash.slice(1)));
 staticText();
 open(location.hash.slice(1)||"giris");

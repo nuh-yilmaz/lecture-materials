@@ -1,6 +1,6 @@
 /* =====================================================================
    SİMÜLATÖR ŞABLONU / SIMULATOR TEMPLATE
-   Template 2026-11 · test engine 2026-11d · guide: claude/simulator_template.md
+   Template 2026-11 · test engine 2026-11k · guide: claude/simulator_template.md
    ---------------------------------------------------------------------
    HOW TO MAKE A NEW SIMULATOR
    1. Copy this file. Name it "<Konu> Simülatörü.html" (one file per lecture).
@@ -9,11 +9,15 @@
       ph. Every text is a pair {tr:"…", en:"…"}. Keep all other UI texts.
    4. MODULES: delete the example modules M.ornek1–M.ornek4 and write one
       module per part of the lecture (format below). Put their keys in ORDER.
-   5. QUIZ: replace the 6 example questions (format under TEST below). Keep the
-      default points unless the lecture needs other weights: mcq 5 · tf 10
-      (5 statements) · order 15 · match 15 · fill 15 (5 blanks) · open 40
-      (scored by the lecturer) = 100; automatic part 60.
-      Give every item a topic (mod = module key) for the topic feedback.
+   5. QUIZ: replace the 6 example questions (format under TEST below). Default
+      test: 6 automatic items, 84 points: mcq 4 · tf 10 (5 statements) ·
+      order 16 (5 steps) · match 15 · fill 15 (5 blanks) · order 24 (mechanism
+      chain, 7 steps, on another module than the 16-point order item).
+      Total = items + confidence points (−24 to +12) + 4-point gift = 100.
+      Points rule (checked in the console): all item points + 2 per automatic
+      item + 4 = 100. Give every item a topic (mod = module key).
+      QUIZ_MID: mini-quiz rounds, exactly 3 items each, one round per 18–20
+      minutes of lecture time (rule 2.12); format at QUIZ_MID in the quiz part.
    6. Facts: check every value in Guyton 15th and Ganong 27th (rule 2.9) and
       give the pages in each module note. Physiology only (rule 2.10).
    7. Test with SHEET_URL "" first: open every tab, take the pre- and the
@@ -43,6 +47,29 @@
      visual*:(s,c)=>html              blocks B.* (see BLOCKS)
      draw*:{h:260,fn(g,W,H,s,c){…}}   large drawing area (canvas 2D, g)
      daily {tr,en} · tasks {tr:[…],en:[…]} · note:()=>html + SRC(tr,en)
+     predict*:{q:{tr,en}, set:{controlId:value,…}, a:"up"|"down"|"same", why:{tr,en}}
+                                      M2 "predict first" box above the controls (PREDICT switch):
+                                      question "If Y …, what happens to X?", one try, 0 points; Lock
+                                      applies set (like a preset) and runs the module. Use the same
+                                      mechanism as one test item of the module in another situation,
+                                      with no shared stem (no cue). Book pages go in the module note.
+     mission*:{kind:"fix"|"organ", title, story, why  {tr,en}
+               start:{controlId:value,…}, lock:[controlId,…], goal:[{k,lo,hi,n*,fmt*},…],
+               fix:   hold*:5, limit*:120, stars*:[3,6], warm*:20, solve:{controlId:value,…}
+               organ: act:controlId (a range), delta*, every*:10, turns*:6, stars*:[0.8,0.6,0.4],
+                      events*:[{t,set:{…},text:{tr,en}}], warm*:10, solve:["up"|"down"|"same",…]}
+                                      M7 mission box under the prediction box (MISSIONS switch; engine
+                                      2026-11h). 2–3 missions per simulator, one per main module; 0 points;
+                                      MISSION_TRIES tries. fix: the module starts disturbed (start, run for
+                                      warm s); the student moves the free controls until every goal value
+                                      (k = key in s) stays in its zone for hold s; stars by moves (≤3 → 3★,
+                                      ≤6 → 2★, more → 1★; time out → 0★). organ: the student is one organ;
+                                      every `every` s the module stops and the student chooses ↑ / ↓ / no
+                                      change for control act (step delta, default 1/4 of its range); events
+                                      change the body at t s (an event at a turn time comes before that
+                                      choice); stars by the share of time with all goals in zone. Presets,
+                                      lock controls, act and event controls are locked during a try.
+                                      solve = one correct answer: the tests check that it gets 3★.
    }
    CONTROLS
      {type:"range",id,label,min,max,step,value,ends:[a,b],show*:v=>"…",help}
@@ -56,38 +83,48 @@
      B.stack(title,[[label,value,color],…])    shares of a whole
      B.counter(n,label,sub)  B.clock(h,sub)  B.progress(f,label)
      B.eq(formula,numbers,note)                equation panel
-   TEST (QUIZ, and QUIZ_MID for the mid-lecture check)       (* = optional)
+   TEST (QUIZ, and QUIZ_MID for the mini-quiz rounds)       (* = optional)
      common: {type, pts, mod, q:{tr,en}, why:{tr,en}, tag*}  mod = topic
      mcq    o:{tr:[5 options],en:[…]}, a: index of the right option
      tf     o: 5 statements, a:[true,false,…], fix: corrections, mods*:[topic per statement]
-     order  o: 4–6 rows in mixed order, a: row indexes in the right order
-            (scored by consecutive pairs: each right pair = pts/(rows−1))
+     order  o: 4–7 rows in mixed order, a: row indexes in the right order. Students tap the
+            steps in order (tap again to remove a number; steps without a number go to the end)
+            (scored by consecutive pairs; pts = 4 × (rows − 1): 4 points per right pair)
      match  left: 4–6 items, o: options (2–3 left over), a: option index per item, mods*
      fill   segs:{tr:[text,text,…]} around the blanks (one piece more than the blanks), 5 blanks,
             blanks:[{o:{tr:[options],en:[…]},a:index},…], mods*
-     open   rubric: 4 steps, ph*: placeholder. Scored by the lecturer in the Sheet:
+     open   (special cases only; not in the default test)
+            rubric: 4 steps, ph*: placeholder. Scored by the lecturer in the Sheet:
             per step full / partial / none = pts/steps · 0.4×that · 0
             (e.g. 40 points, 4 steps: 10 / 4 / 0). Students tick the steps as a
             self-check after the post-test; it is not added to their score.
+   SCORING: Total = items + confidence points (M3) + 4-point gift; never below 0, at most 100.
+     A coloured box at the top of every test (pre, post, delayed) tells the students the rule.
    SWITCHES (below): TESTS.pre/mid/post/late, LATE_DAYS, CONFIDENCE (M3),
-     FEEDBACK (M4, 1–5 form after the post-test), MINUTE (M5, one-minute paper), PROGRAMS.
-   MINI-QUIZ (TESTS.mid): QUIZ_MID, Kahoot style, format at QUIZ_MID in the TEST part.
-   QR LINKS: <simulator link>#pre, #mid, #post open that test directly (one QR per slide).
-   LEADERBOARD: <simulator link>#board on the projector (lecturer only; needs SHEET_URL and Apps Script 2026-11e).
+     FEEDBACK (M4, 1–5 form after the post-test), MINUTE (M5, one-minute paper), PREDICT (M2),
+     MISSIONS and MISSION_TRIES (M7), PROGRAMS.
+   MINI-QUIZ (TESTS.mid): QUIZ_MID = list of rounds, 3 items each, Kahoot style; format at QUIZ_MID in the quiz part.
+   QR LINKS: <simulator link>#pre, #post open that test; #mid1, #mid2 … open that mini-quiz round (#mid = round 1).
+   LEADERBOARD: <simulator link>#board1, #board2 … on the projector, one per round (#board = round 1; lecturer only;
+     needs SHEET_URL and Apps Script 2026-11g; the streak bonus needs Apps Script 2026-11h).
+   MISSION LINKS: <simulator link>#mission-<module key> opens that module at its mission (projector or QR).
    ===================================================================== */
 
 /* ---------------- AYARLAR / CONFIG ---------------- */
 const COURSE="template";   // Sheet tab name (English, lower case), e.g. "respiration"
 const PFX="tpl";           // browser storage prefix, 2–5 letters, unique per simulator
-const SURUM="2026-11d";    // version sent with each result; change it when the test changes
+const SURUM="2026-11h";    // version sent with each result; change it when the test changes
 const SHEET_URL="";        // Apps Script web app URL (…/exec); "" = results are not sent
 const ORDER=["ornek1","ornek2","ornek3","ornek4"];   // module keys, in tab order
 /* assessment switches (true = on) */
-const TESTS={pre:true, mid:true, post:true, late:true};  // mid = M6 mini-quiz (Kahoot style, QUIZ_MID: 4–5 items; give it after about 15–20 minutes or at a topic break; set false to switch it off); late = M1 delayed test
+const TESTS={pre:true, mid:true, post:true, late:true};  // mid = M6 mini-quiz rounds (Kahoot style, QUIZ_MID: 3 items per round; one round every 18–20 minutes of lecture time, rule 2.12; set false to switch it off); late = M1 delayed test
 const LATE_DAYS=14;        // the delayed test opens this many days after the student's post-test
-const CONFIDENCE=true;     // M3: "Are you sure?" under each automatic item (recorded, not scored)
+const CONFIDENCE=true;     // M3: "Are you sure?" under each automatic item; "sure" = +2·s − 4·(1 − s) (s = item score share), "not sure" / no mark = 0 (−24 to +12)
 const FEEDBACK=true;       // M4: four 1–5 statements after the post-test
 const MINUTE=true;         // M5: one-minute paper after the post-test
+const PREDICT=true;        // M2: "predict first" box in modules that have predict:{…} (2–3 tasks per simulator, one per main module)
+const MISSIONS=true;       // M7: mission box in modules that have mission:{…} (2–3 missions per simulator, one per main module; 0 points)
+const MISSION_TRIES=3;     // M7: tries per mission and browser; the best stars are sent with the post-test (Q7-A: 3 tries)
 /* programs (faculty / language) asked once per browser and sent as the "Program" column; [] = do not ask.
    PLACEHOLDER list: replace it with the user's list. */
 const PROGRAMS=[{k:"tip-tr",tr:"Tıp (Türkçe)",en:"Medicine (Turkish)"},{k:"tip-en",tr:"Tıp (İngilizce)",en:"Medicine (English)"},{k:"diger",tr:"Diğer",en:"Other"}];
@@ -120,7 +157,7 @@ const UI={
   /* --- usually unchanged --- */
   tabStart:{tr:"Başla",en:"Start"}, tabTest:{tr:"Ön / son test",en:"Pre / post test"},
   howTitle:{tr:"Nasıl kullanılır?",en:"How to use it"},
-  st1:{tr:"<b>Önce ön testi çözün.</b> 5 soru, 5 farklı soru türü. Not için değil, neyi bildiğinizi görmek için.",en:"<b>Take the pre-test first.</b> 5 questions, 5 question types. It is not graded; it shows what you already know."},
+  st1:{tr:"<b>Önce ön testi çözün.</b> 6 soru, 5 farklı soru türü. Not için değil, neyi bildiğinizi görmek için.",en:"<b>Take the pre-test first.</b> 6 questions, 5 question types. It is not graded; it shows what you already know."},
   st2:{tr:"<b>Bir modül seçin.</b> Düğmelere basın, kaydırıcıları oynatın.",en:"<b>Choose a module.</b> Press the buttons and move the sliders."},
   st3:{tr:"<b>“Ne oluyor?” kutusunu okuyun.</b> Ekranda olanı adım adım açıklar.",en:"<b>Read the “What is happening?” box.</b> It explains the screen step by step."},
   st4:{tr:"<b>Ders notunu okuyun ve görevleri yapın,</b> sonra son testi çözüp puanınızı karşılaştırın.",en:"<b>Read the lecture note and do the tasks,</b> then take the post-test and compare your scores."},
