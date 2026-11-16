@@ -25,6 +25,13 @@ lecture-materials/
     └── Code.gs         Google Sheets endpoint for test results
 ```
 
+## Branches
+
+- `main`: the last stable version. The student links (GitHub Pages) are built from `main`. Changes arrive only by pull request from `dev`, after the tests pass and the live test passed.
+- `dev`: all development (engine, Apps Script, tests, new pages).
+- Rollback point: commit `4a17a3e` (last `main` before this setup, 2026-11-13).
+- The branches `engine-2026-11f`, `-11g` and `-11h` were merged into `dev` on 2026-11-16 and then deleted. Versions (for example engine 2026-11j) are named in commit messages, not in branch names.
+
 ## Collecting pre/post test results
 
 Students submit results under an automatically generated code (NF-XXXX); names are not collected. Results go to a Google Sheet through the Apps Script web app in `apps-script/Code.gs`, and each topic writes to its own tab. The endpoint URL is the `SHEET_URL` constant in each simulation page.
