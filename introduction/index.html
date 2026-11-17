@@ -744,7 +744,7 @@ M.homeo={
   rows:(s,c)=>{ const h=HV[s.cur], e=s.x-h.set; return [[
     {l:L("Bozucu etki","Disturbance"),s:L("Değişkeni uzaklaştırır","Moves the variable away"),v:0.5+c.dist/2,c:"--h2",fmt:()=>sp(c.dist)},
     {l:L("Algılayıcı","Sensor"),s:L("Değişikliği ölçer","Measures the change"),v:s.y,c:"--h1",fmt:()=>hF(h,s.x)},
-    {l:L("Kontrol merkezi","Control center"),s:L("Ayar noktasıyla karşılaştırır","Compares with the set point"),v:0.5+cl(e/h.sw,-1,1)/2,c:"--h5",fmt:()=>sg(e,h.d)},
+    {l:L("Bütünleştirici merkez","Integrating center"),s:L("Ayar noktasıyla karşılaştırır","Compares with the set point"),v:0.5+cl(e/h.sw,-1,1)/2,c:"--h5",fmt:()=>sg(e,h.d)},
     {l:L("Etkileyici","Effector"),s:L("Düzeltici yanıt","Corrective response"),v:c.ctl?0.5+cl(-s.D*0.9/h.sw,-1,1)/2:0.5,c:"--h3",fmt:()=>c.ctl?sg(-s.D*0.9,h.d):"0"}
   ],[
     {l:L("Ayar noktası (model)","Set point (model)"),s:L("Guyton değeri","Guyton value"),v:hN(h,h.set),c:"--muted",fmt:()=>hF(h,h.set)},
@@ -840,7 +840,7 @@ M.feedback={
   rows:(s,c)=>[[
     {l:L("Arter basıncı","Arterial pressure"),s:L("ortalama","mean"),v:s.P/200,c:"--signal",fmt:()=>Math.round(s.P)+" mm Hg"},
     {l:L("Baroreseptörler","Baroreceptors"),s:L("gerilme → uyarı","stretch → impulses"),v:s.P/200,c:"--h1",fmt:()=>pct(s.P/100)},
-    {l:L("Vazomotor merkez","Vasomotor center"),s:c.br?L("medulla (bütünleştirici)","medulla (integrator)"):L("elle (siz)","by hand (you)"),v:s.Sy/2,c:"--h5",fmt:()=>s.Sy>1.02?L("Baskı azaldı","Less inhibited"):s.Sy<0.98?L("Baskılandı","Inhibited"):L("Normal","Normal"),small:true},
+    {l:L("Vazomotor merkez","Vasomotor center"),s:c.br?L("medulla (bütünleştirici merkez)","medulla (integrating center)"):L("elle (siz)","by hand (you)"),v:s.Sy/2,c:"--h5",fmt:()=>s.Sy>1.02?L("Baskı azaldı","Less inhibited"):s.Sy<0.98?L("Baskılandı","Inhibited"):L("Normal","Normal"),small:true},
     {l:L("Sempatik etkinlik","Sympathetic activity"),s:L("normalin yüzdesi","percent of normal"),v:s.Sy/2,c:"--h3",fmt:()=>pct(s.Sy)}
   ],[
     {l:L("Kan hacmi","Blood volume"),s:L("normal 5 L (model)","normal 5 L (model)"),v:s.V/7,c:"--h2",fmt:()=>dec(s.V)+" L"},
@@ -1304,7 +1304,7 @@ const QUIZ_MID=[
  {story:{tr:"Bir deneyde hücreler farklı tuz çözeltileriyle karşılaşıyor.",en:"In an experiment, cells meet different salt solutions."},
   items:[   // R7 · Part 4 (S64)
   {type:"tf",mod:"shift",q:TFQ,o:{tr:["%0,9 NaCl çözeltisi hücreler için izotoniktir."],en:["A 0.9% NaCl solution is isotonic for cells."]},a:[true],
-   why:{tr:"Doğru (G s. 315).",en:"True (G p. 315)."}},
+   why:{tr:"Doğru – %0,9 NaCl ≈ 286 mOsm/L; hücre içiyle aynı etkin ozmolarite, hücre hacmi değişmez (G s. 314–315).",en:"True – 0.9% NaCl ≈ 286 mOsm/L; same effective osmolarity as the intracellular fluid, so cell volume does not change (G pp. 314–315)."}},
   {type:"mcq",mod:"shift",q:{tr:"Hücre dışı sıvıya hipertonik NaCl eklenirse hücre içi hacim ne olur?",en:"If hypertonic NaCl is added to the extracellular fluid, what happens to the intracellular volume?"},
    o:{tr:["Artar","Azalır","Değişmez","Önce artar, sonra azalır"],en:["It rises","It falls","It does not change","It first rises, then falls"]},a:1,
    why:{tr:"Azalır ✓ (G s. 316–317, Şekil 25.6). Artar = hipotonik çözeltide. Değişmez = izotonik çözeltide. Önce artar sonra azalır – böyle bir sıra yok.",en:"It falls ✓ (G pp. 316–317, Fig. 25.6). It rises = with a hypotonic solution. No change = with an isotonic solution. First rises, then falls – there is no such sequence."}},
@@ -1319,7 +1319,7 @@ const QUIZ_MID=[
    o:{tr:["3","7","17","30"],en:["3","7","17","30"]},a:2,
    why:{tr:"17 ✓ (G s. 323). 3 = yalnızca düşük kompliyans. 7 = lenf ya da protein yıkanması tek başına. 30 – toplamdan büyük.",en:"17 ✓ (G p. 323). 3 = low compliance alone. 7 = lymph or protein washout alone. 30 – more than the total."}},
   {type:"tf",mod:"edema",q:TFQ,o:{tr:["Plazma protein yoğunluğu 2,5 g/dL'nin altına düşerse yaygın ödem gelişebilir."],en:["If the plasma protein concentration falls below 2.5 g/dL, generalized edema can develop."]},a:[true],
-   why:{tr:"Doğru (G s. 321).",en:"True (G p. 321)."}},
+   why:{tr:"Doğru – protein azalınca plazma kolloid ozmotik basıncı düşer, filtrasyon artar (G s. 321).",en:"True – when protein falls, plasma colloid osmotic pressure falls and filtration rises (G p. 321)."}},
   {type:"fill",mod:"shift",q:FQ,
    segs:{tr:["Plazma Na⁺ "," mmol/L'nin altına düşünce beyin ödemi ve nöbetler görülebilir."],en:["When plasma Na⁺ falls below "," mmol/L, brain edema and seizures can occur."]},
    blanks:[{o:{tr:["115–120","130–135","140–145"],en:["115–120","130–135","140–145"]},a:0}],
