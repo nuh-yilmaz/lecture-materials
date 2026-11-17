@@ -587,7 +587,7 @@ body.boardon{overflow:hidden}
 /* ---------------- AYARLAR / CONFIG ---------------- */
 const COURSE="introduction";   // Sheet tab name (English, lower case), e.g. "respiration"
 const PFX="gir";           // browser storage prefix, 2–5 letters, unique per simulator
-const VERSION="2026-11h-intro1";    // version sent with each result; change it when the test changes
+const VERSION="2026-11h-intro2";    // version sent with each result; change it when the test changes
 const SHEET_URL="https://script.google.com/macros/s/AKfycbzfIUIU-sczvJPGUjR4El7rH4OUNUcMupt07RNCQ1Vok-51ib1nOfsyjZ3tXLDe3RQp/exec";        // Apps Script web app URL (…/exec); "" = results are not sent
 const ORDER=["homeo","feedback","fluids","shift","edema"];   // module keys, in tab order
 /* assessment switches (true = on) */
@@ -1179,10 +1179,10 @@ const QUIZ=[
    why:{tr:"Her ifade eşit puan alır; her ifadenin gerekçesi yanında.",en:"Each statement earns equal points; the reason is shown next to each statement."}},
   {type:"order",pts:24,mod:"feedback",
    q:{tr:"Arter basıncı yükselince baroreseptör refleksinde olanları doğru sıraya koyun.",en:"Put the events of the baroreceptor reflex after a rise in arterial pressure in the correct order."},
-   o:{tr:["Vazomotor merkez baskılanır","Arter basıncı artar","Kalp pompalaması azalır, damarlar genişler","Baroreseptör uyarısı artar","Arter basıncı normale döner","Arter duvarı gerilir","Sempatik aktivite azalır"],
-      en:["The vasomotor center is inhibited","Arterial pressure rises","The heart pumps less and the vessels dilate","Baroreceptor impulses increase","Arterial pressure returns to normal","The arterial wall is stretched","Sympathetic activity falls"]},a:[1,5,3,0,6,2,4],
-   why:{tr:"Basınç ↑ → duvar gerilir → baroreseptör uyarısı ↑ → vazomotor merkez BASKILANIR → sempatik ↓ → kalp pompalaması ↓, damarlar genişler → basınç normale döner (G s. 7–8, Şekil 1.3). Sık hata: «merkez uyarılır»; baroreseptör sinyali merkezi baskılar.",
-        en:"Pressure ↑ → the wall is stretched → baroreceptor impulses ↑ → the vasomotor center is INHIBITED → sympathetic ↓ → the heart pumps less and the vessels dilate → pressure returns to normal (G pp. 7–8, Fig. 1.3). Common error: “the center is stimulated”; the baroreceptor signal inhibits the center."}},
+   o:{tr:["Vazomotor merkez baskılanır","Uyarılar medullaya iletilir","Kalp pompalaması azalır, damarlar genişler","Baroreseptör uyarısı artar","Arter basıncı normale döner","Arter duvarı gerilir","Sempatik aktivite azalır"],
+      en:["The vasomotor center is inhibited","The impulses reach the medulla","The heart pumps less and the vessels dilate","Baroreceptor impulses increase","Arterial pressure returns to normal","The arterial wall is stretched","Sympathetic activity falls"]},a:[5,3,1,0,6,2,4],
+   why:{tr:"Soru: arter basıncı yükselmiştir. Sıra: duvar gerilir → baroreseptör uyarısı ↑ → uyarılar medullaya iletilir → vazomotor merkez BASKILANIR → sempatik ↓ → kalp pompalaması ↓, damarlar genişler → basınç normale döner (G s. 7–8, Şekil 1.3). Sık hata: «merkez uyarılır»; baroreseptör sinyali merkezi baskılar.",
+        en:"The question: arterial pressure has risen. Sequence: the wall is stretched → baroreceptor impulses ↑ → the impulses reach the medulla → the vasomotor center is INHIBITED → sympathetic ↓ → the heart pumps less and the vessels dilate → pressure returns to normal (G pp. 7–8, Fig. 1.3). Common error: “the center is stimulated”; the baroreceptor signal inhibits the center."}},
   {type:"fill",pts:15,mod:"fluids",
    q:{tr:"Boşlukları listeden seçerek doldurun.",en:"Fill in the blanks by choosing from the lists."},
    segs:{tr:["70 kg'lık bir erkekte total vücut suyu yaklaşık "," litredir. Bunun yaklaşık "," hücre içindedir. Hücre dışı sıvının dörtte üçünden fazlası ",". Hücre içinde en bol bulunan katyon ",", hücre dışında ise "," iyonudur."],
@@ -1196,10 +1196,10 @@ const QUIZ=[
         en:"1) 42 ✓ = 70 kg × 60% (G p. 310); 28 = intracellular volume; 14 = extracellular volume. 2) two-thirds ✓ (Guyton 2/3, p. 310; Boron 60%); half – in none of the books; one-third = the extracellular share. 3) interstitial fluid ✓ (11 of 14 L, G p. 311); plasma – only one-quarter (3 L); transcellular fluid – a separate, small compartment, 1–2 L (G p. 310). 4) K⁺ ✓ (140 inside the cells, G Table 25.2, p. 312); Na⁺ – 14 inside the cells; Cl⁻ – 4 inside the cells. 5) Na⁺ ✓ (142); K⁺ – 4.2 outside; Mg²⁺ – mostly inside the cells (G pp. 311–312)."}},
   {type:"order",pts:16,mod:"edema",
    q:{tr:"Kapiller filtrasyon artınca ödeme karşı çalışan olayları doğru sıraya koyun.",en:"Put the events that work against edema after capillary filtration rises in the correct order."},
-   o:{tr:["Lenf akımı artar","Kapiller filtrasyon artar","Dokudan protein uzaklaşır, interstisyel kolloid ozmotik basınç düşer","İnterstisyel sıvı basıncı yükselir","İnterstisyel sıvı hacmi artar"],
-      en:["Lymph flow increases","Capillary filtration increases","Protein is removed from the tissue and the interstitial colloid osmotic pressure falls","Interstitial fluid pressure rises","Interstitial fluid volume increases"]},a:[1,4,3,0,2],
-   why:{tr:"Filtrasyon ↑ → interstisyel hacim ↑ → negatif aralıkta düşük kompliyans nedeniyle basınç hızla ↑ → lenf akımı ↑ (10–50 kat) → protein yıkanır, interstisyel kolloid ozmotik basınç ↓ (G s. 322–323, Şekil 25.9). Sık hata: lenfi basınçtan önce koymak; lenf, basınç arttığı için artar.",
-        en:"Filtration ↑ → interstitial volume ↑ → because compliance is low in the negative range, pressure rises quickly ↑ → lymph flow ↑ (10- to 50-fold) → protein is washed out and the interstitial colloid osmotic pressure falls ↓ (G pp. 322–323, Fig. 25.9). Common error: putting lymph before pressure; lymph flow rises because pressure rises."}},
+   o:{tr:["Lenf akımı artar","Dokudan protein uzaklaşır","İnterstisyel kolloid ozmotik basınç düşer","İnterstisyel sıvı basıncı yükselir","İnterstisyel sıvı hacmi artar"],
+      en:["Lymph flow increases","Protein is removed from the tissue","The interstitial colloid osmotic pressure falls","Interstitial fluid pressure rises","Interstitial fluid volume increases"]},a:[4,3,0,1,2],
+   why:{tr:"Soru: kapiller filtrasyon artmıştır. Sıra: interstisyel hacim ↑ → negatif aralıkta düşük kompliyans nedeniyle basınç hızla ↑ → lenf akımı ↑ (10–50 kat) → dokudan protein uzaklaşır → interstisyel kolloid ozmotik basınç ↓ (G s. 322–323, Şekil 25.9). Sık hata: lenfi basınçtan önce koymak; lenf, basınç arttığı için artar.",
+        en:"The question: capillary filtration has risen. Sequence: interstitial volume ↑ → because compliance is low in the negative range, pressure rises quickly ↑ → lymph flow ↑ (10- to 50-fold) → protein is removed from the tissue → the interstitial colloid osmotic pressure falls ↓ (G pp. 322–323, Fig. 25.9). Common error: putting lymph before pressure; lymph flow rises because pressure rises."}},
   {type:"mcq",pts:4,mod:"shift",
    q:{tr:"Hiponatremi hücre hacmini nasıl etkiler?",en:"How does hyponatremia affect cell volume?"},
    o:{tr:["Hücreler şişer","Hücreler büzüşür","Değişmez","Önce büzüşür, sonra şişer","Yalnızca eritrositler etkilenir"],
