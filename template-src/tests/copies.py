@@ -13,6 +13,7 @@ flat.html    as midon, QUIZ_MID as the old 2026-11f flat list (3 items; read as 
 nomission.html as midoff, MISSIONS=false
 tries1.html  as midoff, MISSION_TRIES=1
 lateoff.html as midoff, TESTS.late=false (F1 plan without step 4)
+ordrep.html  as plain, the 16-point order item asks about "Damar 1'in yarıçapı azalınca", so its step "Damar 1'in yarıçapı azalır" repeats the question (author check, engine 2026-11p)
 """
 import os, sys
 src, out = sys.argv[1], sys.argv[2]
@@ -64,3 +65,5 @@ save("nomission.html", sub(off, "const MISSIONS=true;", "const MISSIONS=false;")
 save("tries1.html", sub(off, "const MISSION_TRIES=3;", "const MISSION_TRIES=1;"))
 print("copies in", out)
 save("lateoff.html", sub(off, "late:true", "late:false"))
+# author check (engine 2026-11p): an order step that repeats the question
+save("ordrep.html", sub(s, "Damar 1 daralınca olanları doğru sıraya koyun.", "Damar 1'in yarıçapı azalınca olanları doğru sıraya koyun."))

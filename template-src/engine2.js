@@ -1,4 +1,6 @@
-/* ---------------- TEST ENGINE 2026-11n ----------------
+/* ---------------- TEST ENGINE 2026-11p ----------------
+   2026-11p: author check: a warning when a step of an order item repeats the question (the question gives that step away).
+             (2026-11o is the Apps Script fix of 2026-11-16; there is no engine 2026-11o.)
    2026-11n: an open box redrawn by the TR | EN buttons shows its last reply at once (no blank list while it asks again).
    2026-11m: TR | EN buttons inside the leaderboard (#board) and class summary (#summary) box (the box covers the page switch);
              a switch redraws the open box at once (title, buttons, rows).
@@ -982,7 +984,20 @@ function checkQuiz(set,name){
     if(q.type==="tf"&&(q.a.length!==L(q.o)||L(q.fix)!==L(q.o))) err("a and fix need one entry per statement");
     if(q.type==="fill"&&q.blanks.some(b=>!(b.a>=0&&b.a<L(b.o)))) err("a blank answer is out of range");
     if(q.type==="open"&&L(q.rubric)<2) err("rubric needs steps");
-    if(q.mods&&q.mods.some(m=>!M[m])) err("mods has an unknown module key"); });
+    if(q.mods&&q.mods.some(m=>!M[m])) err("mods has an unknown module key");
+    if(q.type==="order") checkOrderStem(q,i,name); });
+}
+/* 2026-11p: an order step must not repeat the question (handbook pp. 101, 112: no cue in the stem).
+   A step "repeats" the question when at least 2/3 of its words (3+ letters, first 4 letters compared, common words left out)
+   are in the question. Checked in tr and en; a warning only, because the test is a word match. */
+const ORD_STOP=new Set(["the","and","for","with","into","from","that","this","are","its","after","put","correct","order","events",
+  "bir","ile","için","olan","olanları","doğru","sıraya","koyun","olayları","olayı"]);
+const ordWords=t=>String(t||"").toLocaleLowerCase("tr").replace(/[^\p{L}\p{N}]+/gu," ").split(" ")
+  .filter(w=>w.length>=3&&!ORD_STOP.has(w)).map(w=>w.slice(0,4));
+function checkOrderStem(q,i,name){
+  ["tr","en"].forEach(lg=>{ const stem=new Set(ordWords(q.q&&q.q[lg])), rows=(q.o&&q.o[lg])||[];
+    rows.forEach((r,k)=>{ const w=ordWords(r); if(w.length<2) return; const hit=w.filter(x=>stem.has(x)).length;
+      if(hit*3>=w.length*2) console.warn(`${name}[${i}] (order, ${lg}): step "${r}" repeats the question; the question gives this step away. Start the steps after the event the question names, and keep the number of steps (points = 4 × (rows − 1)).`); }); });
 }
 function checkPredict(){   // M2 tasks: q and why in tr and en, a = up | down | same, set uses the module's control ids
   M2_TASKS.forEach(k=>{ const P=M[k].predict, err=x=>console.error(`M.${k}.predict: ${x}`), ids=M[k].controls.map(c=>c.id);
