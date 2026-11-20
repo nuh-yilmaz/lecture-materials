@@ -13,6 +13,8 @@ flat.html    as midon, QUIZ_MID as the old 2026-11f flat list (3 items; read as 
 nomission.html as midoff, MISSIONS=false
 tries1.html  as midoff, MISSION_TRIES=1
 lateoff.html as midoff, TESTS.late=false (F1 plan without step 4)
+decks.html   as midon, 2 decks (engine 2026-11q): deck 1 = QUIZ with rounds 1-2, deck 2 = QUIZ with " (2)" after each question (new item codes) with round 3 (= round 1)
+decksbad.html as decks, deck 2 with the key of deck 1 and no English title (the author check must report it)
 ordrep.html  as plain, the 16-point order item asks about "Damar 1'in yarıçapı azalınca", so its step "Damar 1'in yarıçapı azalır" repeats the question (author check, engine 2026-11p)
 """
 import os, sys
@@ -67,3 +69,11 @@ print("copies in", out)
 save("lateoff.html", sub(off, "late:true", "late:false"))
 # author check (engine 2026-11p): an order step that repeats the question
 save("ordrep.html", sub(s, "Damar 1 daralınca olanları doğru sıraya koyun.", "Damar 1'in yarıçapı azalınca olanları doğru sıraya koyun."))
+# decks (engine 2026-11q): DECKS is set at the end of the quiz part
+DK = ('\nDECKS=[{key:"d1",title:{tr:"Bölüm 1: Geri bildirim",en:"Part 1: Feedback"},QUIZ,QUIZ_MID:[QUIZ_MID[0],QUIZ_MID[1]]},\n'
+      ' {key:"d2",title:{tr:"Bölüm 2: Akım",en:"Part 2: Flow"},QUIZ:QUIZ.map(q=>Object.assign({},q,{q:{tr:q.q.tr+" (2)",en:q.q.en+" (2)"}})),QUIZ_MID:[QUIZ_MID[0]]}];')
+k = on.index("const QUIZ_MID=[")
+e = on.index("\n];", k) + 3
+decks = on[:e] + DK + on[e:]
+save("decks.html", decks)
+save("decksbad.html", sub(decks, '{key:"d2",title:{tr:"Bölüm 2: Akım",en:"Part 2: Flow"}', '{key:"d1",title:{tr:"Bölüm 2: Akım"}'))
