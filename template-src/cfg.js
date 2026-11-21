@@ -1,6 +1,6 @@
 /* =====================================================================
    SİMÜLATÖR ŞABLONU / SIMULATOR TEMPLATE
-   Template 2026-11 · test engine 2026-11p · guide: claude/simulator_template.md
+   Template 2026-11 · test engine 2026-11q · guide: claude/simulator_template.md
    ---------------------------------------------------------------------
    HOW TO MAKE A NEW SIMULATOR
    1. Copy this file. Name it "<Konu> Simülatörü.html" (one file per lecture).
@@ -105,6 +105,7 @@
      MISSIONS and MISSION_TRIES (M7), PROGRAMS.
    MINI-QUIZ (TESTS.mid): QUIZ_MID = list of rounds, 3 items each, Kahoot style; format at QUIZ_MID in the quiz part.
    QR LINKS: <simulator link>#pre, #post open that test; #mid1, #mid2 … open that mini-quiz round (#mid = round 1).
+     With DECKS (engine 2026-11q): #pre1, #post1, #pre2 … (#pre, #post = deck 1); one #now QR per lecture.
    LEADERBOARD: <simulator link>#board1, #board2 … on the projector, one per round (#board = round 1; lecturer only;
      needs SHEET_URL and Apps Script 2026-11g; the streak bonus needs Apps Script 2026-11h).
    MISSION LINKS: <simulator link>#mission-<module key> opens that module at its mission (projector or QR).
@@ -129,6 +130,15 @@ const MISSION_TRIES=3;     // M7: tries per mission and browser; the best stars 
    PLACEHOLDER list: replace it with the user's list. */
 const PROGRAMS=[{k:"tip-tr",tr:"Tıp (Türkçe)",en:"Medicine (Turkish)"},{k:"tip-en",tr:"Tıp (İngilizce)",en:"Medicine (English)"},{k:"diger",tr:"Diğer",en:"Other"}];
 const BOARD_TOP=5;           // leaderboard (#board on the projector): number of places shown; equal points share a place
+/* DECKS (engine 2026-11q; rule 2.2): a lecture with more than one deck. null = one deck (QUIZ and QUIZ_MID of the quiz part).
+   Set the list at the END of the quiz part (after the item lists), not here:
+     DECKS=[{key:"d1", title:{tr,en}, QUIZ:[6 items, 100 points], QUIZ_MID:[rounds]}, {key:"d2", …}, …];
+   Each deck has its own pre-test and post-test (links #pre1, #post1, #pre2 …; class summary #summary1, #summary2 …;
+   Sheet tabs <COURSE>-d1, <COURSE>-d2 …). Mini-quiz rounds keep one numbering over the lecture (#mid1 … in deck order);
+   a deck's rounds close after that deck's post-test. Delayed test (M1): all items of all decks, total = mean of the deck
+   parts; it opens LATE_DAYS after the latest post-test (normally the last deck's); Sheet tab <COURSE>-late.
+   One #now QR per lecture. key: short name, lower case (e.g. d1), used in the column "Part d1 (100)". */
+let DECKS=null;
 const MINW=10, KST=PFX+"-t4";
 
 const $=s=>document.querySelector(s);

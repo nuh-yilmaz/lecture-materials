@@ -47,12 +47,13 @@ function modText(){
 function open(key){
   missionLeave();   // M7: leaving or reopening a module ends a running try (it counts as 0★)
   const mm=/^mission-(.+)$/.exec(key); if(mm&&M[mm[1]]){ open(mm[1]); try{ history.replaceState(null,"","#"+key); }catch(e){} const b=$("#m-mission"); if(b&&!b.hidden){ b.tabIndex=-1; b.scrollIntoView({block:"start"}); b.focus({preventScroll:true}); } return; }   // #mission-<module>
-  if(key==="summary"){ showSummary(); return; }   // pre-test class summary for the projector (engine 2026-11j)
+  const sm=/^summary(\d*)$/.exec(key); if(sm){ showSummary(sm[1]?+sm[1]:1); return; }   // pre-test class summary for the projector (engine 2026-11j); #summary1, #summary2 … per deck (2026-11q; #summary = deck 1)
   const bm=/^board(\d*)$/.exec(key); if(bm){ showBoard(bm[1]?+bm[1]:1); return; }   // leaderboard for the projector: #board1, #board2 … (#board = round 1)
   const km=/^mid(\d*)$/.exec(key);
   if(MODES.includes("mid")&&(km||key==="mini")){ qmode="mid"; kr=key==="mini"?(NR===1?1:0):km[1]?+km[1]:1; if(kr>NR) kr=0; renderModes(); key="test"; }   // #mid1, #mid2 … (#mid = round 1); #mini = list of rounds
   else if(key==="now"&&MODES.length){ qmode="now"; renderModes(); key="test"; }   // #now: one QR per lecture (2026-11j)
-  else if(MODES.includes(key)){ qmode=key; renderModes(); key="test"; }   // QR links: #pre, #post, #late
+  else if(/^(pre|post)\d+$/.test(key)&&MODES.includes(key.slice(0,key.search(/\d/)))){ qmode=key.slice(0,key.search(/\d/)); kd=Math.min(Math.max(+key.slice(key.search(/\d/)),1),ND)-1; renderModes(); key="test"; }   // #pre1, #post1, #pre2 … (decks, 2026-11q)
+  else if(MODES.includes(key)){ qmode=key; if(key==="pre"||key==="post") kd=0; renderModes(); key="test"; }   // QR links: #pre, #post, #late (with decks: deck 1)
   if(!M[key]&&key!=="giris"&&key!=="test") key="giris";
   view=key;
   document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.go===key));
@@ -146,7 +147,7 @@ $("#b-pause").onclick=()=>{paused=!paused; $("#b-pause").textContent=paused?t(UI
 $("#b-reset").onclick=()=>reset();
 document.querySelectorAll("#speed button").forEach(b=>b.onclick=()=>{speed=+b.dataset.s; document.querySelectorAll("#speed button").forEach(x=>x.setAttribute("aria-pressed",x===b));});
 document.querySelectorAll("#lang button").forEach(b=>b.onclick=()=>setLang(b.dataset.l));
-document.addEventListener("click",e=>{const g=e.target.closest("[data-go]"); if(!g) return; e.preventDefault(); if(g.dataset.mode&&(MODES.includes(g.dataset.mode)||(g.dataset.mode==="now"&&MODES.length))){qmode=g.dataset.mode; renderModes();} open(g.dataset.go); window.scrollTo({top:0});});
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]"); if(!g) return; e.preventDefault(); if(g.dataset.mode&&(MODES.includes(g.dataset.mode)||(g.dataset.mode==="now"&&MODES.length))){qmode=g.dataset.mode; if(g.dataset.deck) kd=+g.dataset.deck; renderModes();} open(g.dataset.go); window.scrollTo({top:0});});
 window.addEventListener("hashchange",()=>open(location.hash.slice(1)));
 staticText();
 open(location.hash.slice(1)||"giris");

@@ -1,4 +1,7 @@
-/* ---------------- TEST ENGINE 2026-11p ----------------
+/* ---------------- TEST ENGINE 2026-11q ----------------
+   2026-11q: decks (rule 2.2): optional DECKS list; one pre-test and post-test per deck (#pre1, #post1 …, tabs <COURSE>-d1 …),
+             one mini-quiz numbering, delayed test over all decks (total = mean of the deck parts, tab <COURSE>-late).
+             Without DECKS the engine works as 2026-11p.
    2026-11p: author check: a warning when a step of an order item repeats the question (the question gives that step away).
              (2026-11o is the Apps Script fix of 2026-11-16; there is no engine 2026-11o.)
    2026-11n: an open box redrawn by the TR | EN buttons shows its last reply at once (no blank list while it asks again).
@@ -98,6 +101,11 @@ const QT={
   lateWhen:{tr:"Gecikmeli test {d} tarihinde açılacak. Aynı sorular, ne kadarını hatırladığınızı gösterir.",en:"The delayed test will open on {d}. The same questions show how much you remember."},
   lateNoPost:{tr:"Gecikmeli test, son testten {n} gün sonra açılır.",en:"The delayed test opens {n} days after the post-test."},
   lateOpen:{tr:"Gecikmeli test açıldı.",en:"The delayed test is open."},
+  lateDeck:{tr:"Gecikmeli test, «{t}» son testinden {n} gün sonra açılır. Bütün ünitenin soruları sorulur.",en:"The delayed test opens {n} days after the post-test of “{t}”. It has the items of the whole unit."},
+  lateNoPostD:{tr:"Gecikmeli test, «{t}» son testinden {n} gün sonra açılır.",en:"The delayed test opens {n} days after the post-test of “{t}”."},
+  nowLateD:{tr:"«{t}» son testinden sonra",en:"after the post-test of “{t}”"},
+  nowWaitD:{tr:"Şimdilik yapılacak adım yok. Gecikmeli test, «{t}» son testinden sonra açılır.",en:"Nothing to do for now. The delayed test opens after the post-test of “{t}”."},
+  latePartsT:{tr:"bölümler:",en:"parts:"},
   lateDone:{tr:"Gecikmeli test tamamlandı ({z}).",en:"Delayed test completed ({z})."},
   wcount:{tr:"Kelime sayısı: {n} (puanlama için en az 10)",en:"Word count: {n} (at least 10 for scoring)"},
   noneAns:{tr:"Hiç cevap yok. Önce soruları cevaplayın.",en:"No answers yet. Answer the questions first."},
@@ -125,23 +133,37 @@ const MP=[{k:"learned",tr:"Bugün öğrendiğim en önemli şey:",en:"The most i
 const qt=(k,o)=>{let s=(QT[k][LANG]||QT[k].tr); if(o) for(const p in o) s=s.split("{"+p+"}").join(o[p]); return s;};
 const LU="ABCDEFGH", ll="abcdefgh", r2=v=>Math.round(v*100)/100, nf=v=>dec(r2(v),Number.isInteger(r2(v))?0:(Number.isInteger(r2(v)*10)?1:2));
 const MODES=["pre","mid","post","late"].filter(m=>TESTS[m]);
-/* mini-quiz rounds (2026-11g): a 2026-11f flat list of items is read as one round (checkMid reports it) */
-const ROUNDS=(Array.isArray(QUIZ_MID)&&QUIZ_MID.length&&QUIZ_MID[0]&&QUIZ_MID[0].type)?[{items:QUIZ_MID}]:(QUIZ_MID||[]).map(r=>({items:(r&&r.items)||[],story:(r&&r.story)||null}));   // story (2026-11h, T1): one line that ties the 3 items to one person or situation
+/* decks (2026-11q): DK = the decks; without DECKS one deck made from QUIZ and QUIZ_MID (MULTI false: keys, links and tabs as 2026-11p) */
+const MULTI=Array.isArray(DECKS)&&DECKS.length>0;
+const DK=MULTI?DECKS.map(D=>({key:(D&&D.key)||"",title:(D&&D.title)||null,QUIZ:(D&&D.QUIZ)||[],QUIZ_MID:(D&&D.QUIZ_MID)||[]})):[{key:"",title:null,QUIZ,QUIZ_MID}];
+const ND=DK.length;
+let kd=0;   // deck shown on the test tab (0 … ND−1)
+const QZ=d=>DK[d].QUIZ;
+const sk=(m,d)=>MULTI&&(m==="pre"||m==="post")?m+(d+1):m;   // storage key: pre / post (one deck) or pre1, post1 … (decks)
+const deckName=d=>tx(DK[d].title)||String(d+1);
+const LATESET=MULTI?DK.flatMap(D=>D.QUIZ):QUIZ;   // delayed test: all items of all decks, in deck order
+const isLate=set=>MULTI&&set===LATESET;
+const OFF=DK.map((_,i)=>DK.slice(0,i).reduce((a,D)=>a+D.QUIZ.length,0));
+/* mini-quiz rounds (2026-11g): a 2026-11f flat list of items is read as one round (checkMid reports it); one numbering over the decks (2026-11q) */
+const isFlat=Q=>Array.isArray(Q)&&Q.length&&Q[0]&&Q[0].type;
+const ROUNDS=DK.flatMap((D,d)=>(isFlat(D.QUIZ_MID)?[{items:D.QUIZ_MID}]:(D.QUIZ_MID||[]).map(r=>({items:(r&&r.items)||[],story:(r&&r.story)||null}))).map(R=>Object.assign(R,{d})));   // story (2026-11h, T1): one line that ties the 3 items to one person or situation; d = deck
 const RS=()=>(ROUNDS[kr-1]||{}).story, rsHtml=()=>RS()?`<p class="kstory">${tx(RS())}</p>`:"";
 const NR=ROUNDS.length, MIDS=ROUNDS.flatMap(r=>r.items);
 let kr=1;   // round shown on the test tab (1…NR); 0 = list of rounds
 const mk=r=>"mid"+r, RQ=()=>(ROUNDS[kr-1]||{items:[]}).items;
-const setOf=m=>m==="mid"?RQ():QUIZ;
+const setOf=m=>m==="mid"?RQ():m==="late"?LATESET:QZ(kd);
+const setFor=(m,d)=>m==="late"?LATESET:QZ(d);
 const isAuto=q=>q.type!=="open";
-const HAS_OPEN=QUIZ.some(q=>!isAuto(q));
+const HAS_OPEN=DK.some(D=>D.QUIZ.some(q=>!isAuto(q)));
 const maxOf=set=>r2(set.filter(isAuto).reduce((a,q)=>a+q.pts,0));
 const nOf=q=>q.type==="mcq"?1:q.type==="match"?tx(q.left).length:q.type==="fill"?q.blanks.length:tx(q.o).length;
 let ST=store.get(KST); if(!ST||typeof ST!=="object") ST={};
 if("mid" in ST){ if(ST.mid&&!ST.mid1) ST.mid1=ST.mid; delete ST.mid; store.set(KST,ST); }   // a 2026-11f mini-quiz result counts as round 1 (stored once)
-["pre","post","late"].concat(ROUNDS.map((_,i)=>mk(i+1))).forEach(m=>{if(!(m in ST)) ST[m]=null;});
+const stKeys=()=>DK.flatMap((_,d)=>[sk("pre",d),sk("post",d)]).concat(["late"],ROUNDS.map((_,i)=>mk(i+1)));
+stKeys().forEach(m=>{if(!(m in ST)) ST[m]=null;});
 const saveST=()=>store.set(KST,ST);
-const curKey=()=>qmode==="mid"?mk(kr):qmode;
-const hashOf=()=>qmode==="now"?"now":qmode==="mid"?(kr?mk(kr):"mini"):qmode;   // #mid1… for a round, #mini for the list of rounds
+const curKey=()=>qmode==="mid"?mk(kr):sk(qmode,kd);
+const hashOf=()=>qmode==="now"?"now":qmode==="mid"?(kr?mk(kr):"mini"):sk(qmode,kd);   // #mid1… for a round, #mini for the list of rounds
 const hashSync=()=>{ try{ if(location.hash.slice(1)!==hashOf()) history.replaceState(null,"","#"+hashOf()); }catch(e){} };
 let qmode=MODES[0], seq={}, warned=false, devMem=null;   // seq[i] = rows of order item i in the order they were tapped
 const ordAns=(q,i)=>{ const s=seq[i]||[]; return s.concat(tx(q.o).map((_,k)=>k).filter(k=>!s.includes(k))); };   // steps without a number go to the end
@@ -165,8 +187,11 @@ function renderCodeBox(){
   const ps=$("#prog"); if(ps) ps.onchange=()=>{ store.set("sim-program",ps.value||null); if(qmode==="mid"&&kr&&!ST[mk(kr)]) renderQuiz(); else renderCodeBox(); };
 }
 /* ----- delayed test ----- */
-const lateAt=()=>ST.post?ST.post.t+LATE_DAYS*864e5:null;
-const lateOpen=()=>!!ST.post&&Date.now()>=lateAt();
+const posts=()=>DK.map((_,d)=>ST[sk("post",d)]).filter(Boolean);
+const lastPost=()=>ST[sk("post",ND-1)];   // the last deck's post-test (one deck: the post-test)
+const rClosed=r=>!!ST[sk("post",(ROUNDS[r-1]||{d:0}).d)];   // a deck's rounds close after that deck's post-test
+const lateAt=()=>{ const p=posts(); return p.length?Math.max(...p.map(x=>x.t))+LATE_DAYS*864e5:null; };   // 2026-11q: the latest post-test taken
+const lateOpen=()=>posts().length>0&&Date.now()>=lateAt();
 const fmtDate=ms=>new Date(ms).toLocaleDateString(LANG==="en"?"en-GB":"tr-TR",{day:"numeric",month:"long",year:"numeric"});
 /* ----- scoring ----- */
 function grade(set,raw){
@@ -196,15 +221,26 @@ const selfOf=(set,rec)=>set.map((q,i)=>q.type==="open"?r2((rec.self[i]||[]).filt
 const GIFT=4;
 const confOf=(q,s,c)=>CONFIDENCE&&isAuto(q)&&c===1?r2(2*s-4*(1-s)):0;
 const confPts=(set,rec)=>r2(set.reduce((a,q,i)=>a+(isAuto(q)?confOf(q,(rec.qs[i]||0)/q.pts,rec.raw.conf[i]):0),0));
-const totMax=set=>Math.min(100,r2(maxOf(set)+(CONFIDENCE?2*set.filter(isAuto).length:0)+GIFT));
-const totalOf=(set,rec)=>cl(r2(rec.auto+confPts(set,rec)+GIFT),0,100);
+const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+const totMax=set=>isLate(set)?r2(mean(DK.map(D=>totMax(D.QUIZ)))):Math.min(100,r2(maxOf(set)+(CONFIDENCE?2*set.filter(isAuto).length:0)+GIFT));
+const totalOf=(set,rec)=>isLate(set)?r2(mean(lateParts(rec).map(p=>p.tot))):cl(r2(rec.auto+confPts(set,rec)+GIFT),0,100);
+/* delayed test with decks (2026-11q): each deck part is scored as its own test (items + confidence + 4); total = mean of the parts */
+function lateParts(rec){ return DK.map((D,d)=>{ const o=OFF[d], n=D.QUIZ.length, qs=rec.qs.slice(o,o+n);
+  const r={qs, auto:r2(qs.reduce((a,b)=>a+(b||0),0)), raw:{ans:rec.raw.ans.slice(o,o+n), conf:rec.raw.conf.slice(o,o+n)}};
+  return {d, set:D.QUIZ, rec:r, tot:totalOf(D.QUIZ,r), max:totMax(D.QUIZ)}; }); }
 const sgn=v=>v>0?"+"+nf(v):v<0?"−"+nf(-v):"0";
 const totalStr=(set,rec)=>`${nf(totalOf(set,rec))}/${nf(totMax(set))}`;
 /* ----- rendering ----- */
+function modeList(){   // test-tab buttons; with decks: Now · Pre 1 · Mini quiz · Post 1 · Pre 2 · Post 2 … · Delayed (2026-11q)
+  const L=MODES.length?[{m:"now"}]:[];
+  if(!MULTI) MODES.forEach(m=>L.push({m}));
+  else { DK.forEach((_,d)=>{ if(TESTS.pre) L.push({m:"pre",d}); if(d===0&&TESTS.mid) L.push({m:"mid"}); if(TESTS.post) L.push({m:"post",d}); }); if(TESTS.late) L.push({m:"late"}); }
+  return L;
+}
 function renderModes(){
   const box=$("#qmode"); if(!box) return;
-  box.innerHTML=(MODES.length?["now"]:[]).concat(MODES).map(m=>`<button type="button" data-m="${m}" aria-pressed="${m===qmode}">${t(UI["mode_"+m])}</button>`).join("");
-  box.querySelectorAll("button").forEach(b=>b.onclick=()=>{qmode=b.dataset.m; if(qmode==="mid") kr=NR===1?1:0; renderModes(); renderQuiz(); hashSync(); });
+  box.innerHTML=modeList().map(x=>`<button type="button" data-m="${x.m}"${x.d!=null?` data-d="${x.d}"`:""} aria-pressed="${x.m===qmode&&(x.d==null||x.d===kd)}">${x.d!=null?stepName(x.m,0,x.d):t(UI["mode_"+x.m])}</button>`).join("");
+  box.querySelectorAll("button").forEach(b=>b.onclick=()=>{qmode=b.dataset.m; if(b.dataset.d!=null) kd=+b.dataset.d; if(qmode==="mid") kr=NR===1?1:0; renderModes(); renderQuiz(); hashSync(); });
 }
 function itemHtml(q,i,done){
   const o=q.o?tx(q.o):[], id=`${qmode}-${i}`; let body="";
@@ -223,7 +259,7 @@ function itemHtml(q,i,done){
    After checking, the steps are shown in the student's order (right / wrong marks per row). */
 function renderOrder(i,locked){
   const q=setOf(qmode)[i], o=tx(q.o), box=document.getElementById("ord"+i); if(!box) return;
-  if(locked){ const r=ST[qmode].raw.ans[i];
+  if(locked){ const r=ST[curKey()].raw.ans[i];
     box.innerHTML=`<ol class="ord">${r.map((idx,pos)=>`<li class="ordrow" id="ordrow${i}_${pos}"><span class="tnum on">${pos+1}</span><span class="otext"><b>${LU[idx]})</b> ${o[idx]}</span></li>`).join("")}</ol>`; return; }
   const s=seq[i]||(seq[i]=[]);
   box.innerHTML=`<p class="ordhint">${qt("ordHint")}</p><div class="tapord" role="group" aria-label="${qt("type_order")}">`+
@@ -231,25 +267,29 @@ function renderOrder(i,locked){
     `</div><div class="ordbar"><button type="button" class="btn ghost" data-oclear="${i}" ${s.length?"":"disabled"}>${qt("ordClear")}</button></div>`;
 }
 function gateHtml(){
-  if(qmode==="pre"&&!ST.pre&&ST.post) return qt("preClosed");
-  if(qmode==="mid"&&kr&&!ST[mk(kr)]&&ST.post) return qt("midClosed");
-  if(qmode==="late"&&!ST.late&&!lateOpen()) return ST.post?qt("lateWhen",{d:fmtDate(lateAt())}):qt("lateNoPost",{n:LATE_DAYS});
+  if(qmode==="pre"&&!ST[sk("pre",kd)]&&ST[sk("post",kd)]) return qt("preClosed");
+  if(qmode==="mid"&&kr&&!ST[mk(kr)]&&rClosed(kr)) return qt("midClosed");
+  if(qmode==="late"&&!ST.late&&!lateOpen()) return lateAt()?lateWhenStr():qt(MULTI?"lateNoPostD":"lateNoPost",{n:LATE_DAYS,t:deckName(ND-1)});
   return "";
 }
+const deckBtn=d=>MULTI?` data-deck="${d}"`:"";
+/* with decks, before the last deck's post-test: "the delayed test opens after the last deck" (Q2-A of 2026-11-20) */
+const lateWhenStr=()=>MULTI&&!lastPost()?qt("lateDeck",{n:LATE_DAYS,t:deckName(ND-1)}):qt("lateWhen",{d:fmtDate(lateAt())});
 function noteHtml(){
-  const rec=ST[qmode];
-  if(qmode==="pre"&&rec&&!ST.post) return `${qt("toPost",{x:totalStr(QUIZ,rec)})} ${qt("lockPre")} <button class="btn ghost" type="button" data-go="test" data-mode="post">${qt("goPost")}</button>`;
-  if(qmode==="post"&&!rec) return (ST.pre?"":qt("noPre")+" ")+qt("oneTry");
-  if(qmode==="post"&&rec&&TESTS.late) return qt("postDone",{y:totalStr(QUIZ,rec)})+" "+(lateOpen()?qt("lateOpen"):qt("lateWhen",{d:fmtDate(lateAt())}));
+  const rec=ST[curKey()], pre=ST[sk("pre",kd)], post=ST[sk("post",kd)];
+  if(qmode==="pre"&&rec&&!post) return `${qt("toPost",{x:totalStr(QZ(kd),rec)})} ${qt("lockPre")} <button class="btn ghost" type="button" data-go="test" data-mode="post"${deckBtn(kd)}>${qt("goPost")}</button>`;
+  if(qmode==="post"&&!rec) return (pre?"":qt("noPre")+" ")+qt("oneTry");
+  if(qmode==="post"&&rec&&TESTS.late) return qt("postDone",{y:totalStr(QZ(kd),rec)})+" "+(lateOpen()?qt("lateOpen"):lateWhenStr());
   return rec?"":qt("oneTry");
 }
 function renderQuiz(){
   clearInterval(kTick); if(qmode==="now") return renderNow(); if(qmode==="mid") return renderKahoot();
-  const set=setOf(qmode), rec=ST[qmode], done=!!rec, f=$("#quiz"); warned=false;
+  const set=setOf(qmode), rec=ST[curKey()], done=!!rec, f=$("#quiz"); warned=false;
   const g=gateHtml(); if(g&&!done){ f.innerHTML=`<div class="q qnote">${g}</div>`; testNote(); renderCodeBox(); return; }
   set.forEach((q,i)=>{ if(q.type==="order") seq[i]=[]; });
   const note=noteHtml();
-  f.innerHTML=(note?`<div class="q qnote" id="qnote">${note}</div>`:"")+`<div class="q scorebox" id="qscorebox" role="note">${qt(CONFIDENCE?"scoreBox":"scoreBoxGift")}</div>`+set.map((q,i)=>itemHtml(q,i,done)).join("")+
+  const dh=MULTI&&qmode!=="late"?`<div class="q qnote deckhead"><b>${esc(deckName(kd))}</b></div>`:"";   // 2026-11q: deck title above the test
+  f.innerHTML=dh+(note?`<div class="q qnote" id="qnote">${note}</div>`:"")+`<div class="q scorebox" id="qscorebox" role="note">${qt(CONFIDENCE?"scoreBox":"scoreBoxGift")}</div>`+set.map((q,i)=>itemHtml(q,i,done)).join("")+
     `<div class="q"><div class="blankwarn" id="qwarn" role="alert" hidden></div><div class="score">${done?"":`<button class="btn" type="submit" id="qsubmit">${qt("check")}</button><button class="btn ghost" type="button" id="qclear">${qt("clear")}</button>`}<span id="qres"></span></div>`+
     `<div class="topics" id="qtopics" hidden></div><div class="remplan" id="qrem" hidden></div><div class="latebox" id="qlate" hidden></div><div class="surewrong" id="qsure" hidden></div><div class="compare" id="qcmp" style="margin-top:12px"></div>`+
     `<div class="fbform" id="fbform" hidden></div><div class="sendbox" id="sendbox" hidden><button class="btn" type="button" id="qsend">${qt("send")}</button><span id="sendmsg" role="status"></span></div></div>`;
@@ -318,43 +358,48 @@ function renderFb(rec){
     (MINUTE?MP.map(x=>`<label class="mp" for="mp-${x.k}">${x[LANG]}</label><textarea id="mp-${x.k}" data-mp="${x.k}" rows="2" ${rec.sent?"readonly":""}>${(rec.mp[x.k]||"").replace(/</g,"&lt;")}</textarea>`).join(""):"");
 }
 function updateTotal(){
-  const rec=ST[qmode], el=$("#qres"); if(!rec||!el) return; const set=setOf(qmode);
-  const parts=[`${qt("totItems")} ${nf(rec.auto)}/${nf(maxOf(set))}`].concat(CONFIDENCE?[`${qt("totConf")} ${sgn(confPts(set,rec))}`]:[],[`${qt("totGift")} ${GIFT}`]);
+  const rec=ST[curKey()], el=$("#qres"); if(!rec||!el) return; const set=setOf(qmode);
+  const parts=[`${qt("totItems")} ${nf(rec.auto)}/${nf(maxOf(set))}`].concat(CONFIDENCE?[`${qt("totConf")} ${sgn(confPts(set,rec))}`]:[],[`${qt("totGift")} ${GIFT}`],
+    isLate(set)?[qt("latePartsT")+" "+lateParts(rec).map(p=>`${esc(deckName(p.d))}: ${nf(p.tot)}/${nf(p.max)}`).join(" · ")]:[]);   // 2026-11q: total = mean of the deck parts
   el.innerHTML=`<span class="big">${qt("totT")} ${totalStr(set,rec)}</span> <span class="tparts">${parts.join(" · ")}</span>`+(HAS_OPEN?` <span class="tnote">(${qt("autoNote")})</span>`:"");
   set.forEach((q,i)=>{ if(q.type!=="open"||qmode==="pre") return; const s=document.getElementById("self"+i); if(s) s.textContent=qt("selfPts",{x:nf(selfOf(set,rec)[i]),m:nf(q.pts)}); });
   const n=$("#qnote"); if(n) n.innerHTML=noteHtml();
   showCompare(); testNote();
 }
 /* ----- "Şimdi / Now" page (2026-11j): one QR per lecture opens #now; the next step is suggested, every step can be opened ----- */
-const stepName=(m,r)=>m==="mid"?(NR>1?`${t(UI.mode_mid)} ${r}`:t(UI.mode_mid)):t(UI["mode_"+m]);
-function nextStep(){
+const stepName=(m,r,d)=>m==="mid"?(NR>1?`${t(UI.mode_mid)} ${r}`:t(UI.mode_mid)):t(UI["mode_"+m])+(MULTI&&(m==="pre"||m==="post")?" "+((d||0)+1):"");
+function nextStep(){   // with decks (2026-11q): deck 1 pre → its rounds → deck 1 post → deck 2 pre … → delayed
   const run=store.get(KRUN); if(run&&MODES.includes("mid")) return {m:"mid",r:run.r||1};   // a started round first
-  if(MODES.includes("pre")&&!ST.pre&&!ST.post) return {m:"pre"};
-  if(MODES.includes("mid")&&!ST.post) for(let r=1;r<=NR;r++) if(!ST[mk(r)]) return {m:"mid",r};
-  if(MODES.includes("post")&&!ST.post) return {m:"post"};
+  for(let d=0;d<ND;d++){ const post=ST[sk("post",d)];
+    if(MODES.includes("pre")&&!ST[sk("pre",d)]&&!post) return {m:"pre",d};
+    if(MODES.includes("mid")&&!post) for(let r=1;r<=NR;r++) if(ROUNDS[r-1].d===d&&!ST[mk(r)]) return {m:"mid",r};
+    if(MODES.includes("post")&&!post) return {m:"post",d}; }
   if(MODES.includes("late")&&!ST.late&&lateOpen()) return {m:"late"};
   return null;
 }
-function nowStatus(m){
-  const rec=ST[m];
-  if(rec) return `<span class="tm ok">✓</span> ${qt("nowDone")} · ${totalStr(QUIZ,rec)}`;
-  if(m==="pre"&&ST.post) return `<small>${qt("kClosed")}</small>`;
-  if(m==="late"&&!lateOpen()) return `<small>${ST.post?qt("nowLate",{d:fmtDate(lateAt())}):qt("nowLateN",{n:LATE_DAYS})}</small>`;
+function nowStatus(m,d){
+  const rec=ST[sk(m,d)];
+  if(rec) return `<span class="tm ok">✓</span> ${qt("nowDone")} · ${totalStr(setFor(m,d),rec)}`;
+  if(m==="pre"&&ST[sk("post",d)]) return `<small>${qt("kClosed")}</small>`;
+  if(m==="late"&&!lateOpen()) return `<small>${lateAt()?(MULTI&&!lastPost()?qt("nowLateD",{t:esc(deckName(ND-1))}):qt("nowLate",{d:fmtDate(lateAt())})):qt(MULTI?"nowLateD":"nowLateN",{n:LATE_DAYS,t:esc(deckName(ND-1))})}</small>`;
   return `<small>${qt("nowOpen")}</small>`;
 }
 function renderNow(){
   const f=$("#quiz"), nx=nextStep(); renderCodeBox(); testNote();
-  const isNx=(m,r)=>nx&&nx.m===m&&(m!=="mid"||nx.r===r);
-  const row=m=>{ if(m==="mid") return `<li><span class="nowlab">${t(UI.mode_mid)}</span><span class="nowrounds">`+
-      ROUNDS.map((_,i)=>{ const r=i+1, done=!!ST[mk(r)], cl=done?"done":ST.post?"closed":isNx("mid",r)?"next":"";
-        return `<button type="button" class="btn ghost ${cl}" data-step="mid" data-r="${r}" aria-label="${stepName("mid",r)}${done?" ✓":""}">${r}${done?"✓":""}</button>`; }).join("")+`</span></li>`;
-    return `<li><button type="button" class="btn ghost${isNx(m)?" next":""}" data-step="${m}">${t(UI["mode_"+m])}</button> ${nowStatus(m)}</li>`; };
+  const isNx=(m,r,d)=>nx&&nx.m===m&&(m!=="mid"||nx.r===r)&&(nx.d==null||nx.d===d);
+  const row=(m,d)=>{ if(m==="mid"){ const rs=ROUNDS.map((R,i)=>({R,r:i+1})).filter(x=>x.R.d===d); if(!rs.length) return "";
+      return `<li><span class="nowlab">${t(UI.mode_mid)}</span><span class="nowrounds">`+
+      rs.map(({r})=>{ const done=!!ST[mk(r)], cl=done?"done":rClosed(r)?"closed":isNx("mid",r)?"next":"";
+        return `<button type="button" class="btn ghost ${cl}" data-step="mid" data-r="${r}" aria-label="${stepName("mid",r)}${done?" ✓":""}">${r}${done?"✓":""}</button>`; }).join("")+`</span></li>`; }
+    return `<li><button type="button" class="btn ghost${isNx(m,0,d)?" next":""}" data-step="${m}"${MULTI&&m!=="late"?` data-d="${d}"`:""}>${stepName(m,0,d)}</button> ${nowStatus(m,d)}</li>`; };
+  const list=MULTI?DK.map((_,d)=>`<li class="nowdeck"><b>${esc(deckName(d))}</b></li>`+MODES.filter(m=>m!=="late").map(m=>row(m,d)).join("")).join("")+(MODES.includes("late")?row("late",0):"")
+    :MODES.map(m=>row(m,0)).join("");
   f.innerHTML=`<div class="q nowpage"><h3 class="kh">${qt("nowT")}</h3><p>${qt("nowHint")}</p>`+
-    (nx?`<button type="button" class="btn nownext" data-step="${nx.m}" data-r="${nx.r||""}">${qt("nowNext",{s:stepName(nx.m,nx.r)})}</button>`:`<p class="nowall">${TESTS.late&&ST.post&&!ST.late?qt("nowWait",{d:fmtDate(lateAt())}):qt("nowAll")}</p>`)+
-    `<ul class="nowlist">${MODES.map(row).join("")}</ul>`+
+    (nx?`<button type="button" class="btn nownext" data-step="${nx.m}" data-r="${nx.r||""}"${nx.d!=null&&MULTI?` data-d="${nx.d}"`:""}>${qt("nowNext",{s:stepName(nx.m,nx.r,nx.d)})}</button>`:`<p class="nowall">${TESTS.late&&posts().length&&!ST.late?(MULTI&&!lastPost()?qt("nowWaitD",{t:esc(deckName(ND-1))}):qt("nowWait",{d:fmtDate(lateAt())})):qt("nowAll")}</p>`)+
+    `<ul class="nowlist">${list}</ul>`+
     `<div class="latebox" id="qlate" hidden></div>`+(MODES.includes("mid")?`<p class="nowlect"><a href="#board">${qt("nowBoard")}</a></p>`:"")+`</div><div class="compare" id="qcmp"></div>`;
   renderLateBox($("#qlate"));
-  f.querySelectorAll("[data-step]").forEach(b=>b.onclick=()=>{ qmode=b.dataset.step; if(qmode==="mid") kr=+b.dataset.r||1; renderModes(); renderQuiz(); hashSync(); window.scrollTo({top:0}); });
+  f.querySelectorAll("[data-step]").forEach(b=>b.onclick=()=>{ qmode=b.dataset.step; if(qmode==="mid") kr=+b.dataset.r||1; if(b.dataset.d) kd=+b.dataset.d; renderModes(); renderQuiz(); hashSync(); window.scrollTo({top:0}); });
   showCompare();
   const np=f.querySelector(".nowpage"); if(np&&np.scrollIntoView){ const go=()=>np.scrollIntoView({block:"start"}); requestAnimationFrame(go); setTimeout(go,250); }   // again after the browser restores an old scroll position on reload   // Q26-A: the "next" button is visible on a phone
 }
@@ -371,7 +416,7 @@ function icsText(){ const d=new Date(lateAt()), e=new Date(d.getFullYear(),d.get
 function gcalUrl(){ const d=new Date(lateAt()), e=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1);
   return "https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(qt("calTitle",{t:document.title}))+"&dates="+ymdC(d)+"/"+ymdC(e)+"&details="+encodeURIComponent(qt("calDesc",{u:lateUrl()})); }
 function renderLateBox(el){
-  if(!el) return; if(!(TESTS.late&&ST.post&&!ST.late&&!lateOpen())){ el.hidden=true; return; }
+  if(!el) return; if(!(TESTS.late&&lastPost()&&!ST.late&&!lateOpen())){ el.hidden=true; return; }   // 2026-11q (Q2-A): after the last deck's post-test only
   const dd=fmtDate(lateAt()), req=store.get(KREM);
   el.hidden=false;
   el.innerHTML=`<b>${qt("lrT")}</b><p>${qt("lrP",{d:dd})}</p><div class="score">`+
@@ -395,15 +440,17 @@ function showCompare(){
   ["pre","mid","post","late"].forEach(m=>{
     if(m==="mid"){ let r=0,n=0,k=0; ROUNDS.forEach((R,i)=>{ const x=ST[mk(i+1)]; if(x){ r+=x.auto; n+=R.items.length; k++; } });   // one pill for all rounds
       if(k) h+=`<span class="pill">${t(UI.mode_mid)}: ${qt("kPill",{r,n,k})}</span>`; return; }
-    if(ST[m]) h+=`<span class="pill">${t(UI["mode_"+m])}: ${totalStr(setOf(m),ST[m])}</span>`; });
-  if(ST.pre&&ST.post){const d=r2(totalOf(QUIZ,ST.post)-totalOf(QUIZ,ST.pre)); h+=`<span class="pill" style="color:var(--ok)">${d>=0?"+":""}${nf(d)} ${qt("pts")}</span>`;}
+    (m==="late"?[0]:DK.map((_,d)=>d)).forEach(d=>{ const x=ST[sk(m,d)]; if(x) h+=`<span class="pill">${stepName(m,0,d)}: ${totalStr(setFor(m,d),x)}</span>`; }); });
+  DK.forEach((_,k)=>{ const a=ST[sk("pre",k)], b=ST[sk("post",k)];   // gain per deck (2026-11q)
+    if(a&&b){const d=r2(totalOf(QZ(k),b)-totalOf(QZ(k),a)); h+=`<span class="pill" style="color:var(--ok)">${MULTI?(k+1)+": ":""}${d>=0?"+":""}${nf(d)} ${qt("pts")}</span>`;} });
   el.innerHTML=h;
 }
 function testNote(){
   const el=document.getElementById("testnote"); if(!el) return; let h="";
-  if(ST.late) h=qt("lateDone",{z:totalStr(QUIZ,ST.late)});
-  else if(ST.post) h=TESTS.late?(lateOpen()?`<span>${qt("lateOpen")}</span> <button class="btn" type="button" data-go="test" data-mode="late">${qt("goLate")}</button>`:qt("postDone",{y:totalStr(QUIZ,ST.post)})+" "+qt("lateWhen",{d:fmtDate(lateAt())})):qt("postDone",{y:totalStr(QUIZ,ST.post)});
-  else if(ST.pre) h=`<span>${qt("toPost",{x:totalStr(QUIZ,ST.pre)})}</span> <button class="btn" type="button" data-go="test" data-mode="post">${qt("goPost")}</button>`;
+  const pre=ST[sk("pre",kd)], post=ST[sk("post",kd)], pd=DK.map((_,d)=>d).filter(d=>ST[sk("post",d)]), py=pd.length?pd.includes(kd)?kd:pd[pd.length-1]:0;   // py: deck of the post-test named in the note
+  if(ST.late) h=qt("lateDone",{z:totalStr(LATESET,ST.late)});
+  else if(pre&&!post) h=`<span>${qt("toPost",{x:totalStr(QZ(kd),pre)})}</span> <button class="btn" type="button" data-go="test" data-mode="post"${deckBtn(kd)}>${qt("goPost")}</button>`;
+  else if(pd.length){ const y=totalStr(QZ(py),ST[sk("post",py)]); h=TESTS.late?(lateOpen()?`<span>${qt("lateOpen")}</span> <button class="btn" type="button" data-go="test" data-mode="late">${qt("goLate")}</button>`:qt("postDone",{y})+" "+lateWhenStr()):qt("postDone",{y}); }
   el.hidden=!h; el.innerHTML=h;
 }
 function readRaw(set){
@@ -431,12 +478,12 @@ function blankList(set,raw){
 const isEmpty=(set,raw)=>set.every((q,i)=>{ const r=raw.ans[i]; return q.type==="mcq"?r<0:q.type==="order"?!(seq[i]||[]).length:q.type==="open"?!countWords(r):r.every(v=>v===null); });
 function finish(set,raw){
   const qs=grade(set,raw);
-  ST[qmode]={raw, qs, auto:r2(qs.reduce((a,b)=>a+(b||0),0)), self:{}, fb:null, mp:null, sent:false, t:Date.now()};
+  ST[curKey()]={raw, qs, auto:r2(qs.reduce((a,b)=>a+(b||0),0)), self:{}, fb:null, mp:null, sent:false, t:Date.now()};
   saveST(); renderQuiz();
   const el=$("#qres"); if(el) el.scrollIntoView({block:"center",behavior:"smooth"});
 }
 $("#quiz").addEventListener("submit",e=>{
-  e.preventDefault(); if(qmode==="now"||qmode==="mid"||ST[qmode]) return; const set=setOf(qmode);
+  e.preventDefault(); if(qmode==="now"||qmode==="mid"||ST[curKey()]) return; const set=setOf(qmode);
   const r=readRaw(set), wbox=$("#qwarn");
   if(!progOK()){ wbox.hidden=false; wbox.textContent=qt("progNeed"); $("#rumuzbox").scrollIntoView({block:"center",behavior:"smooth"}); return; }
   if(isEmpty(set,r)){ wbox.hidden=false; wbox.textContent=qt("noneAns"); return; }
@@ -450,18 +497,18 @@ $("#quiz").addEventListener("submit",e=>{
   }
   finish(set,r);
 });
-$("#quiz").addEventListener("click",e=>{ if(qmode==="now"||qmode==="mid"||ST[qmode]) return;
+$("#quiz").addEventListener("click",e=>{ if(qmode==="now"||qmode==="mid"||ST[curKey()]) return;
   const c=e.target.closest("[data-oclear]");
   if(c){ const i=+c.dataset.oclear; seq[i]=[]; renderOrder(i,false); const f=document.querySelector(`#ord${i} [data-tap]`); if(f) f.focus(); return; }
   const b=e.target.closest("[data-tap]"); if(!b) return;
   const i=+b.dataset.q, k=+b.dataset.tap, s=seq[i]||(seq[i]=[]), at=s.indexOf(k);
   if(at>=0) s.splice(at,1); else s.push(k);          // a numbered step loses its number; later numbers move down
   renderOrder(i,false); const nb=document.querySelector(`#ord${i} [data-tap="${k}"]`); if(nb) nb.focus(); });
-$("#quiz").addEventListener("change",e=>{ const el=e.target, rec=ST[qmode]; if(!rec||rec.sent) return;
+$("#quiz").addEventListener("change",e=>{ const el=e.target, rec=ST[curKey()]; if(!rec||rec.sent) return;
   if(el.dataset.rb!==undefined){ const i=+el.dataset.q; rec.self[i]=rec.self[i]||[]; rec.self[i][+el.dataset.rb]=el.checked; saveST(); updateTotal(); }
   if(el.dataset.fb!==undefined){ rec.fb=rec.fb||{}; rec.fb[el.dataset.fb]=+el.value; saveST(); } });
 $("#quiz").addEventListener("input",e=>{ const el=e.target;
-  if(el.dataset.mp!==undefined){ const rec=ST[qmode]; if(rec&&!rec.sent){ rec.mp=rec.mp||{}; rec.mp[el.dataset.mp]=el.value.slice(0,1000); saveST(); } return; }
+  if(el.dataset.mp!==undefined){ const rec=ST[curKey()]; if(rec&&!rec.sent){ rec.mp=rec.mp||{}; rec.mp[el.dataset.mp]=el.value.slice(0,1000); saveST(); } return; }
   if(el.tagName!=="TEXTAREA"||el.dataset.q===undefined) return; const w=document.getElementById("wc"+el.dataset.q); if(w) w.textContent=qt("wcount",{n:countWords(el.value)}); warned=false; });
 /* ----- M6 mini-quiz (Kahoot style). The phone measures time (Date.now when the question appears), so a slow
    connection does not change the score. The phone shows right/wrong and time; the POINTS are calculated on the
@@ -495,7 +542,7 @@ function kList(){   // list of rounds (the "Mini quiz" button when there are sev
   f.innerHTML=`<div class="q kq"><h3 class="kh">${qt("kList")}</h3><p>${qt("kListHint")}</p><ul class="klist kround">`+
     ROUNDS.map((R,i)=>{ const r=i+1, rec=ST[mk(r)];
       return `<li><button type="button" class="btn ghost" data-kr="${r}">${qt("kRound",{r,n:NR})}</button> `+
-        (rec?`<span class="tm ok">✓</span> ${qt("kSum",{r:rec.auto,n:R.items.length})}`:ST.post?`<small>${qt("kClosed")}</small>`:"")+`</li>`; }).join("")+`</ul></div>`;
+        (rec?`<span class="tm ok">✓</span> ${qt("kSum",{r:rec.auto,n:R.items.length})}`:rClosed(r)?`<small>${qt("kClosed")}</small>`:"")+`</li>`; }).join("")+`</ul></div>`;
   f.querySelectorAll("[data-kr]").forEach(b=>b.onclick=()=>{ kr=+b.dataset.kr; hashSync(); renderKahoot(); });
   showCompare();
 }
@@ -575,8 +622,8 @@ function kPayload(rec,alias){   // one row per student and round (Q134-A): Test 
   cols.push(["Item codes",itemCodes(set)],["Version",VERSION],["Language",LANG]);
   return {schema:2, course:COURSE+"-quiz", alias, test:mk(kr), cols};
 }
-function checkMid(){   // 2026-11g: 1–10 rounds, exactly 3 items per round (Q126-A, Q127-A, Q128-A)
-  if(Array.isArray(QUIZ_MID)&&QUIZ_MID.length&&QUIZ_MID[0]&&QUIZ_MID[0].type) console.error("QUIZ_MID: write rounds: [ {items:[3 items]}, {items:[…]}, … ] (engine 2026-11g); this flat list is read as one round");
+function checkMid(){   // 2026-11g: 1–10 rounds, exactly 3 items per round (Q126-A, Q127-A, Q128-A); 2026-11q: rounds of all decks
+  if(DK.some(D=>isFlat(D.QUIZ_MID))) console.error("QUIZ_MID: write rounds: [ {items:[3 items]}, {items:[…]}, … ] (engine 2026-11g); this flat list is read as one round");
   if(NR<1||NR>10) console.error(`QUIZ_MID: use 1–10 rounds (this file has ${NR})`);
   ROUNDS.forEach((R,ri)=>{ if(R.story&&(!R.story.tr||!R.story.en)) console.error(`QUIZ_MID round ${ri+1}: story needs tr and en`); });
   ROUNDS.forEach((R,ri)=>{
@@ -622,7 +669,7 @@ function showBoard(r){
   boardLoad(); bTimer=setInterval(boardLoad,5000);
 }
 const bLast={board:null,sum:null};   // last reply of each box (engine 2026-11n); key = round + the stored "Reset" time ("d" = default window)
-const bKey=()=>bR+":"+(store.get(KST+"-board"+bR)||"d"), sKey=()=>String(store.get(KST+"-sum")||"d");
+const bKey=()=>bR+":"+(store.get(KST+"-board"+bR)||"d"), sKey=()=>sD+":"+String(store.get(sumK())||"d");
 function boardLoad(){
   const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"board="+encodeURIComponent(COURSE+"-quiz")+"&test="+mk(bR)+"&since="+boardSince()+"&n="+BOARD_TOP+"&streak=1";   // streak bonus (Apps Script 2026-11h; an older script ignores it)
   const r0=bR, k0=bKey();
@@ -654,14 +701,18 @@ const ST_={tr:{t:"Ön test · Sınıf özeti",n:"{n} öğrenci ön testi gönder
     off:"SHEET_URL is empty: the class summary only works in a simulator that sends results.",none:"No results match the items of this version."}};
 const SUM_MIN=5;
 const st_=(k,v)=>{ let s=ST_[LANG][k]; if(v) Object.keys(v).forEach(x=>s=s.split("{"+x+"}").join(v[x])); return s; };
-function sumSince(){ const s=store.get(KST+"-sum"); return (s&&Date.now()-s<3*3600e3)?s:Date.now()-30*60e3; }   // default: the last 30 minutes
-function showSummary(){
-  try{ if(location.hash!=="#summary") history.replaceState(null,"","#summary"); }catch(e){}
+let sD=0;   // deck of the class summary (#summary1, #summary2 …; 2026-11q)
+const sumK=()=>KST+"-sum"+(MULTI?sD+1:"");
+function sumSince(){ const s=store.get(sumK()); return (s&&Date.now()-s<3*3600e3)?s:Date.now()-30*60e3; }   // default: the last 30 minutes
+function showSummary(n){
+  if(n) sD=Math.min(Math.max(n,1),ND)-1; const h="#summary"+(MULTI?sD+1:"");
+  try{ if(location.hash!==h) history.replaceState(null,"",h); }catch(e){}
   let el=$("#board"); if(!el){ el=document.createElement("div"); el.id="board"; el.setAttribute("role","dialog"); document.body.appendChild(el); }
-  el.setAttribute("aria-label",st_("t")); el.hidden=false; document.body.classList.add("boardon");
-  el.innerHTML=`<div class="bwrap csum"><div class="bhead"><h2>${st_("t")}</h2><div class="bbtn">${bLangHTML()}<button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
+  const ti=st_("t")+(MULTI?" · "+deckName(sD):"");
+  el.setAttribute("aria-label",ti); el.hidden=false; document.body.classList.add("boardon");
+  el.innerHTML=`<div class="bwrap csum"><div class="bhead"><h2>${esc(ti)}</h2><div class="bbtn">${bLangHTML()}<button class="btn ghost" type="button" id="breset">${bt("reset")}</button><button class="btn ghost" type="button" id="bclose">${bt("close")}</button></div></div>`+
     `<p class="bcount" id="bcount"></p><ol class="blist slist" id="blist"></ol><p class="bitems" id="bitems"></p><p class="bnote" id="slegend">${st_("legend")}</p><p class="bnote" id="shint">${st_("hint")}</p><p class="bnote" id="bnote" role="status"></p></div>`;
-  bLangBind(el); $("#breset").onclick=()=>{ store.set(KST+"-sum",Date.now()); sumLoad(); };
+  bLangBind(el); $("#breset").onclick=()=>{ store.set(sumK(),Date.now()); sumLoad(); };
   $("#bclose").onclick=()=>{ clearInterval(bTimer); el.hidden=true; document.body.classList.remove("boardon"); open("giris"); };
   clearInterval(bTimer);
   if(!SHEET_URL){ $("#bnote").textContent=st_("off"); return; }
@@ -671,7 +722,7 @@ function showSummary(){
 /* topic shares from the item shares of the reply; an item counts only when its number, type and points match this version */
 function sumTopics(items){
   const T={}, used=[];
-  (items||[]).forEach(x=>{ const q=QUIZ[x.q-1]; if(!q||!isAuto(q)||q.type!==x.type||Math.abs(q.pts-x.pts)>1e-6) return;
+  (items||[]).forEach(x=>{ const q=QZ(sD)[x.q-1]; if(!q||!isAuto(q)||q.type!==x.type||Math.abs(q.pts-x.pts)>1e-6) return;
     const s=Math.min(Math.max(Number(x.share)||0,0),1); used.push({q:x.q,s});
     if(!T[q.mod]) T[q.mod]={e:0,p:0}; T[q.mod].e+=s*q.pts; T[q.mod].p+=q.pts; });
   const tops=Object.keys(T).map(m=>{ const pc=T[m].e/T[m].p; return {m, label:M[m]?t(M[m].tab):m, pc, mark:pc>=.75?"✓":pc>=.5?"~":"✗"}; }).sort((a,b)=>a.pc-b.pc);
@@ -680,7 +731,7 @@ function sumTopics(items){
 function sumOpen(m){ clearInterval(bTimer); const el=$("#board"); if(el) el.hidden=true; document.body.classList.remove("boardon"); open(m);
   const b=$("#m-predict"); if(b&&!b.hidden){ b.tabIndex=-1; b.scrollIntoView({block:"start"}); b.focus({preventScroll:true}); } }
 function sumLoad(){
-  const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"summary="+encodeURIComponent(COURSE)+"&test=pre&since="+sumSince()+"&ver="+encodeURIComponent(VERSION);
+  const u=SHEET_URL+(SHEET_URL.includes("?")?"&":"?")+"summary="+encodeURIComponent(MULTI?COURSE+"-d"+(sD+1):COURSE)+"&test=pre&since="+sumSince()+"&ver="+encodeURIComponent(VERSION);
   const k0=sKey();
   fetch(u,{cache:"no-store"}).then(r=>r.json()).then(d=>{
     if(!d||!d.ok) throw new Error(d&&d.error||"bad");
@@ -940,18 +991,20 @@ function payloadOf(mode,rec,alias){
     } });
   cols.push([`Auto total (${nf(maxOf(set))})`,rec.auto]);
   if(CONFIDENCE) cols.push(["Confidence points",confPts(set,rec)]);
-  cols.push([`Gift (${GIFT})`,GIFT],[`Total (${nf(totMax(set))})`,totalOf(set,rec)]);
+  cols.push([`Gift (${GIFT})`,GIFT]);
+  if(isLate(set)) lateParts(rec).forEach(p=>cols.push([`Part ${DK[p.d].key||"d"+(p.d+1)} (${nf(p.max)})`,p.tot]));   // 2026-11q: deck parts of the delayed test
+  cols.push([`Total (${nf(totMax(set))})`,totalOf(set,rec)]);
   if(HAS_OPEN) cols.push([`Total incl. lecturer`,null]);   // lecturer columns only when the test has an open item
   cols.push(["Topics",topicStr(set,rec)]);
   // form columns are sent with every test (empty except after the post-test), so the column order stays fixed
-  const isPost=mode==="post";
+  const isPost=mode==="post", isLastPost=isPost&&kd===ND-1;   // 2026-11q (Q3-A): M2 and M7 with the last deck's post-test only
   if(FEEDBACK) FB.forEach(x=>cols.push([`Feedback: ${x.k} (1-5)`,isPost?((rec.fb||{})[x.k]??""):null]));
   if(MINUTE) MP.forEach(x=>cols.push([x.k==="learned"?"Learned most":"Still unclear",isPost?((rec.mp||{})[x.k]||""):null]));
-  if(M2_TASKS.length) cols.push(["M2 answers",isPost?m2Answers():null],["M2 right",isPost?m2Right():null]);   // sent with the post-test row
-  if(M7_TASKS.length) cols.push(["M7 stars",isPost?m7StarsStr():null],["M7 tries",isPost?m7TriesStr():null]);   // engine 2026-11h, post-test row
+  if(M2_TASKS.length) cols.push(["M2 answers",isLastPost?m2Answers():null],["M2 right",isLastPost?m2Right():null]);   // sent with the post-test row
+  if(M7_TASKS.length) cols.push(["M7 stars",isLastPost?m7StarsStr():null],["M7 tries",isLastPost?m7TriesStr():null]);   // engine 2026-11h, post-test row
   if(PROGRAMS.length>1) cols.push(["Program",prog()]);
   cols.push(["Item codes",itemCodes(set)],["Version",VERSION],["Language",LANG]);
-  return {schema:2, course:COURSE, alias, test:mode, cols};
+  return {schema:2, course:MULTI?(mode==="late"?COURSE+"-late":COURSE+"-d"+(kd+1)):COURSE, alias, test:mode, cols};   // 2026-11q: tabs <COURSE>-d1 … and <COURSE>-late
 }
 async function sendResult(){
   const rec=ST[curKey()]; if(!rec||rec.sent||!SHEET_URL) return;
@@ -963,7 +1016,7 @@ async function sendResult(){
     document.querySelectorAll("[data-rb],[data-fb]").forEach(x=>x.disabled=true); document.querySelectorAll("[data-mp]").forEach(x=>x.readOnly=true);
   }catch(err){ btn.disabled=false; $("#sendmsg").textContent=qt("sendFail"); }
 }
-function resetCheck(){ if(location.hash!=="#test-sifirla") return; if(confirm(qt("resetQ"))){ ST={pre:null,post:null,late:null}; ROUNDS.forEach((_,i)=>{ ST[mk(i+1)]=null; }); saveST(); store.set(KRUN,null); kr=1; M2={}; store.set(KM2,null); M7={}; store.set(KM7,null); MR=null; m7Last=null; qmode=MODES[0]; renderModes(); } try{history.replaceState(null,"","#test");}catch(e){} }
+function resetCheck(){ if(location.hash!=="#test-sifirla") return; if(confirm(qt("resetQ"))){ ST={}; stKeys().forEach(m=>{ ST[m]=null; }); saveST(); store.set(KRUN,null); kr=1; M2={}; store.set(KM2,null); M7={}; store.set(KM7,null); MR=null; m7Last=null; qmode=MODES[0]; renderModes(); } try{history.replaceState(null,"","#test");}catch(e){} }
 resetCheck(); window.addEventListener("hashchange",resetCheck);
 /* ----- format check for template authors: problems are listed in the browser console -----
    Rules (engine 2026-11f): all item points + 2 per automatic item (confidence) + 4 (gift) = 100;
@@ -1006,5 +1059,13 @@ function checkPredict(){   // M2 tasks: q and why in tr and en, a = up | down | 
     Object.keys(P.set||{}).forEach(id=>{ if(!ids.includes(id)) err("set: unknown control id "+id); }); });
   if(M2_TASKS.length&&(M2_TASKS.length<2||M2_TASKS.length>3)) console.warn(`M2: the design is 2–3 prediction tasks per simulator (one per main module); this file has ${M2_TASKS.length}.`);
 }
-checkQuiz(QUIZ,"QUIZ"); if(TESTS.mid) checkMid(); checkPredict(); checkMission();
+function checkDecks(){   // 2026-11q: DECKS author check (console)
+  if(DECKS===null) return; if(!Array.isArray(DECKS)||!DECKS.length){ console.error("DECKS: use null (one deck) or a list of decks [{key, title:{tr,en}, QUIZ, QUIZ_MID}, …]"); return; }
+  const keys=new Set();
+  DECKS.forEach((D,i)=>{ const err=m=>console.error(`DECKS[${i}]: ${m}`);
+    if(!D||!/^[a-z0-9]{1,8}$/.test(D.key||"")) err('key: short name, lower case letters and digits (e.g. "d1")'); else if(keys.has(D.key)) err("key used twice: "+D.key); else keys.add(D.key);
+    if(!D||!D.title||!D.title.tr||!D.title.en) err("title needs tr and en");
+    if(!D||!Array.isArray(D.QUIZ)||!D.QUIZ.length) err("QUIZ: the deck's pre-test and post-test items (default 6 items)"); });
+}
+checkDecks(); DK.forEach((D,i)=>checkQuiz(D.QUIZ,MULTI?`DECKS[${i}].QUIZ`:"QUIZ")); if(TESTS.mid) checkMid(); checkPredict(); checkMission();
 renderModes(); renderCodeBox(); testNote();
