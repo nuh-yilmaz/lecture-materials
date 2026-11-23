@@ -1,4 +1,5 @@
-/* ---------------- TEST ENGINE 2026-11q ----------------
+/* ---------------- TEST ENGINE 2026-11r ----------------
+   2026-11r: mini-quiz round limit 1–30 rounds over all decks (was 1–10; Unit II needs about 26 rounds).
    2026-11q: decks (rule 2.2): optional DECKS list; one pre-test and post-test per deck (#pre1, #post1 …, tabs <COURSE>-d1 …),
              one mini-quiz numbering, delayed test over all decks (total = mean of the deck parts, tab <COURSE>-late).
              Without DECKS the engine works as 2026-11p.
@@ -622,9 +623,9 @@ function kPayload(rec,alias){   // one row per student and round (Q134-A): Test 
   cols.push(["Item codes",itemCodes(set)],["Version",VERSION],["Language",LANG]);
   return {schema:2, course:COURSE+"-quiz", alias, test:mk(kr), cols};
 }
-function checkMid(){   // 2026-11g: 1–10 rounds, exactly 3 items per round (Q126-A, Q127-A, Q128-A); 2026-11q: rounds of all decks
+function checkMid(){   // 2026-11g: exactly 3 items per round (Q126-A, Q127-A, Q128-A); 2026-11q: rounds of all decks; 2026-11r: 1–30 rounds (was 1–10)
   if(DK.some(D=>isFlat(D.QUIZ_MID))) console.error("QUIZ_MID: write rounds: [ {items:[3 items]}, {items:[…]}, … ] (engine 2026-11g); this flat list is read as one round");
-  if(NR<1||NR>10) console.error(`QUIZ_MID: use 1–10 rounds (this file has ${NR})`);
+  if(NR<1||NR>30) console.error(`QUIZ_MID: use 1–30 rounds over all decks (this file has ${NR})`);
   ROUNDS.forEach((R,ri)=>{ if(R.story&&(!R.story.tr||!R.story.en)) console.error(`QUIZ_MID round ${ri+1}: story needs tr and en`); });
   ROUNDS.forEach((R,ri)=>{
     if(R.items.length!==3) console.error(`QUIZ_MID round ${ri+1}: use exactly 3 items (this round has ${R.items.length})`);
