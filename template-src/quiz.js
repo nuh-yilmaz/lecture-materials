@@ -52,7 +52,7 @@ const QUIZ=[
    why:{tr:"Cevabınızı ölçütle karşılaştırın. Bu soruyu eğitimci, her basamak için tam / kısmen / yok olarak puanlar.",en:"Compare your answer with the guide. The lecturer scores this question as full / partial / none for each step."}}
   With an open item the points rule still holds: all item points + 2 per automatic item + 4 = 100. */
 /* M6 MINI-QUIZ ROUNDS (Kahoot style; used when TESTS.mid is true). Rule 2.12: one round every 18–20 minutes of
-   lecture time (e.g. about 8 rounds in 160 minutes). The number of rounds is free (1–10, Q126-A); each round has
+   lecture time (e.g. about 8 rounds in 160 minutes). The number of rounds is free (1–30 over all decks, engine 2026-11r); each round has
    exactly 3 items (Q127-A, Q128-A). One try per round, timed on the phone.
    Format: QUIZ_MID = [ {story*:{tr,en}, items:[item, item, item]}, … ]  (round 1 first).
      story (optional, 2026-11h): one line that ties the 3 items to one person or situation (e.g. "Ayşe climbs a
